@@ -31,6 +31,19 @@ class CompilerTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             WorkflowGraphCompiler.compile_graph({"workflow_id": "wf_x", "nodes": [], "edges": []})
 
+    def test_compile_skips_non_json_brace_prefix(self) -> None:
+        raw = "template {placeholder}\n{\"steps\": []}"
+        macro = MacroCompiler.compile(raw)
+        self.assertEqual(len(macro.steps), 0)
+
+    def test_workflow_graph_compiler_extracts_json_from_noisy_text(self) -> None:
+        raw = (
+            "noise before {not-json}\n"
+            '{"workflow_id":"wf_demo","nodes":[{"node_id":"n1","step":{"step_id":"step_1","tool_name":"read_local_file","arguments":{"file_path":"/tmp/a"}}}],"edges":[]}'
+        )
+        graph = WorkflowGraphCompiler.compile_graph(raw)
+        self.assertEqual(graph.workflow_id, "wf_demo")
+
 
 if __name__ == "__main__":
     unittest.main()
