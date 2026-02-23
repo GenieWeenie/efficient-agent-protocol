@@ -31,7 +31,7 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["agent*", "environment*", "protocol*", "eap*"]
+include = ["agent*", "environment*", "protocol*", "eap*", "starter_packs*"]
 exclude = ["examples*"]
 
 [tool.pytest.ini_options]
@@ -44,4 +44,4 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-source = ["protocol", "agent", "environment", "eap"]
+source = ["protocol", "agent", "environment", "eap", "starter_packs"]

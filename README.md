@@ -74,6 +74,14 @@ streamlit run app.py
 - Check **Data Inspector** for pointer payloads
 - Check **Execution Trace** for step timing/retries/errors
 
+6. Try starter packs
+
+```bash
+python -m starter_packs.research_assistant --question "What are launch risks?"
+python -m starter_packs.doc_ops --focus "summarize priorities and actions"
+python -m starter_packs.local_etl
+```
+
 ## Programmatic Example
 
 ```python
@@ -136,5 +144,9 @@ python3 -m build
 - `docs/eap_proof_sheet.md`
 - `docs/phase7_competitive_openclaw_roadmap.md`
 - `docs/openclaw_interop.md`
+- `docs/starter_packs/README.md`
+- `docs/starter_packs/research_assistant.md`
+- `docs/starter_packs/doc_ops.md`
+- `docs/starter_packs/local_etl.md`
 - `integrations/openclaw/eap-runtime-plugin/README.md`
 - `integrations/openclaw/eap-runtime-plugin/skills/README.md`
