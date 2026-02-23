@@ -30,6 +30,14 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Add contributor governance docs (`CONTRIBUTING.md`, issue/PR templates, maintainer expectations).
 - Reduce bus factor with maintainer runbooks and reviewer coverage.
 
+## Phase 5: Recommendation Readiness (Next)
+
+- Close all open high-severity code scanning alerts and keep the baseline at zero.
+- Add maintainer/reviewer ownership map (`CODEOWNERS`) for critical runtime paths.
+- Add README quickstart smoke validation in CI so onboarding docs stay executable.
+- Publish a one-page "why EAP vs alternatives" proof sheet with benchmark + failure-mode evidence.
+- Checklist: `docs/phase5_recommendation_readiness_checklist.md`
+
 ## Done
 
 - Branch protection on `main` with required CI checks and PR review.
@@ -40,3 +48,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 2 reliability/contract/perf tranche completed (issue #2).
 - Phase 3 release and security hardening shipped (issue #3).
 - Phase 4 migration/observability/governance tranche completed (issue #4).
+- Phase 5 tranche 1 started: compiler ReDoS hardening and regression tests (EAP-064).

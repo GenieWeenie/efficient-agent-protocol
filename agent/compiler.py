@@ -1,6 +1,5 @@
 # agent/compiler.py
 import json
-import re
 from typing import Any, Dict, Optional, Union
 from protocol.models import (
     BatchedMacroRequest,
@@ -8,6 +7,22 @@ from protocol.models import (
     PersistedWorkflowGraph,
     RetryPolicy,
 )
+
+
+def _extract_first_json_object(raw_payload: str, error_message: str) -> Dict[str, Any]:
+    """Extract the first top-level JSON object embedded in arbitrary text."""
+    decoder = json.JSONDecoder()
+    start_index = raw_payload.find("{")
+    while start_index != -1:
+        try:
+            parsed, _ = decoder.raw_decode(raw_payload, start_index)
+        except json.JSONDecodeError:
+            start_index = raw_payload.find("{", start_index + 1)
+            continue
+        if isinstance(parsed, dict):
+            return parsed
+        start_index = raw_payload.find("{", start_index + 1)
+    raise ValueError(error_message)
 
 class MacroCompiler:
     """
@@ -19,13 +34,10 @@ class MacroCompiler:
         try:
             # 1. Extract JSON from potential markdown or conversational noise
             if isinstance(raw_llm_output, str):
-                # Use regex to find the first '{' and last '}' to strip conversational text
-                match = re.search(r'\{.*\}', raw_llm_output, re.DOTALL)
-                if not match:
-                    raise ValueError("No JSON object found in output.")
-                
-                cleaned_output = match.group(0)
-                parsed_data = json.loads(cleaned_output)
+                parsed_data = _extract_first_json_object(
+                    raw_llm_output,
+                    error_message="No JSON object found in output.",
+                )
             else:
                 parsed_data = raw_llm_output
 
@@ -52,10 +64,10 @@ class WorkflowGraphCompiler:
 
     @staticmethod
     def _extract_json_object(raw_payload: str) -> Dict[str, Any]:
-        match = re.search(r"\{.*\}", raw_payload, re.DOTALL)
-        if not match:
-            raise ValueError("No JSON object found in workflow graph payload.")
-        return json.loads(match.group(0))
+        return _extract_first_json_object(
+            raw_payload,
+            error_message="No JSON object found in workflow graph payload.",
+        )
 
     @staticmethod
     def _coerce_graph_payload(
