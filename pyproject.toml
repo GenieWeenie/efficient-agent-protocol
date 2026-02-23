@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "efficient-agent-protocol"
+version = "0.1.0"
+description = "High-performance multi-agent framework for stateful batched execution."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "pydantic==2.6.1",
+  "requests==2.31.0",
+  "beautifulsoup4==4.12.3",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-cov>=5.0.0",
+  "ruff>=0.6.0",
+]
+storage = [
+  "redis>=5.0.0",
+  "psycopg[binary]>=3.1.0",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agent*", "environment*", "protocol*", "eap*"]
+exclude = ["examples*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = [
+  "integration: cross-module integration tests",
+  "packaging: package installation smoke tests",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["protocol", "agent", "environment", "eap"]

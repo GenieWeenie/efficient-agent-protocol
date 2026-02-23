@@ -1,0 +1,18 @@
+{
+  "name": "@eap/sdk-typescript",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for Efficient Agent Protocol macro APIs.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

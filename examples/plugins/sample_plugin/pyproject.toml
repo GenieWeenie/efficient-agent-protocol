@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eap-sample-plugin"
+version = "0.1.0"
+description = "Sample third-party plugin for Efficient Agent Protocol."
+requires-python = ">=3.9"
+
+[project.entry-points."eap.tool_plugins"]
+sample_plugin = "sample_plugin:get_plugin_manifest"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sample_plugin*"]

@@ -1,0 +1,34 @@
+# Auto Claude data directory
+.auto-claude/
+
+# Auto Claude generated files
+.auto-claude-security.json
+.auto-claude-status
+.claude_settings.json
+.worktrees/
+.security-key
+logs/security/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.coverage
+*.cover
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Local runtime/state
+*.db
+*.sqlite
+.env
+.DS_Store
+
+# JS/TS
+node_modules/

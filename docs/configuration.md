@@ -1,0 +1,58 @@
+# Configuration
+
+EAP reads runtime configuration from environment variables. The app loads settings through `eap.protocol.load_settings()` at startup and fails fast if values are invalid.
+
+## Quick Start
+
+1. Copy `.env.example` to `.env` (or export vars in your shell).
+2. Set provider/model values for architect and auditor roles.
+3. Start app:
+   - `streamlit run app.py`
+
+## Variables
+
+Global defaults:
+- `EAP_BASE_URL`
+- `EAP_MODEL`
+- `EAP_API_KEY`
+- `EAP_TIMEOUT_SECONDS`
+- `EAP_TEMPERATURE`
+
+Role-specific overrides:
+- `EAP_ARCHITECT_BASE_URL`
+- `EAP_ARCHITECT_MODEL`
+- `EAP_ARCHITECT_API_KEY`
+- `EAP_ARCHITECT_TIMEOUT_SECONDS`
+- `EAP_ARCHITECT_TEMPERATURE`
+- `EAP_AUDITOR_BASE_URL`
+- `EAP_AUDITOR_MODEL`
+- `EAP_AUDITOR_API_KEY`
+- `EAP_AUDITOR_TIMEOUT_SECONDS`
+- `EAP_AUDITOR_TEMPERATURE`
+
+Logging:
+- `EAP_LOG_LEVEL` (`DEBUG`, `INFO`, `WARNING`, `ERROR`)
+- `EAP_LOG_JSON` (`1`/`true`/`yes` to enable JSON logs)
+
+Executor concurrency/rate limits:
+- `EAP_EXECUTOR_MAX_CONCURRENCY` (integer > 0, default `8`)
+- `EAP_EXECUTOR_GLOBAL_RPS` (optional float > 0)
+- `EAP_EXECUTOR_GLOBAL_BURST` (optional integer > 0, requires `EAP_EXECUTOR_GLOBAL_RPS`)
+- `EAP_EXECUTOR_PER_TOOL_LIMITS_JSON` (optional JSON object)
+  - Example:
+    - `{"scrape_url":{"max_concurrency":2,"requests_per_second":5.0,"burst_capacity":2}}`
+
+Pointer janitor (dashboard):
+- `EAP_POINTER_JANITOR_ENABLED` (default: enabled)
+- `EAP_POINTER_JANITOR_INTERVAL_SECONDS` (default: `300`)
+- `EAP_POINTER_JANITOR_MAX_DELETE` (default: `200`)
+
+## Validation Rules
+
+- Base URLs must start with `http://` or `https://`.
+- Models and API keys cannot be empty strings.
+- Timeout values must be integers greater than zero.
+- Temperature must be a float greater than or equal to zero.
+- Executor global concurrency must be a positive integer.
+- Global burst capacity requires global RPS to be set.
+- Per-tool limits JSON must be an object keyed by non-empty tool names.
