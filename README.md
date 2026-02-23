@@ -37,7 +37,6 @@ Requirements:
 git clone https://github.com/GenieWeenie/efficient-agent-protocol.git
 cd efficient-agent-protocol
 pip install -e .
-pip install streamlit pandas
 ```
 
 2. Configure
@@ -54,13 +53,20 @@ EAP_MODEL=nemotron-orchestrator-8b
 EAP_API_KEY=not-needed
 ```
 
-3. Run dashboard
+3. Smoke test
 
 ```bash
+python -m examples.01_minimal
+```
+
+4. Run dashboard
+
+```bash
+pip install streamlit pandas
 streamlit run app.py
 ```
 
-4. Use it
+5. Use it
 
 - Open `http://localhost:8501`
 - In **Agent Chat**, ask for a task
