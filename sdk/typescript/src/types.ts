@@ -34,11 +34,24 @@ export interface BranchingRule {
   allow_early_exit?: boolean;
 }
 
+export interface StepApprovalCheckpoint {
+  required?: boolean;
+  prompt?: string;
+}
+
+export type StepApprovalDecisionType = "approve" | "reject";
+
+export interface StepApprovalDecision {
+  decision: StepApprovalDecisionType;
+  reason?: string;
+}
+
 export interface ToolCall {
   step_id: string;
   tool_name: string;
   arguments: Record<string, unknown>;
   branching?: BranchingRule;
+  approval?: StepApprovalCheckpoint;
 }
 
 export interface RetryPolicy {
@@ -66,6 +79,7 @@ export interface BatchedMacroRequest {
   return_final_state_only?: boolean;
   retry_policy?: RetryPolicy;
   execution_limits?: ExecutionLimits;
+  approvals?: Record<string, StepApprovalDecision>;
 }
 
 export interface GenerateMacroRequest {

@@ -13,7 +13,16 @@ class TraceModelTests(unittest.TestCase):
     def test_event_type_contract_covers_required_states(self) -> None:
         self.assertEqual(
             {event_type.value for event_type in ExecutionTraceEventType},
-            {"queued", "started", "retried", "failed", "completed"},
+            {
+                "queued",
+                "approval_required",
+                "approved",
+                "rejected",
+                "started",
+                "retried",
+                "failed",
+                "completed",
+            },
         )
 
     def test_completed_event_requires_output_pointer(self) -> None:
@@ -61,6 +70,15 @@ class TraceModelTests(unittest.TestCase):
         )
         self.assertEqual(event.event_type, ExecutionTraceEventType.COMPLETED)
         self.assertEqual(event.output_pointer_id, "ptr_abc12345")
+
+    def test_rejected_event_requires_error_payload(self) -> None:
+        with self.assertRaises(ValidationError):
+            ExecutionTraceEvent(
+                run_id="run_1",
+                step_id="s5",
+                tool_name="tool_a",
+                event_type=ExecutionTraceEventType.REJECTED,
+            )
 
 
 if __name__ == "__main__":

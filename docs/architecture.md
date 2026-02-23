@@ -16,7 +16,7 @@ This document describes the runtime architecture of Efficient Agent Protocol (EA
 ## `protocol/models.py`
 - Core Pydantic contracts (`ToolCall`, `BatchedMacroRequest`, `RetryPolicy`, error payloads).
 - Execution trace model (`ExecutionTraceEvent`) with lifecycle states:
-  - `queued`, `started`, `retried`, `failed`, `completed`
+  - `queued`, `approval_required`, `approved`, `rejected`, `started`, `retried`, `failed`, `completed`
 - Conversation memory models:
   - `ConversationSession`, `ConversationTurn`, `MemoryStrategy`
 - Workflow graph models:

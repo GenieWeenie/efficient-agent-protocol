@@ -8,7 +8,8 @@ Current status:
 - [x] `EAP-073` OpenClaw plugin adapter MVP (`integrations/openclaw/eap-runtime-plugin`)
 - [x] `EAP-074` OpenClaw skill pack (`integrations/openclaw/eap-runtime-plugin/skills`)
 - [x] `EAP-075` interop CI lane (`.github/workflows/openclaw-interop.yml`)
-- [ ] `EAP-076` onward
+- [x] `EAP-076` human approval checkpoints (HITL pause/approve/reject + trace transitions)
+- [ ] `EAP-077` onward
 
 ## Objective
 

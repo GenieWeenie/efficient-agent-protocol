@@ -11,6 +11,7 @@ from protocol.models import (
     ExecutionLimits,
     ExecutionTraceEvent,
     ExecutionTraceEventType,
+    StepApprovalDecisionType,
     ToolErrorPayload,
 )
 from protocol.state_manager import StateManager
@@ -328,6 +329,106 @@ class AsyncLocalExecutor:
                     )
                     return step_pointer
 
+                requires_approval = bool(step.approval and step.approval.required)
+                approval_decision = macro.approvals.get(step.step_id)
+                if requires_approval:
+                    self.state_manager.append_trace_event(
+                        ExecutionTraceEvent(
+                            run_id=run_id,
+                            step_id=step.step_id,
+                            tool_name=step.tool_name,
+                            event_type=ExecutionTraceEventType.APPROVAL_REQUIRED,
+                        )
+                    )
+                    if approval_decision is None:
+                        pending_payload = {
+                            "status": "paused",
+                            "reason": "awaiting_approval",
+                            "step_id": step.step_id,
+                            "approval_prompt": step.approval.prompt if step.approval else None,
+                        }
+                        step_pointer = self.state_manager.store_and_point(
+                            raw_data=pending_payload,
+                            summary=f"Step {step.step_id} paused awaiting approval.",
+                            metadata={
+                                "status": "paused",
+                                "reason": "awaiting_approval",
+                                "approval_prompt": step.approval.prompt if step.approval else None,
+                            },
+                        )
+                        step_status[step.step_id] = {
+                            "status": "paused",
+                            "pointer_id": step_pointer["pointer_id"],
+                        }
+                        step_contexts[step.step_id] = {
+                            "pointer_id": step_pointer["pointer_id"],
+                            "metadata": step_pointer.get("metadata"),
+                            "raw_data": pending_payload,
+                            "status": "paused",
+                        }
+                        if step.branching:
+                            branch_decisions[step.step_id] = set()
+                        if not step_futures[step.step_id].done():
+                            step_futures[step.step_id].set_result(step_pointer["pointer_id"])
+                        logger.info(
+                            "task paused awaiting approval",
+                            extra={"step_id": step.step_id, "tool_name": step.tool_name, "run_id": run_id},
+                        )
+                        return step_pointer
+
+                    if approval_decision.decision == StepApprovalDecisionType.REJECT:
+                        rejection_reason = approval_decision.reason or "Rejected by reviewer."
+                        error_payload = ToolErrorPayload(
+                            error_type="approval_rejected",
+                            message=rejection_reason,
+                            step_id=step.step_id,
+                            tool_name=step.tool_name,
+                            details={"approval_prompt": step.approval.prompt if step.approval else None},
+                        )
+                        self.state_manager.append_trace_event(
+                            ExecutionTraceEvent(
+                                run_id=run_id,
+                                step_id=step.step_id,
+                                tool_name=step.tool_name,
+                                event_type=ExecutionTraceEventType.REJECTED,
+                                attempt=1,
+                                error=error_payload,
+                            )
+                        )
+                        rejection_payload = error_payload.model_dump(mode="json")
+                        step_pointer = self.state_manager.store_and_point(
+                            raw_data=rejection_payload,
+                            summary=f"Step {step.step_id} rejected at approval checkpoint.",
+                            metadata={"status": "rejected", "error_type": "approval_rejected"},
+                        )
+                        step_status[step.step_id] = {
+                            "status": "rejected",
+                            "pointer_id": step_pointer["pointer_id"],
+                        }
+                        step_contexts[step.step_id] = {
+                            "pointer_id": step_pointer["pointer_id"],
+                            "metadata": step_pointer.get("metadata"),
+                            "raw_data": rejection_payload,
+                            "status": "rejected",
+                        }
+                        resolve_branch_targets(step, status="error")
+                        if not step_futures[step.step_id].done():
+                            step_futures[step.step_id].set_result(step_pointer["pointer_id"])
+                        logger.info(
+                            "task rejected at approval checkpoint",
+                            extra={"step_id": step.step_id, "tool_name": step.tool_name, "run_id": run_id},
+                        )
+                        return step_pointer
+
+                    self.state_manager.append_trace_event(
+                        ExecutionTraceEvent(
+                            run_id=run_id,
+                            step_id=step.step_id,
+                            tool_name=step.tool_name,
+                            event_type=ExecutionTraceEventType.APPROVED,
+                        )
+                    )
+
                 resolved_args = {}
                 input_pointer_ids = {}
                 for key, val in step.arguments.items():
@@ -554,7 +655,18 @@ class AsyncLocalExecutor:
 
         run_completed_at = datetime.now(timezone.utc)
         succeeded_steps = sum(1 for item in step_status.values() if item.get("status") == "ok")
-        failed_steps = sum(1 for item in step_status.values() if item.get("status") == "error")
+        failed_steps = sum(
+            1 for item in step_status.values() if item.get("status") in {"error", "rejected", "paused"}
+        )
+        approval_required_steps = sum(
+            1 for step in macro.steps if step.approval is not None and step.approval.required
+        )
+        approval_paused_steps = sum(1 for item in step_status.values() if item.get("status") == "paused")
+        approval_rejected_steps = sum(1 for item in step_status.values() if item.get("status") == "rejected")
+        approval_approved_steps = max(
+            0,
+            approval_required_steps - approval_paused_steps - approval_rejected_steps,
+        )
         self.state_manager.store_execution_summary(
             run_id=run_id,
             started_at_utc=run_started_at.isoformat(),
@@ -569,6 +681,12 @@ class AsyncLocalExecutor:
         if final_result:
             final_result.setdefault("metadata", {})
             final_result["metadata"]["execution_run_id"] = run_id
+            final_result["metadata"]["approval_metrics"] = {
+                "required_steps": approval_required_steps,
+                "approved_steps": approval_approved_steps,
+                "rejected_steps": approval_rejected_steps,
+                "paused_steps": approval_paused_steps,
+            }
             final_result["metadata"]["saturation_metrics"] = {
                 **saturation_metrics,
                 "global_concurrency_wait_seconds": round(
