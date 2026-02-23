@@ -95,6 +95,7 @@ macro = architect.generate_macro("Read README.md and summarize setup steps", man
 
 ```bash
 python3 -m pytest -q
+pre-commit run --all-files
 python3 -m build
 ```
 
@@ -105,6 +106,8 @@ python3 -m build
 - `docs/v1_contract.md`
 - `docs/release_notes_template.md`
 - `docs/benchmarks.md`
+- `docs/release.md`
+- `SECURITY.md`
 - GitHub roadmap board: https://github.com/users/GenieWeenie/projects/1
 - `docs/configuration.md`
 - `docs/architecture.md`

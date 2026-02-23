@@ -1,0 +1,19 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: ["--maxkb=10000"]
+
+  - repo: local
+    hooks:
+      - id: ruff-runtime-checks
+        name: ruff-runtime-checks
+        entry: python3 -m ruff check . --select E9,F63,F7,F82
+        language: system
+        pass_filenames: false
