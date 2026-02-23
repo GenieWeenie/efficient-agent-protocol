@@ -4,6 +4,7 @@ import sys
 import sqlite3
 import json
 import os
+from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
@@ -14,6 +15,7 @@ from .models import (
     MemoryStrategy,
     PointerResponse,
 )
+from .migrations import apply_sqlite_migrations
 from .storage import PointerStoreBackend, SQLitePointerStore
 
 class StateManager:
@@ -102,6 +104,7 @@ class StateManager:
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_conversation_sessions_updated_at ON conversation_sessions(updated_at_utc)"
             )
+        apply_sqlite_migrations(self.db_path)
 
     @staticmethod
     def _now_utc_iso() -> str:
@@ -590,3 +593,77 @@ class StateManager:
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
             self._init_db()
+
+    def collect_operational_metrics(self, now_utc: Optional[str] = None) -> Dict[str, Any]:
+        snapshot_now = self._parse_now_utc(now_utc).isoformat()
+
+        total_pointers = len(self.list_pointers(include_expired=True, now_utc=snapshot_now))
+        active_pointers = len(self.list_pointers(include_expired=False, now_utc=snapshot_now))
+        expired_pointers = max(0, total_pointers - active_pointers)
+
+        with sqlite3.connect(self.db_path) as conn:
+            run_row = conn.execute(
+                """
+                SELECT
+                    COUNT(*) AS run_count,
+                    COALESCE(SUM(total_steps), 0) AS total_steps,
+                    COALESCE(SUM(succeeded_steps), 0) AS succeeded_steps,
+                    COALESCE(SUM(failed_steps), 0) AS failed_steps,
+                    COALESCE(AVG(total_duration_ms), 0.0) AS avg_duration_ms
+                FROM execution_run_summaries
+                """
+            ).fetchone()
+            failed_run_count = conn.execute(
+                "SELECT COUNT(*) FROM execution_run_summaries WHERE failed_steps > 0"
+            ).fetchone()[0]
+
+            event_rows = conn.execute(
+                """
+                SELECT event_type, COUNT(*)
+                FROM execution_trace_events
+                GROUP BY event_type
+                """
+            ).fetchall()
+            trace_event_total = conn.execute("SELECT COUNT(*) FROM execution_trace_events").fetchone()[0]
+
+            session_count = conn.execute("SELECT COUNT(*) FROM conversation_sessions").fetchone()[0]
+            turn_count = conn.execute("SELECT COUNT(*) FROM conversation_turns").fetchone()[0]
+
+        return {
+            "snapshot_utc": snapshot_now,
+            "db_path": self.db_path,
+            "pointer_store": {
+                "total_pointers": total_pointers,
+                "active_pointers": active_pointers,
+                "expired_pointers": expired_pointers,
+            },
+            "execution": {
+                "run_count": int(run_row[0]),
+                "failed_run_count": int(failed_run_count),
+                "total_steps": int(run_row[1]),
+                "succeeded_steps": int(run_row[2]),
+                "failed_steps": int(run_row[3]),
+                "avg_duration_ms": float(run_row[4]),
+                "trace_event_total": int(trace_event_total),
+                "trace_events_by_type": {row[0]: int(row[1]) for row in event_rows},
+            },
+            "conversation": {
+                "session_count": int(session_count),
+                "turn_count": int(turn_count),
+            },
+        }
+
+    def export_operational_metrics(
+        self,
+        output_path: str,
+        now_utc: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        metrics = self.collect_operational_metrics(now_utc=now_utc)
+        output = Path(output_path)
+        if output.parent and str(output.parent) != ".":
+            output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(metrics, indent=2, sort_keys=True), encoding="utf-8")
+        return {
+            "output_path": str(output.resolve()),
+            "snapshot_utc": metrics["snapshot_utc"],
+        }

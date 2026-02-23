@@ -11,6 +11,7 @@ class JsonFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         payload = {
+            "timestamp_utc": self.formatTime(record, datefmt="%Y-%m-%dT%H:%M:%S"),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -39,6 +40,7 @@ class RedactionFilter(logging.Filter):
 def configure_logging(
     level: Optional[str] = None,
     use_json: Optional[bool] = None,
+    log_format: Optional[str] = None,
     stream: Optional[TextIO] = None,
 ) -> logging.Logger:
     """
@@ -46,7 +48,8 @@ def configure_logging(
 
     Environment variables:
     - EAP_LOG_LEVEL: DEBUG/INFO/WARNING/ERROR (default INFO)
-    - EAP_LOG_JSON: 1/true/yes for JSON output (default false)
+    - EAP_LOG_FORMAT: json|text (default json)
+    - EAP_LOG_JSON: legacy bool override for JSON output
     """
     logger = logging.getLogger("eap")
     logger.handlers.clear()
@@ -57,7 +60,14 @@ def configure_logging(
 
     json_enabled = use_json
     if json_enabled is None:
-        json_enabled = os.getenv("EAP_LOG_JSON", "").lower() in {"1", "true", "yes"}
+        requested_format = (log_format or os.getenv("EAP_LOG_FORMAT", "json")).strip().lower()
+        if requested_format not in {"json", "text"}:
+            requested_format = "json"
+        json_enabled = requested_format == "json"
+
+        legacy_json_flag = os.getenv("EAP_LOG_JSON", "").strip()
+        if legacy_json_flag:
+            json_enabled = legacy_json_flag.lower() in {"1", "true", "yes"}
 
     handler = logging.StreamHandler(stream or sys.stdout)
     handler.addFilter(RedactionFilter())
