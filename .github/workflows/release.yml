@@ -24,6 +24,25 @@ jobs:
             pyproject.toml
             requirements.txt
 
+      - name: Validate tag and package version alignment
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${REF_NAME#v}"
+          PACKAGE_VERSION="$(python - <<'PY'
+          import tomllib
+          with open("pyproject.toml", "rb") as f:
+              data = tomllib.load(f)
+          print(data["project"]["version"])
+          PY
+          )"
+          if [ "${TAG_VERSION}" != "${PACKAGE_VERSION}" ]; then
+            echo "::error title=Version mismatch::Tag ${REF_NAME} does not match pyproject version ${PACKAGE_VERSION}."
+            exit 1
+          fi
+
       - name: Install build tools
         run: |
           python -m pip install --upgrade pip
