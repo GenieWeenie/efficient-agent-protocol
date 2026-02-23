@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "efficient-agent-protocol"
-version = "0.1.6"
+version = "0.1.7"
 description = "High-performance multi-agent framework for stateful batched execution."
 readme = "README.md"
 requires-python = ">=3.9"
