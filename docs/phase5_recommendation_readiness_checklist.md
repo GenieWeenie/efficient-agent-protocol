@@ -11,5 +11,5 @@ This checklist tracks the next ordered tranche after Phase 4 to make EAP recomme
 ## Current status
 
 - [x] `EAP-064` Regex-based JSON extraction replaced with parser-based extraction; noisy-payload regression tests added.
-- [ ] `EAP-065` `CODEOWNERS` for `agent/`, `environment/`, `protocol/`, `docs/`, and `.github/workflows/`.
-- [ ] `EAP-066` CI job executes README quickstart path (install + minimal run) on pull requests.
+- [x] `EAP-065` `CODEOWNERS` for `agent/`, `environment/`, `protocol/`, `docs/`, and `.github/workflows/`.
+- [x] `EAP-066` CI job executes README quickstart path (install + minimal run) on pull requests.

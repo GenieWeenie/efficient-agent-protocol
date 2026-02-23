@@ -1,0 +1,12 @@
+# Default owner
+* @GenieWeenie
+
+# Critical runtime paths
+/agent/ @GenieWeenie
+/environment/ @GenieWeenie
+/protocol/ @GenieWeenie
+/eap/ @GenieWeenie
+
+# Delivery and governance
+/docs/ @GenieWeenie
+/.github/workflows/ @GenieWeenie
