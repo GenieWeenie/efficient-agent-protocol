@@ -1,6 +1,7 @@
 import io
 import json
 import unittest
+from unittest import mock
 
 from eap.protocol.logging_config import configure_logging
 
@@ -39,6 +40,26 @@ class LoggingConfigTest(unittest.TestCase):
         self.assertNotIn("secret", output)
         self.assertNotIn("abc123", output)
         self.assertNotIn("hunter2", output)
+
+    def test_default_logging_is_json(self) -> None:
+        stream = io.StringIO()
+        with mock.patch.dict("os.environ", {}, clear=True):
+            logger = configure_logging(level="INFO", stream=stream)
+            logger.info("default-json")
+
+        payload = json.loads(stream.getvalue().strip())
+        self.assertEqual(payload["level"], "INFO")
+        self.assertEqual(payload["message"], "default-json")
+
+    def test_log_format_env_can_force_plain_text(self) -> None:
+        stream = io.StringIO()
+        with mock.patch.dict("os.environ", {"EAP_LOG_FORMAT": "text"}, clear=True):
+            logger = configure_logging(level="INFO", stream=stream)
+            logger.info("plain-env")
+
+        output = stream.getvalue()
+        self.assertIn("plain-env", output)
+        self.assertNotIn('{"message"', output)
 
 
 if __name__ == "__main__":

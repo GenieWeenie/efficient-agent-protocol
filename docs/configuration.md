@@ -32,7 +32,8 @@ Role-specific overrides:
 
 Logging:
 - `EAP_LOG_LEVEL` (`DEBUG`, `INFO`, `WARNING`, `ERROR`)
-- `EAP_LOG_JSON` (`1`/`true`/`yes` to enable JSON logs)
+- `EAP_LOG_FORMAT` (`json` or `text`, default: `json`)
+- `EAP_LOG_JSON` (legacy boolean override for JSON logs)
 
 Executor concurrency/rate limits:
 - `EAP_EXECUTOR_MAX_CONCURRENCY` (integer > 0, default `8`)

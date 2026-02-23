@@ -27,6 +27,8 @@ dist/
 # Local runtime/state
 *.db
 *.sqlite
+*.bak
+metrics/
 .env
 .DS_Store
 

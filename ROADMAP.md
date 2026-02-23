@@ -39,3 +39,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Release notes template published (`docs/release_notes_template.md`).
 - Phase 2 reliability/contract/perf tranche completed (issue #2).
 - Phase 3 release and security hardening shipped (issue #3).
+- Phase 4 migration/observability/governance tranche completed (issue #4).
