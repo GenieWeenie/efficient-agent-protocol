@@ -130,3 +130,4 @@ python3 -m build
 - `docs/sdk_contract.md`
 - `docs/distributed_execution.md`
 - `docs/troubleshooting.md`
+- `docs/eap_proof_sheet.md`

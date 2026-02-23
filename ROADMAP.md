@@ -37,6 +37,7 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Add README quickstart smoke validation in CI so onboarding docs stay executable.
 - Publish a one-page "why EAP vs alternatives" proof sheet with benchmark + failure-mode evidence.
 - Checklist: `docs/phase5_recommendation_readiness_checklist.md`
+- Proof sheet: `docs/eap_proof_sheet.md`
 
 ## Done
 
@@ -49,3 +50,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 3 release and security hardening shipped (issue #3).
 - Phase 4 migration/observability/governance tranche completed (issue #4).
 - Phase 5 tranche 1 started: compiler ReDoS hardening and regression tests (EAP-064).
+- Phase 5 tranche 2 completed: proof sheet with benchmark and failure-mode evidence.
