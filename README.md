@@ -3,6 +3,9 @@
 [![CI](https://github.com/GenieWeenie/efficient-agent-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/GenieWeenie/efficient-agent-protocol/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 
+> Status: Experimental (pre-1.0). APIs and schema may change.
+> See `STABILITY.md` and `ROADMAP.md` for guarantees and planned milestones.
+
 Efficient Agent Protocol is a local-first framework for multi-step tool workflows.
 It stores large outputs as pointer-backed state (`ptr_*`) and runs dependency-aware DAG steps in parallel.
 
@@ -88,6 +91,8 @@ python3 -m build
 
 ## Docs
 
+- `STABILITY.md`
+- `ROADMAP.md`
 - `docs/configuration.md`
 - `docs/architecture.md`
 - `docs/tools.md`
