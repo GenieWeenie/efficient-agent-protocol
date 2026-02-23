@@ -101,3 +101,14 @@ export interface ExecuteMacroResponse extends ApiEnvelope {
   summary: string;
   metadata?: Record<string, unknown>;
 }
+
+export interface ResumeRunRequest {
+  approvals?: Record<string, StepApprovalDecision>;
+}
+
+export interface ResumeRunResponse extends ApiEnvelope {
+  run_id: string;
+  pointer_id: string;
+  summary: string;
+  metadata?: Record<string, unknown>;
+}

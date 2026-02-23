@@ -14,6 +14,7 @@ class SDKContractCompatibilityTest(unittest.TestCase):
         self.assertIn("Operation: `chat`", text)
         self.assertIn("Operation: `generate_macro`", text)
         self.assertIn("Operation: `execute_macro`", text)
+        self.assertIn("Operation: `resume_run`", text)
         self.assertIn("Authorization: Bearer <api_key>", text)
 
     def test_typescript_sdk_exposes_required_types_and_methods(self) -> None:
@@ -30,6 +31,7 @@ class SDKContractCompatibilityTest(unittest.TestCase):
             "interface GenerateMacroRequest",
             "interface ExecuteMacroRequest",
             "interface BatchedMacroRequest",
+            "interface ResumeRunRequest",
         ]:
             self.assertIn(token, types_text)
 
@@ -37,9 +39,11 @@ class SDKContractCompatibilityTest(unittest.TestCase):
             "async chat(",
             "async generateMacro(",
             "async executeMacro(",
+            "async resumeRun(",
             "/v1/eap/chat",
             "/v1/eap/macro/generate",
             "/v1/eap/macro/execute",
+            "/v1/eap/runs/",
         ]:
             self.assertIn(token, client_text)
 
@@ -57,6 +61,7 @@ class SDKContractCompatibilityTest(unittest.TestCase):
             "type GenerateMacroRequest struct",
             "type ExecuteMacroRequest struct",
             "type BatchedMacroRequest struct",
+            "type ResumeRunRequest struct",
             '`json:"request_id"`',
             '`json:"timestamp_utc"`',
         ]:
@@ -66,9 +71,11 @@ class SDKContractCompatibilityTest(unittest.TestCase):
             "func (c *Client) Chat(",
             "func (c *Client) GenerateMacro(",
             "func (c *Client) ExecuteMacro(",
+            "func (c *Client) ResumeRun(",
             '"/v1/eap/chat"',
             '"/v1/eap/macro/generate"',
             '"/v1/eap/macro/execute"',
+            '"/v1/eap/runs/"',
         ]:
             self.assertIn(token, client_text)
 
@@ -88,6 +95,8 @@ class SDKContractCompatibilityTest(unittest.TestCase):
         }
         self.assertTrue(expected.issubset(ts_paths))
         self.assertTrue(expected.issubset(go_paths))
+        self.assertIn("/v1/eap/runs/", ts_client)
+        self.assertIn("/v1/eap/runs/", go_client)
 
 
 if __name__ == "__main__":

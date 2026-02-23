@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -69,6 +70,26 @@ func (c *Client) GenerateMacro(ctx context.Context, request GenerateMacroRequest
 func (c *Client) ExecuteMacro(ctx context.Context, request ExecuteMacroRequest) (*ExecuteMacroResponse, error) {
 	var response ExecuteMacroResponse
 	if err := c.postJSON(ctx, "/v1/eap/macro/execute", request, &response); err != nil {
+		return nil, err
+	}
+	return &response, nil
+}
+
+func (c *Client) ResumeRun(
+	ctx context.Context,
+	runID string,
+	request ResumeRunRequest,
+) (*ResumeRunResponse, error) {
+	if strings.TrimSpace(runID) == "" {
+		return nil, fmt.Errorf("runID is required")
+	}
+	var response ResumeRunResponse
+	if err := c.postJSON(
+		ctx,
+		"/v1/eap/runs/"+url.PathEscape(runID)+"/resume",
+		request,
+		&response,
+	); err != nil {
 		return nil, err
 	}
 	return &response, nil

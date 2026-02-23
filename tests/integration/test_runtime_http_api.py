@@ -118,6 +118,46 @@ class RuntimeHttpApiIntegrationTest(unittest.TestCase):
         self.assertEqual(body["error_type"], "validation_error")
         self.assertIn("Invalid macro payload", body["message"])
 
+    def test_resume_run_with_approval_decision(self) -> None:
+        execute_response = requests.post(
+            f"{self.server.base_url}/v1/eap/macro/execute",
+            headers={"Authorization": "Bearer secret-token"},
+            json={
+                "macro": {
+                    "steps": [
+                        {
+                            "step_id": "step_1",
+                            "tool_name": "echo_text",
+                            "arguments": {"text": "hello"},
+                            "approval": {"required": True},
+                        }
+                    ]
+                }
+            },
+            timeout=5,
+        )
+        self.assertEqual(execute_response.status_code, 200)
+        run_id = execute_response.json()["metadata"]["execution_run_id"]
+
+        resume_response = requests.post(
+            f"{self.server.base_url}/v1/eap/runs/{run_id}/resume",
+            headers={"Authorization": "Bearer secret-token"},
+            json={"approvals": {"step_1": {"decision": "approve"}}},
+            timeout=5,
+        )
+        self.assertEqual(resume_response.status_code, 200)
+        resume_body = resume_response.json()
+        self.assertEqual(resume_body["run_id"], run_id)
+        self.assertTrue(resume_body["metadata"]["resumed_from_checkpoint"])
+
+        run_response = requests.get(
+            f"{self.server.base_url}/v1/eap/runs/{run_id}",
+            headers={"Authorization": "Bearer secret-token"},
+            timeout=5,
+        )
+        self.assertEqual(run_response.status_code, 200)
+        self.assertEqual(run_response.json()["status"], "succeeded")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,6 +7,8 @@ import {
   ExecuteMacroResponse,
   GenerateMacroRequest,
   GenerateMacroResponse,
+  ResumeRunRequest,
+  ResumeRunResponse,
 } from "./types.js";
 
 export interface EAPClientOptions {
@@ -62,6 +64,16 @@ export class EAPClient {
 
   async executeMacroFromDefinition(macro: BatchedMacroRequest): Promise<ExecuteMacroResponse> {
     return this.executeMacro({ macro });
+  }
+
+  async resumeRun(runId: string, request: ResumeRunRequest = {}): Promise<ResumeRunResponse> {
+    if (!runId || !runId.trim()) {
+      throw new EAPApiError("runId is required", 400, {
+        error_type: "validation_error",
+        message: "runId is required",
+      });
+    }
+    return this.request<ResumeRunResponse>(`/v1/eap/runs/${encodeURIComponent(runId)}/resume`, request);
   }
 
   private async request<TResponse>(path: string, payload: object): Promise<TResponse> {

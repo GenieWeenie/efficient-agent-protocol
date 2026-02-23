@@ -8,6 +8,7 @@ The SDK contract standardizes payloads for:
 - Chat completion (`chat`)
 - Macro generation (`generate_macro`)
 - Macro execution (`execute_macro`)
+- Run resume (`resume_run`) via `POST /v1/eap/runs/{run_id}/resume`
 
 The contract is transport-agnostic but is intended for JSON-over-HTTP.
 
@@ -57,6 +58,38 @@ Response:
   "request_id": "req_123",
   "timestamp_utc": "2026-02-23T12:00:00+00:00",
   "content": "Summary text..."
+}
+```
+
+## Operation: `resume_run`
+
+Resume an interrupted run from persisted checkpoint state.
+
+Request:
+```json
+{
+  "approvals": {
+    "step_1": {"decision": "approve"}
+  }
+}
+```
+
+Endpoint:
+- `POST /v1/eap/runs/{run_id}/resume`
+
+Response:
+```json
+{
+  "request_id": "req_999",
+  "timestamp_utc": "2026-02-23T12:00:03+00:00",
+  "run_id": "run_001",
+  "pointer_id": "ptr_resume1234",
+  "summary": "Completed step step_1 successfully.",
+  "metadata": {
+    "execution_run_id": "run_001",
+    "resumed_from_checkpoint": true,
+    "checkpoint_status": "completed"
+  }
 }
 ```
 

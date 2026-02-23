@@ -68,3 +68,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 7 `EAP-074` skill pack added (`run`, `inspect`, `retry failed step`, `export trace`) with 5-minute quickstart.
 - Phase 7 `EAP-075` interop CI lane added with pinned OpenClaw version smoke tests.
 - Phase 7 `EAP-076` HITL checkpoints added (step-level pause/approve/reject semantics with trace transitions).
+- Phase 7 `EAP-077` crash-safe resume/replay added with persisted run checkpoints and resume endpoint.

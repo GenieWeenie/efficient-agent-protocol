@@ -1,8 +1,8 @@
 # OpenClaw Interop Spike (EAP-071)
 
-Status: Updated through EAP-075 (2026-02-23)  
+Status: Updated through EAP-077 (2026-02-23)  
 Owner: EAP maintainers  
-Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075)
+Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077)
 
 ## 1) Version Snapshot
 
@@ -107,7 +107,7 @@ Recommended sequence:
 
 ## 8) Recommended Next Item
 
-`EAP-075` has now been implemented in-repo with:
+`EAP-077` has now been implemented in-repo with:
 - OpenClaw plugin adapter package at `integrations/openclaw/eap-runtime-plugin`
 - required plugin tools:
   - `run_eap_workflow`
@@ -125,9 +125,17 @@ Recommended sequence:
 - pinned version matrix:
   - `v2026.2.21`
   - `v2026.2.22`
+- HITL approval checkpoints in runtime execution:
+  - `approval_required`
+  - `approved`
+  - `rejected`
+- crash-safe run checkpoint persistence:
+  - `execution_run_checkpoints` state table
+  - executor `resume_run(...)`
+  - HTTP resume endpoint `POST /v1/eap/runs/{run_id}/resume`
 
-Proceed to **EAP-077**:
-- Add crash-safe resume and replay from persisted checkpoints.
+Proceed to **EAP-078**:
+- Add MCP interoperability bridge/server path for reference tools.
 
 ## References (Primary Sources)
 
