@@ -7,7 +7,8 @@ Current status:
 - [x] `EAP-072` minimal EAP runtime HTTP endpoints + auth hooks + integration tests
 - [x] `EAP-073` OpenClaw plugin adapter MVP (`integrations/openclaw/eap-runtime-plugin`)
 - [x] `EAP-074` OpenClaw skill pack (`integrations/openclaw/eap-runtime-plugin/skills`)
-- [ ] `EAP-075` onward
+- [x] `EAP-075` interop CI lane (`.github/workflows/openclaw-interop.yml`)
+- [ ] `EAP-076` onward
 
 ## Objective
 

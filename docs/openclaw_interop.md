@@ -1,8 +1,8 @@
 # OpenClaw Interop Spike (EAP-071)
 
-Status: Updated through EAP-074 (2026-02-23)  
+Status: Updated through EAP-075 (2026-02-23)  
 Owner: EAP maintainers  
-Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074)
+Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075)
 
 ## 1) Version Snapshot
 
@@ -14,7 +14,9 @@ This spike captures compatibility against these versions at analysis time:
 
 Implication:
 - Treat this as a moving-target snapshot for OpenClaw `main`.
-- Pin explicit OpenClaw release versions in CI once EAP-075 starts.
+- Interop CI pins and validates against:
+  - `v2026.2.21`
+  - `v2026.2.22`
 
 ## 2) Interop Surfaces (What We Checked)
 
@@ -105,7 +107,7 @@ Recommended sequence:
 
 ## 8) Recommended Next Item
 
-`EAP-074` has now been implemented in-repo with:
+`EAP-075` has now been implemented in-repo with:
 - OpenClaw plugin adapter package at `integrations/openclaw/eap-runtime-plugin`
 - required plugin tools:
   - `run_eap_workflow`
@@ -118,9 +120,14 @@ Recommended sequence:
   - `eap_retry_failed_step`
   - `eap_export_trace`
 - 5-minute skill quickstart at `integrations/openclaw/eap-runtime-plugin/skills/README.md`
+- dedicated interop workflow: `.github/workflows/openclaw-interop.yml`
+- OpenClaw compatibility smoke script: `scripts/interop_openclaw_smoke.sh`
+- pinned version matrix:
+  - `v2026.2.21`
+  - `v2026.2.22`
 
-Proceed to **EAP-075**:
-- Add an interop CI lane that validates plugin + skills against pinned OpenClaw versions.
+Proceed to **EAP-076**:
+- Add human approval checkpoints (HITL) for step-level pause/approve/reject.
 
 ## References (Primary Sources)
 

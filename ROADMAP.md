@@ -66,3 +66,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - `v0.1.4` release published with Phase 5 and CodeQL v4 updates.
 - Phase 7 interop foundation started with `EAP-071` (interop matrix), `EAP-072` (runtime HTTP endpoints), and `EAP-073` (OpenClaw plugin adapter MVP).
 - Phase 7 `EAP-074` skill pack added (`run`, `inspect`, `retry failed step`, `export trace`) with 5-minute quickstart.
+- Phase 7 `EAP-075` interop CI lane added with pinned OpenClaw version smoke tests.

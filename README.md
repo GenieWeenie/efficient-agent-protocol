@@ -105,6 +105,7 @@ python3 -m pytest -q
 pre-commit run --all-files
 python3 scripts/migrate_state_db.py --db-path agent_state.db --dry-run
 python3 scripts/export_metrics.py --db-path agent_state.db --output metrics/latest.json
+./scripts/interop_openclaw_smoke.sh v2026.2.22
 python3 -m build
 ```
 
