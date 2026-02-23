@@ -1,0 +1,44 @@
+{
+  "id": "eap-runtime",
+  "name": "EAP Runtime Adapter",
+  "version": "0.1.0",
+  "description": "Expose EAP runtime workflow execution and inspection endpoints as OpenClaw tools.",
+  "entry": "./index.js",
+  "main": "./index.js",
+  "skills": [
+    "./skills/eap_run_workflow",
+    "./skills/eap_inspect_run",
+    "./skills/eap_retry_failed_step",
+    "./skills/eap_export_trace"
+  ],
+  "category": "integration",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "baseUrl": {
+        "type": "string",
+        "format": "uri",
+        "description": "Base URL for the EAP runtime API (for example http://127.0.0.1:8080)."
+      },
+      "apiKey": {
+        "type": "string",
+        "description": "Bearer token used by the EAP runtime API."
+      },
+      "timeoutMs": {
+        "type": "integer",
+        "minimum": 1000,
+        "maximum": 120000,
+        "default": 15000,
+        "description": "HTTP timeout per request in milliseconds."
+      }
+    },
+    "required": [
+      "baseUrl"
+    ]
+  },
+  "uiHints": {
+    "sensitive": [
+      "apiKey"
+    ]
+  }
+}

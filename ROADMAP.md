@@ -39,11 +39,18 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Checklist: `docs/phase5_recommendation_readiness_checklist.md`
 - Proof sheet: `docs/eap_proof_sheet.md`
 
-## Phase 6: Distribution and V1 Readiness (Next)
+## Phase 6: Distribution and V1 Readiness (In Progress)
 
-- Publish stable package releases to PyPI from tag workflow (configure release secret path).
+- Publish stable package releases to PyPI from tag workflow (Trusted Publishing).
 - Add post-release install smoke validation against published package artifacts.
 - Finalize `v1.0` stabilization checklist and upgrade notes for external adopters.
+
+## Phase 7: Competitive Positioning + OpenClaw Interop (Next)
+
+- Execute OpenClaw integration track (plugin + skills + CI interop lane).
+- Close high-impact competitive gaps: HITL checkpoints, crash-safe resume, MCP interop.
+- Publish updated competitive proof artifacts with reproducible evidence.
+- Checklist: `docs/phase7_competitive_openclaw_roadmap.md`
 
 ## Done
 
@@ -57,3 +64,5 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 4 migration/observability/governance tranche completed (issue #4).
 - Phase 5 recommendation readiness completed (`EAP-064` to `EAP-067`).
 - `v0.1.4` release published with Phase 5 and CodeQL v4 updates.
+- Phase 7 interop foundation started with `EAP-071` (interop matrix), `EAP-072` (runtime HTTP endpoints), and `EAP-073` (OpenClaw plugin adapter MVP).
+- Phase 7 `EAP-074` skill pack added (`run`, `inspect`, `retry failed step`, `export trace`) with 5-minute quickstart.
