@@ -1,5 +1,8 @@
 # Efficient Agent Protocol (EAP)
 
+[![CI](https://github.com/GenieWeenie/efficient-agent-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/GenieWeenie/efficient-agent-protocol/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+
 Efficient Agent Protocol is a local-first framework for multi-step tool workflows.
 It stores large outputs as pointer-backed state (`ptr_*`) and runs dependency-aware DAG steps in parallel.
 
@@ -19,7 +22,7 @@ Requirements:
 1. Install
 
 ```bash
-git clone https://github.com/your-org/efficient-agent-protocol.git
+git clone https://github.com/GenieWeenie/efficient-agent-protocol.git
 cd efficient-agent-protocol
 pip install -e .
 pip install streamlit pandas
