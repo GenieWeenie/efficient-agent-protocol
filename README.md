@@ -133,3 +133,7 @@ python3 -m build
 - `docs/distributed_execution.md`
 - `docs/troubleshooting.md`
 - `docs/eap_proof_sheet.md`
+- `docs/phase7_competitive_openclaw_roadmap.md`
+- `docs/openclaw_interop.md`
+- `integrations/openclaw/eap-runtime-plugin/README.md`
+- `integrations/openclaw/eap-runtime-plugin/skills/README.md`
