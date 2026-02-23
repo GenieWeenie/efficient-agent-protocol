@@ -7,6 +7,7 @@ This project is currently **pre-1.0 (experimental)**.
 - Python runtime requirement (`>=3.9`) is intentional and documented.
 - CI must pass for merges to `main`.
 - Tagged releases are used for published milestones.
+- `v1.0` scope and freeze candidates are documented in `docs/v1_contract.md`.
 
 ## Not Yet Stable (May Change Without Notice)
 
