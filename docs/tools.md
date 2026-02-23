@@ -74,6 +74,23 @@ This document describes the built-in tools shipped in `environment.tools`.
   - Output includes `links`, `link_count`, and `truncated`.
   - Schema uses `additionalProperties: false`.
 
+## Interop tools
+
+### `invoke_mcp_tool`
+- Purpose: Call a tool exposed by an external MCP stdio server and return the MCP `tools/call` JSON result.
+- Parameters:
+  - `server_command` (`string`, required, `minLength=1`)
+  - `tool_name` (`string`, required, `minLength=1`)
+  - `tool_arguments` (`object`, optional)
+  - `timeout_seconds` (`integer`, optional, `1..120`)
+  - `working_directory` (`string`, optional, `minLength=1`)
+  - `require_listed_tool` (`boolean`, optional)
+- Notes:
+  - Initializes MCP handshake (`initialize` + `notifications/initialized`) before invocation.
+  - Can enforce that the target tool appears in `tools/list` before `tools/call`.
+  - Returns JSON text payload from MCP result so downstream steps can parse it.
+  - Schema uses `additionalProperties: false`.
+
 ## Validation contract
 
 Tool inputs are validated by `ToolRegistry.validate_arguments` before execution.

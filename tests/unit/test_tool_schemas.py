@@ -6,6 +6,7 @@ from eap.environment.tools import (
     ANALYZE_SCHEMA,
     EXTRACT_LINKS_SCHEMA,
     FETCH_JSON_SCHEMA,
+    INVOKE_MCP_TOOL_SCHEMA,
     LIST_DIRECTORY_SCHEMA,
     READ_FILE_SCHEMA,
     SCRAPE_SCHEMA,
@@ -13,6 +14,7 @@ from eap.environment.tools import (
     analyze_data,
     extract_links_from_url,
     fetch_json_url,
+    invoke_mcp_tool,
     list_local_directory,
     read_local_file,
     scrape_url,
@@ -30,6 +32,7 @@ class ToolSchemaValidationTest(unittest.TestCase):
         self.registry.register("scrape_url", scrape_url, SCRAPE_SCHEMA)
         self.registry.register("fetch_json_url", fetch_json_url, FETCH_JSON_SCHEMA)
         self.registry.register("extract_links_from_url", extract_links_from_url, EXTRACT_LINKS_SCHEMA)
+        self.registry.register("invoke_mcp_tool", invoke_mcp_tool, INVOKE_MCP_TOOL_SCHEMA)
 
     def test_valid_payload_passes_validation(self) -> None:
         self.registry.validate_arguments("analyze_data", {"raw_data": "payload", "focus": "summary"})
@@ -74,6 +77,28 @@ class ToolSchemaValidationTest(unittest.TestCase):
     def test_web_schema_string_length_constraint_is_enforced(self) -> None:
         with self.assertRaises(InputValidationError):
             self.registry.validate_arguments("fetch_json_url", {"url": ""})
+
+    def test_mcp_schema_enforces_timeout_bounds(self) -> None:
+        with self.assertRaises(InputValidationError):
+            self.registry.validate_arguments(
+                "invoke_mcp_tool",
+                {
+                    "server_command": "python -u /tmp/server.py",
+                    "tool_name": "echo",
+                    "timeout_seconds": 0,
+                },
+            )
+
+    def test_mcp_schema_rejects_non_object_tool_arguments(self) -> None:
+        with self.assertRaises(InputValidationError):
+            self.registry.validate_arguments(
+                "invoke_mcp_tool",
+                {
+                    "server_command": "python -u /tmp/server.py",
+                    "tool_name": "echo",
+                    "tool_arguments": "not-an-object",
+                },
+            )
 
 
 if __name__ == "__main__":

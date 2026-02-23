@@ -48,7 +48,7 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 ## Phase 7: Competitive Positioning + OpenClaw Interop (Next)
 
 - Execute OpenClaw integration track (plugin + skills + CI interop lane).
-- Close high-impact competitive gaps: HITL checkpoints, crash-safe resume, MCP interop.
+- Close remaining high-impact competitive gaps after HITL checkpoints, crash-safe resume, and MCP interop.
 - Publish updated competitive proof artifacts with reproducible evidence.
 - Checklist: `docs/phase7_competitive_openclaw_roadmap.md`
 
@@ -69,3 +69,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 7 `EAP-075` interop CI lane added with pinned OpenClaw version smoke tests.
 - Phase 7 `EAP-076` HITL checkpoints added (step-level pause/approve/reject semantics with trace transitions).
 - Phase 7 `EAP-077` crash-safe resume/replay added with persisted run checkpoints and resume endpoint.
+- Phase 7 `EAP-078` MCP interoperability added via `invoke_mcp_tool` stdio bridge and runtime integration test.

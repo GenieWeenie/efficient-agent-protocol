@@ -1,8 +1,8 @@
 # OpenClaw Interop Spike (EAP-071)
 
-Status: Updated through EAP-077 (2026-02-23)  
+Status: Updated through EAP-078 (2026-02-23)  
 Owner: EAP maintainers  
-Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077)
+Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078)
 
 ## 1) Version Snapshot
 
@@ -105,9 +105,18 @@ Recommended sequence:
 - [x] Plugin vs skill tradeoffs documented.
 - [x] Known limits captured with concrete next actions.
 
-## 8) Recommended Next Item
+## 8) Implemented MCP Bridge (EAP-078)
 
-`EAP-077` has now been implemented in-repo with:
+`EAP-078` is now implemented in-repo with:
+- MCP stdio client bridge at `environment/mcp_client.py`
+- built-in bridge tool:
+  - `invoke_mcp_tool` (`environment/tools/mcp_tools.py`)
+  - schema export in `environment.tools` and `eap.environment.tools`
+- integration test proving runtime execution of a reference MCP tool:
+  - `tests/integration/test_mcp_interop.py`
+  - mock MCP server fixture: `tests/fixtures/mock_mcp_stdio_server.py`
+
+`EAP-077` remains implemented in-repo with:
 - OpenClaw plugin adapter package at `integrations/openclaw/eap-runtime-plugin`
 - required plugin tools:
   - `run_eap_workflow`
@@ -134,8 +143,8 @@ Recommended sequence:
   - executor `resume_run(...)`
   - HTTP resume endpoint `POST /v1/eap/runs/{run_id}/resume`
 
-Proceed to **EAP-078**:
-- Add MCP interoperability bridge/server path for reference tools.
+Proceed to **EAP-079**:
+- Add evaluation harness + scorecard with CI-published trends and regression thresholds.
 
 ## References (Primary Sources)
 

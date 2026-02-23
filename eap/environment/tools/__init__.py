@@ -1,6 +1,7 @@
 from environment.tools import (
     ANALYZE_SCHEMA,
     FETCH_SCHEMA,
+    INVOKE_MCP_TOOL_SCHEMA,
     LIST_DIRECTORY_SCHEMA,
     READ_FILE_SCHEMA,
     EXTRACT_LINKS_SCHEMA,
@@ -11,6 +12,7 @@ from environment.tools import (
     extract_links_from_url,
     fetch_json_url,
     fetch_user_data,
+    invoke_mcp_tool,
     list_local_directory,
     read_local_file,
     scrape_url,
@@ -34,4 +36,6 @@ __all__ = [
     "SCRAPE_SCHEMA",
     "FETCH_JSON_SCHEMA",
     "EXTRACT_LINKS_SCHEMA",
+    "invoke_mcp_tool",
+    "INVOKE_MCP_TOOL_SCHEMA",
 ]

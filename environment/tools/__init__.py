@@ -16,11 +16,16 @@ from .web_tools import (
     fetch_json_url,
     scrape_url,
 )
+from .mcp_tools import (
+    INVOKE_MCP_TOOL_SCHEMA,
+    invoke_mcp_tool,
+)
 
 __all__ = [
     "fetch_user_data", "analyze_data", "FETCH_SCHEMA", "ANALYZE_SCHEMA",
     "read_local_file", "write_local_file", "list_local_directory",
     "READ_FILE_SCHEMA", "WRITE_FILE_SCHEMA", "LIST_DIRECTORY_SCHEMA",
     "scrape_url", "fetch_json_url", "extract_links_from_url",
-    "SCRAPE_SCHEMA", "FETCH_JSON_SCHEMA", "EXTRACT_LINKS_SCHEMA"
+    "SCRAPE_SCHEMA", "FETCH_JSON_SCHEMA", "EXTRACT_LINKS_SCHEMA",
+    "invoke_mcp_tool", "INVOKE_MCP_TOOL_SCHEMA",
 ]
