@@ -52,3 +52,10 @@ Use rollback only when a bad release is published.
 - Release notes are accurate.
 - Security scanning workflows remain green.
 - Roadmap issue/task status updated.
+
+## Security Workflow Notes
+
+- `pip-audit` runs in CI and is always enforced on Python 3.11.
+- Optional GitHub Dependency Review workflow can be enabled by setting repository variable:
+  - `ENABLE_DEPENDENCY_REVIEW=true`
+- GitHub Dependency Graph should be enabled for dependency-review support.

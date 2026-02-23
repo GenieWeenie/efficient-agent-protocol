@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Run gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
@@ -26,7 +28,7 @@ jobs:
 
   dependency-review:
     name: Dependency Review
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && vars.ENABLE_DEPENDENCY_REVIEW == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
