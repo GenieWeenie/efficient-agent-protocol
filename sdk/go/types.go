@@ -102,3 +102,15 @@ type ExecuteMacroResponse struct {
 	Summary   string                 `json:"summary"`
 	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
+
+type ResumeRunRequest struct {
+	Approvals map[string]StepApprovalDecision `json:"approvals,omitempty"`
+}
+
+type ResumeRunResponse struct {
+	APIEnvelope
+	RunID     string                 `json:"run_id"`
+	PointerID string                 `json:"pointer_id"`
+	Summary   string                 `json:"summary"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+}

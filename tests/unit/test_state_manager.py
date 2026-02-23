@@ -77,6 +77,45 @@ class StateManagerTest(unittest.TestCase):
         self.assertEqual(summary["failed_steps"], 1)
         self.assertEqual(summary["final_pointer_id"], "ptr_final")
 
+    def test_upsert_and_get_run_checkpoint(self) -> None:
+        self.manager.upsert_run_checkpoint(
+            run_id="run_ckpt",
+            started_at_utc="2026-02-23T00:00:00+00:00",
+            status="active",
+            macro_payload={"steps": [{"step_id": "s1", "tool_name": "echo", "arguments": {}}]},
+            step_status={"s1": {"status": "ok", "pointer_id": "ptr_1"}},
+            branch_decisions={"s1": ["s2"]},
+            final_pointer_id="ptr_final",
+        )
+        checkpoint = self.manager.get_run_checkpoint("run_ckpt")
+        self.assertEqual(checkpoint["run_id"], "run_ckpt")
+        self.assertEqual(checkpoint["status"], "active")
+        self.assertEqual(checkpoint["step_status"]["s1"]["pointer_id"], "ptr_1")
+        self.assertEqual(checkpoint["branch_decisions"]["s1"], ["s2"])
+        self.assertEqual(checkpoint["final_pointer_id"], "ptr_final")
+
+    def test_list_run_checkpoints_filters_by_status(self) -> None:
+        self.manager.upsert_run_checkpoint(
+            run_id="run_active",
+            started_at_utc="2026-02-23T00:00:00+00:00",
+            status="active",
+            macro_payload={"steps": []},
+            step_status={},
+            branch_decisions={},
+        )
+        self.manager.upsert_run_checkpoint(
+            run_id="run_completed",
+            started_at_utc="2026-02-23T00:00:00+00:00",
+            status="completed",
+            macro_payload={"steps": []},
+            step_status={},
+            branch_decisions={},
+        )
+        active = self.manager.list_run_checkpoints(status="active")
+        completed = self.manager.list_run_checkpoints(status="completed")
+        self.assertEqual([item["run_id"] for item in active], ["run_active"])
+        self.assertEqual([item["run_id"] for item in completed], ["run_completed"])
+
     def test_store_pointer_with_ttl_persists_lifecycle_fields(self) -> None:
         ptr = self.manager.store_and_point(raw_data="hello", summary="done", ttl_seconds=60)
         with sqlite3.connect(self.db_path) as conn:

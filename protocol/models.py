@@ -207,6 +207,7 @@ class ExecutionLimits(BaseModel):
 class ExecutionTraceEventType(str, Enum):
     """Lifecycle states emitted during step execution."""
 
+    REPLAYED = "replayed"
     QUEUED = "queued"
     APPROVAL_REQUIRED = "approval_required"
     APPROVED = "approved"
@@ -258,6 +259,12 @@ class ExecutionTraceEvent(BaseModel):
 
     @model_validator(mode="after")
     def validate_event_contract(self) -> "ExecutionTraceEvent":
+        if self.event_type == ExecutionTraceEventType.REPLAYED:
+            if not self.output_pointer_id:
+                raise ValueError("replayed events must include output_pointer_id")
+            if self.error:
+                raise ValueError("replayed events cannot include error")
+
         if self.event_type == ExecutionTraceEventType.QUEUED:
             if self.output_pointer_id or self.error or self.duration_ms is not None:
                 raise ValueError("queued events cannot include output_pointer_id, error, or duration_ms")

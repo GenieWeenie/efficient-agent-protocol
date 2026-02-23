@@ -27,7 +27,7 @@ Source: `docs/benchmarks.md` (baseline date: 2026-02-23)
 | Transient tool failure | Retry and then succeed when policy allows | `tests/integration/test_executor_retries.py` |
 | Non-retryable timeout | Fail fast with typed `tool_execution_error` | `tests/integration/test_reliability_failures.py` |
 | Upstream step fails | Downstream dependency marked `dependency_error` | `tests/integration/test_reliability_failures.py` |
-| Retry/fail/approval trace visibility | `queued/approval_required/approved/rejected/started/retried/failed/completed` persisted with run summary | `tests/integration/test_execution_traces.py`, `tests/integration/test_human_approval.py` |
+| Retry/fail/approval/replay trace visibility | `replayed/queued/approval_required/approved/rejected/started/retried/failed/completed` persisted with run summary | `tests/integration/test_execution_traces.py`, `tests/integration/test_human_approval.py`, `tests/integration/test_resume_replay.py` |
 | Pointer lifecycle cleanup | Expired pointers filtered and cleaned idempotently | `tests/integration/test_pointer_ttl.py` |
 | Distributed worker lease expiry | Expired lease is reassigned; stale completion rejected | `tests/perf/test_distributed_resilience.py` |
 

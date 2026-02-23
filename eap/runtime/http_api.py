@@ -29,6 +29,10 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         if parsed.path == "/v1/eap/macro/execute":
             self._handle_execute_macro()
             return
+        if parsed.path.startswith("/v1/eap/runs/") and parsed.path.endswith("/resume"):
+            run_id = unquote(parsed.path[len("/v1/eap/runs/") : -len("/resume")]).strip()
+            self._handle_resume_run(run_id=run_id)
+            return
         self._send_error(404, "not_found", f"Path '{parsed.path}' is not registered.")
 
     def do_GET(self) -> None:  # noqa: N802
@@ -63,19 +67,23 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             return False
         return True
 
-    def _read_json_body(self) -> Optional[Dict[str, Any]]:
+    def _read_json_body(self, required: bool = True) -> Optional[Dict[str, Any]]:
         content_length_header = self.headers.get("Content-Length")
         if not content_length_header:
-            self._send_error(400, "validation_error", "Request body is required.")
-            return None
+            if required:
+                self._send_error(400, "validation_error", "Request body is required.")
+                return None
+            return {}
         try:
             content_length = int(content_length_header)
         except ValueError:
             self._send_error(400, "validation_error", "Invalid Content-Length header.")
             return None
         if content_length <= 0:
-            self._send_error(400, "validation_error", "Request body is required.")
-            return None
+            if required:
+                self._send_error(400, "validation_error", "Request body is required.")
+                return None
+            return {}
 
         raw_body = self.rfile.read(content_length)
         try:
@@ -134,6 +142,63 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         response_payload = {
             "request_id": _request_id(),
             "timestamp_utc": _timestamp_utc(),
+            "pointer_id": result["pointer_id"],
+            "summary": result.get("summary", ""),
+            "metadata": result.get("metadata"),
+        }
+        self._send_json(200, response_payload)
+
+    def _handle_resume_run(self, run_id: str) -> None:
+        if not self._require_auth():
+            return
+        if not run_id:
+            self._send_error(400, "validation_error", "run_id is required.")
+            return
+
+        payload = self._read_json_body(required=False)
+        if payload is None:
+            return
+        approvals = payload.get("approvals")
+        if approvals is not None and not isinstance(approvals, dict):
+            self._send_error(400, "validation_error", "Field 'approvals' must be a JSON object.")
+            return
+
+        try:
+            result = asyncio.run(self.server.executor.resume_run(run_id=run_id, approvals=approvals))
+        except KeyError:
+            self._send_error(404, "not_found", f"Execution checkpoint for run '{run_id}' not found.")
+            return
+        except ValueError as exc:
+            self._send_error(400, "validation_error", str(exc))
+            return
+        except ValidationError as exc:
+            self._send_error(
+                400,
+                "validation_error",
+                "Invalid resume approval payload.",
+                details={"errors": exc.errors()},
+            )
+            return
+        except Exception as exc:  # pragma: no cover - defensive safeguard
+            self._send_error(
+                500,
+                "execution_error",
+                f"Run resume failed: {str(exc)}",
+            )
+            return
+
+        if not result or "pointer_id" not in result:
+            self._send_error(
+                500,
+                "execution_error",
+                "Run resume did not return a pointer response.",
+            )
+            return
+
+        response_payload = {
+            "request_id": _request_id(),
+            "timestamp_utc": _timestamp_utc(),
+            "run_id": run_id,
             "pointer_id": result["pointer_id"],
             "summary": result.get("summary", ""),
             "metadata": result.get("metadata"),

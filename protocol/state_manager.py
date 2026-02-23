@@ -73,6 +73,32 @@ class StateManager:
             )
             conn.execute(
                 """
+                CREATE TABLE IF NOT EXISTS execution_run_checkpoints (
+                    run_id TEXT PRIMARY KEY,
+                    started_at_utc TEXT NOT NULL,
+                    updated_at_utc TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    macro_payload TEXT NOT NULL,
+                    step_status_payload TEXT NOT NULL,
+                    branch_decisions_payload TEXT NOT NULL,
+                    final_pointer_id TEXT
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_execution_run_checkpoints_status
+                ON execution_run_checkpoints(status)
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_execution_run_checkpoints_updated
+                ON execution_run_checkpoints(updated_at_utc)
+                """
+            )
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS conversation_sessions (
                     session_id TEXT PRIMARY KEY,
                     created_at_utc TEXT NOT NULL,
@@ -289,6 +315,89 @@ class StateManager:
                     final_pointer_id,
                 ),
             )
+
+    def upsert_run_checkpoint(
+        self,
+        run_id: str,
+        started_at_utc: str,
+        status: str,
+        macro_payload: Dict[str, Any],
+        step_status: Dict[str, Dict[str, Any]],
+        branch_decisions: Dict[str, List[str]],
+        final_pointer_id: Optional[str] = None,
+    ) -> None:
+        updated_at_utc = self._now_utc_iso()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO execution_run_checkpoints (
+                    run_id, started_at_utc, updated_at_utc, status, macro_payload,
+                    step_status_payload, branch_decisions_payload, final_pointer_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    run_id,
+                    started_at_utc,
+                    updated_at_utc,
+                    status,
+                    json.dumps(macro_payload),
+                    json.dumps(step_status),
+                    json.dumps(branch_decisions),
+                    final_pointer_id,
+                ),
+            )
+
+    def get_run_checkpoint(self, run_id: str) -> Dict[str, Any]:
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                """
+                SELECT started_at_utc, updated_at_utc, status, macro_payload,
+                       step_status_payload, branch_decisions_payload, final_pointer_id
+                FROM execution_run_checkpoints
+                WHERE run_id = ?
+                """,
+                (run_id,),
+            ).fetchone()
+
+        if not row:
+            raise KeyError(f"Execution checkpoint for run {run_id} not found.")
+
+        return {
+            "run_id": run_id,
+            "started_at_utc": row[0],
+            "updated_at_utc": row[1],
+            "status": row[2],
+            "macro_payload": json.loads(row[3]),
+            "step_status": json.loads(row[4]) if row[4] else {},
+            "branch_decisions": json.loads(row[5]) if row[5] else {},
+            "final_pointer_id": row[6],
+        }
+
+    def list_run_checkpoints(self, status: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        query = """
+            SELECT run_id, started_at_utc, updated_at_utc, status, final_pointer_id
+            FROM execution_run_checkpoints
+        """
+        params: tuple[Any, ...] = ()
+        if status is not None:
+            query += " WHERE status = ?"
+            params = (status,)
+        query += " ORDER BY updated_at_utc DESC LIMIT ?"
+        params = params + (limit,)
+
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(query, params).fetchall()
+
+        return [
+            {
+                "run_id": row[0],
+                "started_at_utc": row[1],
+                "updated_at_utc": row[2],
+                "status": row[3],
+                "final_pointer_id": row[4],
+            }
+            for row in rows
+        ]
 
     def get_execution_summary(self, run_id: str) -> Dict[str, Any]:
         with sqlite3.connect(self.db_path) as conn:

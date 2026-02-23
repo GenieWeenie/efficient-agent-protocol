@@ -14,6 +14,7 @@ class TraceModelTests(unittest.TestCase):
         self.assertEqual(
             {event_type.value for event_type in ExecutionTraceEventType},
             {
+                "replayed",
                 "queued",
                 "approval_required",
                 "approved",
@@ -78,6 +79,15 @@ class TraceModelTests(unittest.TestCase):
                 step_id="s5",
                 tool_name="tool_a",
                 event_type=ExecutionTraceEventType.REJECTED,
+            )
+
+    def test_replayed_event_requires_output_pointer(self) -> None:
+        with self.assertRaises(ValidationError):
+            ExecutionTraceEvent(
+                run_id="run_1",
+                step_id="s6",
+                tool_name="tool_a",
+                event_type=ExecutionTraceEventType.REPLAYED,
             )
 
 

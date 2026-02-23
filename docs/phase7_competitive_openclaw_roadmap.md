@@ -9,7 +9,8 @@ Current status:
 - [x] `EAP-074` OpenClaw skill pack (`integrations/openclaw/eap-runtime-plugin/skills`)
 - [x] `EAP-075` interop CI lane (`.github/workflows/openclaw-interop.yml`)
 - [x] `EAP-076` human approval checkpoints (HITL pause/approve/reject + trace transitions)
-- [ ] `EAP-077` onward
+- [x] `EAP-077` crash-safe resume and replay (checkpoint persistence + run resume API)
+- [ ] `EAP-078` onward
 
 ## Objective
 

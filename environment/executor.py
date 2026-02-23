@@ -5,7 +5,7 @@ import re
 import time
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 from protocol.models import (
     BatchedMacroRequest,
     ExecutionLimits,
@@ -63,10 +63,15 @@ class AsyncLocalExecutor:
         self.registry = registry
         self.default_execution_limits = default_execution_limits or ExecutionLimits()
 
-    async def execute_macro(self, macro: BatchedMacroRequest) -> dict:
-        run_id = f"run_{uuid.uuid4().hex[:12]}"
+    async def execute_macro(
+        self,
+        macro: BatchedMacroRequest,
+        run_id: Optional[str] = None,
+        resume: bool = False,
+    ) -> dict:
+        run_id = run_id or f"run_{uuid.uuid4().hex[:12]}"
         run_started_at = datetime.now(timezone.utc)
-        run_started_perf = time.perf_counter()
+        replayed_step_ids: Set[str] = set()
         logger.info(
             "received macro batch",
             extra={"step_count": len(macro.steps), "run_id": run_id},
@@ -76,10 +81,90 @@ class AsyncLocalExecutor:
         step_futures: Dict[str, asyncio.Future] = {
             step.step_id: asyncio.Future() for step in macro.steps
         }
-        step_status: Dict[str, Dict[str, str]] = {}
+        step_status: Dict[str, Dict[str, Any]] = {}
         step_contexts: Dict[str, Dict[str, Any]] = {}
         branch_decisions: Dict[str, Set[str]] = {}
         early_exit_event = asyncio.Event()
+        checkpoint_lock = asyncio.Lock()
+
+        if resume:
+            checkpoint = self.state_manager.get_run_checkpoint(run_id)
+            if checkpoint["status"] not in {"active", "awaiting_approval"}:
+                raise ValueError(
+                    f"Run {run_id} is not resumable from status '{checkpoint['status']}'."
+                )
+            run_started_at = datetime.fromisoformat(checkpoint["started_at_utc"])
+            if run_started_at.tzinfo is None:
+                run_started_at = run_started_at.replace(tzinfo=timezone.utc)
+            step_status = dict(checkpoint.get("step_status") or {})
+            branch_decisions = {
+                step_id: set(targets)
+                for step_id, targets in (checkpoint.get("branch_decisions") or {}).items()
+            }
+
+        def _hydrate_pointer_response(pointer_id: Optional[str], step_id: str) -> Dict[str, Any]:
+            if not pointer_id:
+                return {
+                    "pointer_id": "",
+                    "summary": f"Step {step_id} recovered from checkpoint.",
+                    "metadata": {"status": step_status.get(step_id, {}).get("status")},
+                }
+            pointer = next(
+                (
+                    item
+                    for item in self.state_manager.list_pointers(include_expired=True)
+                    if item.get("pointer_id") == pointer_id
+                ),
+                None,
+            )
+            if pointer is None:
+                return {
+                    "pointer_id": pointer_id,
+                    "summary": f"Recovered pointer {pointer_id} for step {step_id}.",
+                    "metadata": {"status": step_status.get(step_id, {}).get("status")},
+                }
+            return {
+                "pointer_id": pointer_id,
+                "summary": pointer.get("summary", f"Recovered pointer {pointer_id}."),
+                "metadata": pointer.get("metadata"),
+            }
+
+        for step_id, status_payload in step_status.items():
+            pointer_id = status_payload.get("pointer_id")
+            status_value = status_payload.get("status")
+            if pointer_id and status_value in {"ok", "error", "skipped", "rejected"}:
+                if step_id in step_futures and not step_futures[step_id].done():
+                    step_futures[step_id].set_result(pointer_id)
+            if pointer_id:
+                step_contexts[step_id] = {
+                    "pointer_id": pointer_id,
+                    "metadata": status_payload.get("metadata"),
+                    "raw_data": None,
+                    "status": status_value,
+                }
+                try:
+                    step_contexts[step_id]["raw_data"] = self.state_manager.retrieve(pointer_id)
+                except Exception:
+                    step_contexts[step_id]["raw_data"] = None
+
+        async def _persist_checkpoint(
+            status: str = "active",
+            final_pointer_id: Optional[str] = None,
+        ) -> None:
+            async with checkpoint_lock:
+                self.state_manager.upsert_run_checkpoint(
+                    run_id=run_id,
+                    started_at_utc=run_started_at.isoformat(),
+                    status=status,
+                    macro_payload=macro.model_dump(mode="json"),
+                    step_status=step_status,
+                    branch_decisions={
+                        step_id: sorted(targets) for step_id, targets in branch_decisions.items()
+                    },
+                    final_pointer_id=final_pointer_id,
+                )
+
+        await _persist_checkpoint(status="active")
 
         resolved_tool_names: Dict[str, str] = {}
         for step in macro.steps:
@@ -250,6 +335,28 @@ class AsyncLocalExecutor:
                     inflight_per_tool[tool_key] = current - 1
 
         async def run_step(step):
+            existing_state = step_status.get(step.step_id, {})
+            existing_status = existing_state.get("status")
+            existing_pointer_id = existing_state.get("pointer_id")
+            if existing_status in {"ok", "error", "skipped", "rejected"} and existing_pointer_id:
+                if not step_futures[step.step_id].done():
+                    step_futures[step.step_id].set_result(existing_pointer_id)
+                replayed_step_ids.add(step.step_id)
+                self.state_manager.append_trace_event(
+                    ExecutionTraceEvent(
+                        run_id=run_id,
+                        step_id=step.step_id,
+                        tool_name=step.tool_name,
+                        event_type=ExecutionTraceEventType.REPLAYED,
+                        output_pointer_id=existing_pointer_id,
+                    )
+                )
+                logger.info(
+                    "task replayed from checkpoint",
+                    extra={"step_id": step.step_id, "tool_name": step.tool_name, "run_id": run_id},
+                )
+                return _hydrate_pointer_response(existing_pointer_id, step.step_id)
+
             logger.info(
                 "task queued",
                 extra={"step_id": step.step_id, "tool_name": step.tool_name, "run_id": run_id},
@@ -295,6 +402,7 @@ class AsyncLocalExecutor:
                             branch_decisions[step.step_id] = set()
                         if not step_futures[step.step_id].done():
                             step_futures[step.step_id].set_result(step_pointer["pointer_id"])
+                        await _persist_checkpoint(status="active")
                         logger.info(
                             "task skipped by branch routing",
                             extra={"step_id": step.step_id, "tool_name": step.tool_name, "run_id": run_id},
@@ -323,6 +431,7 @@ class AsyncLocalExecutor:
                         branch_decisions[step.step_id] = set()
                     if not step_futures[step.step_id].done():
                         step_futures[step.step_id].set_result(step_pointer["pointer_id"])
+                    await _persist_checkpoint(status="active")
                     logger.info(
                         "task skipped due to early exit",
                         extra={"step_id": step.step_id, "tool_name": step.tool_name, "run_id": run_id},
@@ -370,6 +479,7 @@ class AsyncLocalExecutor:
                             branch_decisions[step.step_id] = set()
                         if not step_futures[step.step_id].done():
                             step_futures[step.step_id].set_result(step_pointer["pointer_id"])
+                        await _persist_checkpoint(status="active")
                         logger.info(
                             "task paused awaiting approval",
                             extra={"step_id": step.step_id, "tool_name": step.tool_name, "run_id": run_id},
@@ -414,6 +524,7 @@ class AsyncLocalExecutor:
                         resolve_branch_targets(step, status="error")
                         if not step_futures[step.step_id].done():
                             step_futures[step.step_id].set_result(step_pointer["pointer_id"])
+                        await _persist_checkpoint(status="active")
                         logger.info(
                             "task rejected at approval checkpoint",
                             extra={"step_id": step.step_id, "tool_name": step.tool_name, "run_id": run_id},
@@ -595,6 +706,7 @@ class AsyncLocalExecutor:
                 resolve_branch_targets(step, status="ok")
                 if not step_futures[step.step_id].done():
                     step_futures[step.step_id].set_result(step_pointer["pointer_id"])
+                await _persist_checkpoint(status="active")
                 logger.info(
                     "task finished",
                     extra={"step_id": step.step_id, "tool_name": step.tool_name, "run_id": run_id},
@@ -647,6 +759,7 @@ class AsyncLocalExecutor:
                 resolve_branch_targets(step, status="error")
                 if not step_futures[step.step_id].done():
                     step_futures[step.step_id].set_result(step_pointer["pointer_id"])
+                await _persist_checkpoint(status="active")
                 return step_pointer
 
         tasks = [asyncio.create_task(run_step(step)) for step in macro.steps]
@@ -667,6 +780,15 @@ class AsyncLocalExecutor:
             0,
             approval_required_steps - approval_paused_steps - approval_rejected_steps,
         )
+        total_duration_ms = round(
+            max(0.0, (run_completed_at - run_started_at).total_seconds() * 1000.0),
+            3,
+        )
+        checkpoint_status = "awaiting_approval" if approval_paused_steps > 0 else "completed"
+        await _persist_checkpoint(
+            status=checkpoint_status,
+            final_pointer_id=final_result["pointer_id"] if final_result else None,
+        )
         self.state_manager.store_execution_summary(
             run_id=run_id,
             started_at_utc=run_started_at.isoformat(),
@@ -674,13 +796,16 @@ class AsyncLocalExecutor:
             total_steps=len(macro.steps),
             succeeded_steps=succeeded_steps,
             failed_steps=failed_steps,
-            total_duration_ms=round((time.perf_counter() - run_started_perf) * 1000, 3),
+            total_duration_ms=total_duration_ms,
             final_pointer_id=final_result["pointer_id"] if final_result else None,
         )
 
         if final_result:
             final_result.setdefault("metadata", {})
             final_result["metadata"]["execution_run_id"] = run_id
+            final_result["metadata"]["checkpoint_status"] = checkpoint_status
+            final_result["metadata"]["resumed_from_checkpoint"] = resume
+            final_result["metadata"]["replayed_steps"] = sorted(replayed_step_ids)
             final_result["metadata"]["approval_metrics"] = {
                 "required_steps": approval_required_steps,
                 "approved_steps": approval_approved_steps,
@@ -703,3 +828,21 @@ class AsyncLocalExecutor:
                 ),
             }
         return final_result
+
+    async def resume_run(
+        self,
+        run_id: str,
+        approvals: Optional[Dict[str, Any]] = None,
+    ) -> dict:
+        checkpoint = self.state_manager.get_run_checkpoint(run_id)
+        if checkpoint["status"] not in {"active", "awaiting_approval"}:
+            raise ValueError(
+                f"Run {run_id} is not resumable from status '{checkpoint['status']}'."
+            )
+        macro_payload = checkpoint["macro_payload"]
+        if approvals:
+            merged_approvals = dict(macro_payload.get("approvals") or {})
+            merged_approvals.update(approvals)
+            macro_payload["approvals"] = merged_approvals
+        macro = BatchedMacroRequest.model_validate(macro_payload)
+        return await self.execute_macro(macro=macro, run_id=run_id, resume=True)
