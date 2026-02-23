@@ -99,6 +99,10 @@ Response:
 - `steps[]` with unique `step_id`.
 - Optional `retry_policy`.
 - Optional `execution_limits`.
+- Optional per-step HITL checkpoint (`ToolCall.approval`) and decisions map (`approvals`):
+  - `approval.required=true` marks a step as approval-gated.
+  - `approvals[step_id].decision` supports `approve | reject`.
+  - `reject` decisions require `reason`.
 
 ## Operation: `execute_macro`
 

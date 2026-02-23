@@ -126,8 +126,8 @@ Recommended sequence:
   - `v2026.2.21`
   - `v2026.2.22`
 
-Proceed to **EAP-076**:
-- Add human approval checkpoints (HITL) for step-level pause/approve/reject.
+Proceed to **EAP-077**:
+- Add crash-safe resume and replay from persisted checkpoints.
 
 ## References (Primary Sources)
 

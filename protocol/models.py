@@ -21,11 +21,56 @@ class PointerResponse(BaseModel):
 class ToolErrorPayload(BaseModel):
     """Normalized tool failure contract for executor/UI consumers."""
 
-    error_type: str = Field(..., description="validation_error | dependency_error | tool_execution_error")
+    error_type: str = Field(
+        ...,
+        description=(
+            "validation_error | dependency_error | tool_execution_error | approval_rejected"
+        ),
+    )
     message: str = Field(..., description="Short human-readable failure reason.")
     step_id: str = Field(..., description="Step ID where the failure occurred.")
     tool_name: str = Field(..., description="Tool name/hash that failed.")
     details: Optional[Dict[str, Any]] = Field(default=None, description="Additional structured error metadata.")
+
+
+class StepApprovalCheckpoint(BaseModel):
+    """Optional HITL approval checkpoint metadata for a step."""
+
+    required: bool = Field(
+        default=True,
+        description="When true, step execution requires an explicit approve/reject decision.",
+    )
+    prompt: Optional[str] = Field(
+        default=None,
+        description="Optional reviewer-facing prompt or policy context for this checkpoint.",
+    )
+
+
+class StepApprovalDecisionType(str, Enum):
+    """Allowed approval decisions for HITL-gated steps."""
+
+    APPROVE = "approve"
+    REJECT = "reject"
+
+
+class StepApprovalDecision(BaseModel):
+    """Approval decision payload supplied at macro execution time."""
+
+    decision: StepApprovalDecisionType = Field(
+        ...,
+        description="approve | reject",
+    )
+    reason: Optional[str] = Field(
+        default=None,
+        description="Required when decision=reject. Optional reviewer note when decision=approve.",
+    )
+
+    @model_validator(mode="after")
+    def validate_reason(self) -> "StepApprovalDecision":
+        if self.decision == StepApprovalDecisionType.REJECT:
+            if not self.reason or not self.reason.strip():
+                raise ValueError("reject decisions require a non-empty reason")
+        return self
 
 
 class ToolCall(BaseModel):
@@ -36,6 +81,10 @@ class ToolCall(BaseModel):
     branching: Optional["BranchingRule"] = Field(
         default=None,
         description="Optional conditional branching config for this step.",
+    )
+    approval: Optional[StepApprovalCheckpoint] = Field(
+        default=None,
+        description="Optional human approval checkpoint for this step.",
     )
 
 
@@ -159,6 +208,9 @@ class ExecutionTraceEventType(str, Enum):
     """Lifecycle states emitted during step execution."""
 
     QUEUED = "queued"
+    APPROVAL_REQUIRED = "approval_required"
+    APPROVED = "approved"
+    REJECTED = "rejected"
     STARTED = "started"
     RETRIED = "retried"
     FAILED = "failed"
@@ -209,6 +261,24 @@ class ExecutionTraceEvent(BaseModel):
         if self.event_type == ExecutionTraceEventType.QUEUED:
             if self.output_pointer_id or self.error or self.duration_ms is not None:
                 raise ValueError("queued events cannot include output_pointer_id, error, or duration_ms")
+
+        if self.event_type == ExecutionTraceEventType.APPROVAL_REQUIRED:
+            if self.output_pointer_id or self.error or self.duration_ms is not None:
+                raise ValueError(
+                    "approval_required events cannot include output_pointer_id, error, or duration_ms"
+                )
+
+        if self.event_type == ExecutionTraceEventType.APPROVED:
+            if self.output_pointer_id or self.error or self.duration_ms is not None:
+                raise ValueError(
+                    "approved events cannot include output_pointer_id, error, or duration_ms"
+                )
+
+        if self.event_type == ExecutionTraceEventType.REJECTED:
+            if not self.error:
+                raise ValueError("rejected events must include error")
+            if self.output_pointer_id:
+                raise ValueError("rejected events cannot include output_pointer_id")
 
         if self.event_type == ExecutionTraceEventType.STARTED:
             if self.output_pointer_id or self.error:
@@ -316,10 +386,15 @@ class BatchedMacroRequest(BaseModel):
         default=None,
         description="Optional concurrency/rate limit settings for this macro run.",
     )
+    approvals: Dict[str, StepApprovalDecision] = Field(
+        default_factory=dict,
+        description="Optional approve/reject decisions keyed by step_id for approval-gated steps.",
+    )
 
     @model_validator(mode="after")
     def validate_branch_targets(self) -> "BatchedMacroRequest":
         step_ids = {step.step_id for step in self.steps}
+        step_by_id: Dict[str, ToolCall] = {step.step_id: step for step in self.steps}
         for step in self.steps:
             if not step.branching:
                 continue
@@ -336,6 +411,18 @@ class BatchedMacroRequest(BaseModel):
                     raise ValueError(
                         f"branch target '{target}' in step '{step.step_id}' cannot self-reference"
                     )
+
+        for approval_step_id in self.approvals.keys():
+            if approval_step_id not in step_ids:
+                raise ValueError(
+                    f"approval decision step_id '{approval_step_id}' is not a valid step_id"
+                )
+            step = step_by_id[approval_step_id]
+            if not step.approval or not step.approval.required:
+                raise ValueError(
+                    f"approval decision provided for step '{approval_step_id}' "
+                    "without approval.required=true"
+                )
         return self
 
 

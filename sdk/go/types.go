@@ -35,11 +35,22 @@ type BranchingRule struct {
 	AllowEarlyExit        bool     `json:"allow_early_exit,omitempty"`
 }
 
+type StepApprovalCheckpoint struct {
+	Required bool   `json:"required,omitempty"`
+	Prompt   string `json:"prompt,omitempty"`
+}
+
+type StepApprovalDecision struct {
+	Decision string `json:"decision"`
+	Reason   string `json:"reason,omitempty"`
+}
+
 type ToolCall struct {
 	StepID    string                 `json:"step_id"`
 	ToolName  string                 `json:"tool_name"`
 	Arguments map[string]interface{} `json:"arguments"`
 	Branching *BranchingRule         `json:"branching,omitempty"`
+	Approval  *StepApprovalCheckpoint `json:"approval,omitempty"`
 }
 
 type RetryPolicy struct {
@@ -67,6 +78,7 @@ type BatchedMacroRequest struct {
 	ReturnFinalStateOnly bool             `json:"return_final_state_only,omitempty"`
 	RetryPolicy          *RetryPolicy     `json:"retry_policy,omitempty"`
 	ExecutionLimits      *ExecutionLimits `json:"execution_limits,omitempty"`
+	Approvals            map[string]StepApprovalDecision `json:"approvals,omitempty"`
 }
 
 type GenerateMacroRequest struct {

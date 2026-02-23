@@ -8,7 +8,7 @@ Source model: `protocol/models.py`
 
 ## `WorkflowGraphNode`
 - `node_id`: stable graph node identifier.
-- `step`: embedded `ToolCall` (includes `tool_name`, `arguments`, `step_id`, optional `branching`).
+- `step`: embedded `ToolCall` (includes `tool_name`, `arguments`, `step_id`, optional `branching`, optional `approval` checkpoint metadata).
 - `label`, `position_x`, `position_y`: editor-only metadata.
 
 ## `WorkflowGraphEdge`
