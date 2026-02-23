@@ -9,6 +9,15 @@
 Efficient Agent Protocol is a local-first framework for multi-step tool workflows.
 It stores large outputs as pointer-backed state (`ptr_*`) and runs dependency-aware DAG steps in parallel.
 
+## Who This Is For
+
+- Python developers building local-first agent/tool orchestration
+- Teams that need pointer-backed state and execution trace visibility
+
+Not ideal yet for:
+- strict long-term API compatibility requirements before `v1.0`
+- non-technical users expecting zero-configuration onboarding
+
 ## What You Get
 
 - Pointer-based state to keep prompts small
@@ -93,6 +102,8 @@ python3 -m build
 
 - `STABILITY.md`
 - `ROADMAP.md`
+- `docs/v1_contract.md`
+- `docs/release_notes_template.md`
 - GitHub roadmap board: https://github.com/users/GenieWeenie/projects/1
 - `docs/configuration.md`
 - `docs/architecture.md`

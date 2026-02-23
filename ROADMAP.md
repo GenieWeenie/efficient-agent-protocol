@@ -35,3 +35,5 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Branch protection on `main` with required CI checks and PR review.
 - MIT license added.
 - Release workflow stabilized and validated on tagged release runs.
+- Phase 1 contract draft published (`docs/v1_contract.md`).
+- Release notes template published (`docs/release_notes_template.md`).
