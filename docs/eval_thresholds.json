@@ -1,0 +1,17 @@
+{
+  "correctness": {
+    "min_pass_rate": 1.0
+  },
+  "reliability": {
+    "min_pass_rate": 1.0
+  },
+  "latency_ms": {
+    "max_p95": 300.0,
+    "max_max": 500.0
+  },
+  "regression": {
+    "max_pass_rate_drop": 0.0,
+    "max_latency_p95_ratio_increase": 0.75,
+    "max_latency_max_ratio_increase": 0.75
+  }
+}

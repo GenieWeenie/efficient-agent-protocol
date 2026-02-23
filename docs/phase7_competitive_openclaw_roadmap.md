@@ -1,6 +1,6 @@
 # Phase 7 Competitive Roadmap (OpenClaw + Market Positioning)
 
-Status: In progress (through EAP-078, 2026-02-23)
+Status: In progress (through EAP-079, 2026-02-23)
 
 Current status:
 - [x] `EAP-071` interop spike + compatibility matrix published (`docs/openclaw_interop.md`)
@@ -11,7 +11,8 @@ Current status:
 - [x] `EAP-076` human approval checkpoints (HITL pause/approve/reject + trace transitions)
 - [x] `EAP-077` crash-safe resume and replay (checkpoint persistence + run resume API)
 - [x] `EAP-078` MCP interoperability (stdio MCP bridge tool + runtime integration test)
-- [ ] `EAP-079` onward
+- [x] `EAP-079` evaluation harness + scorecard (CI artifact + regression gate)
+- [ ] `EAP-080` onward
 
 ## Objective
 
@@ -102,6 +103,7 @@ Optional validation track:
 9. `EAP-079` Evaluation harness and scorecard
    - Deliverable: repeatable eval suite (reliability + correctness + latency)
    - Done when: CI publishes trend artifacts and fails on regression thresholds
+   - Status: complete (`scripts/eval_scorecard.py`, `docs/eval_thresholds.json`, CI `eval-scorecard` job)
 
 ## Tranche 3: Differentiation and Adoption
 

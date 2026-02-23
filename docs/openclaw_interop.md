@@ -1,8 +1,8 @@
 # OpenClaw Interop Spike (EAP-071)
 
-Status: Updated through EAP-078 (2026-02-23)  
+Status: Updated through EAP-079 (2026-02-23)  
 Owner: EAP maintainers  
-Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078)
+Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079)
 
 ## 1) Version Snapshot
 
@@ -143,8 +143,22 @@ Recommended sequence:
   - executor `resume_run(...)`
   - HTTP resume endpoint `POST /v1/eap/runs/{run_id}/resume`
 
-Proceed to **EAP-079**:
-- Add evaluation harness + scorecard with CI-published trends and regression thresholds.
+`EAP-079` follow-up is now complete (see section 9 below).
+
+## 9) Implemented Evaluation Harness (EAP-079)
+
+`EAP-079` is now implemented in-repo with:
+- scorecard harness script: `scripts/eval_scorecard.py`
+- regression config + baseline:
+  - `docs/eval_thresholds.json`
+  - `docs/eval_baseline.json`
+- CI eval lane in `.github/workflows/ci.yml`:
+  - publishes `artifacts/eval/` as `eval-scorecard` artifact
+  - fails on regression threshold violations
+- harness reference doc: `docs/evaluation_harness.md`
+
+Proceed to **EAP-080**:
+- Add vertical starter packs with smoke tests + walkthrough docs.
 
 ## References (Primary Sources)
 
