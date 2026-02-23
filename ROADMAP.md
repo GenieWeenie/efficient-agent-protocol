@@ -30,7 +30,7 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Add contributor governance docs (`CONTRIBUTING.md`, issue/PR templates, maintainer expectations).
 - Reduce bus factor with maintainer runbooks and reviewer coverage.
 
-## Phase 5: Recommendation Readiness (Next)
+## Phase 5: Recommendation Readiness (Completed)
 
 - Close all open high-severity code scanning alerts and keep the baseline at zero.
 - Add maintainer/reviewer ownership map (`CODEOWNERS`) for critical runtime paths.
@@ -38,6 +38,12 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Publish a one-page "why EAP vs alternatives" proof sheet with benchmark + failure-mode evidence.
 - Checklist: `docs/phase5_recommendation_readiness_checklist.md`
 - Proof sheet: `docs/eap_proof_sheet.md`
+
+## Phase 6: Distribution and V1 Readiness (Next)
+
+- Publish stable package releases to PyPI from tag workflow (configure release secret path).
+- Add post-release install smoke validation against published package artifacts.
+- Finalize `v1.0` stabilization checklist and upgrade notes for external adopters.
 
 ## Done
 
@@ -49,5 +55,5 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 2 reliability/contract/perf tranche completed (issue #2).
 - Phase 3 release and security hardening shipped (issue #3).
 - Phase 4 migration/observability/governance tranche completed (issue #4).
-- Phase 5 tranche 1 started: compiler ReDoS hardening and regression tests (EAP-064).
-- Phase 5 tranche 2 completed: proof sheet with benchmark and failure-mode evidence.
+- Phase 5 recommendation readiness completed (`EAP-064` to `EAP-067`).
+- `v0.1.4` release published with Phase 5 and CodeQL v4 updates.

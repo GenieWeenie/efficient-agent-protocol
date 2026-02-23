@@ -2,6 +2,8 @@
 
 This checklist tracks the next ordered tranche after Phase 4 to make EAP recommendable without caveats.
 
+Status: Completed (2026-02-23)
+
 ## Tranche 1 (ordered)
 
 1. `EAP-064` Resolve open CodeQL high alert in compiler JSON extraction
@@ -15,3 +17,7 @@ This checklist tracks the next ordered tranche after Phase 4 to make EAP recomme
 - [x] `EAP-065` `CODEOWNERS` for `agent/`, `environment/`, `protocol/`, `docs/`, and `.github/workflows/`.
 - [x] `EAP-066` CI job executes README quickstart path (install + minimal run) on pull requests.
 - [x] `EAP-067` Proof sheet published at `docs/eap_proof_sheet.md` and linked from roadmap/docs index.
+
+## Outcome
+
+- Phase 5 complete and released in `v0.1.4`.
