@@ -60,6 +60,13 @@ Use rollback only when a bad release is published.
 - Security scanning workflows remain green.
 - Roadmap issue/task status updated.
 
+## V1 Readiness Handoff
+
+For `v1.0` cutover, complete and attach:
+
+- `docs/v1_stabilization_checklist.md`
+- Fully populated `Breaking Changes` and `Upgrade Notes` sections from `docs/release_notes_template.md`
+
 ## Security Workflow Notes
 
 - `pip-audit` runs in CI and is always enforced on Python 3.11.

@@ -97,3 +97,48 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ env.PYPI_API_TOKEN }}
+
+  verify-pypi-install:
+    name: Verify PyPI install smoke (stable tags)
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-rc')
+    permissions:
+      contents: read
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install released package with retry
+        env:
+          PACKAGE_VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${PACKAGE_VERSION#v}"
+          python -m pip install --upgrade pip
+          for attempt in {1..8}; do
+            if python -m pip install --no-cache-dir "efficient-agent-protocol==${VERSION}"; then
+              echo "Installed efficient-agent-protocol==${VERSION} on attempt ${attempt}"
+              break
+            fi
+            if [ "${attempt}" -eq 8 ]; then
+              echo "::error title=PyPI install failed::Unable to install efficient-agent-protocol==${VERSION} from PyPI after retries."
+              exit 1
+            fi
+            python -m pip uninstall -y efficient-agent-protocol || true
+            echo "Package not yet available on PyPI. Retrying in 15s..."
+            sleep 15
+          done
+
+      - name: Import smoke
+        run: |
+          python - <<'PY'
+          import eap
+          import eap.agent
+          import eap.environment
+          import eap.protocol
+          print("Import smoke passed for released package.")
+          PY

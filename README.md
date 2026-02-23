@@ -116,6 +116,7 @@ python3 -m build
 - `docs/release_notes_template.md`
 - `docs/benchmarks.md`
 - `docs/release.md`
+- `docs/v1_stabilization_checklist.md`
 - `docs/migrations.md`
 - `docs/observability.md`
 - `docs/maintainer_runbook.md`
