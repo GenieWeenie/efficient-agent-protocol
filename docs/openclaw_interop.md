@@ -1,8 +1,8 @@
 # OpenClaw Interop Spike (EAP-071)
 
-Status: Updated through EAP-079 (2026-02-23)  
+Status: Updated through EAP-080 (2026-02-23)  
 Owner: EAP maintainers  
-Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079)
+Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080)
 
 ## 1) Version Snapshot
 
@@ -157,8 +157,26 @@ Recommended sequence:
   - fails on regression threshold violations
 - harness reference doc: `docs/evaluation_harness.md`
 
-Proceed to **EAP-080**:
-- Add vertical starter packs with smoke tests + walkthrough docs.
+`EAP-080` follow-up is now complete (see section 10 below).
+
+## 10) Implemented Vertical Starter Packs (EAP-080)
+
+`EAP-080` is now implemented in-repo with:
+- runnable starter pack modules:
+  - `starter_packs/research_assistant.py`
+  - `starter_packs/doc_ops.py`
+  - `starter_packs/local_etl.py`
+- smoke coverage:
+  - `tests/integration/test_starter_packs.py`
+- walkthrough docs and fixtures:
+  - `docs/starter_packs/README.md`
+  - `docs/starter_packs/research_assistant.md`
+  - `docs/starter_packs/doc_ops.md`
+  - `docs/starter_packs/local_etl.md`
+  - `docs/starter_packs/fixtures/*`
+
+Proceed to **EAP-081**:
+- Add operator telemetry pack with dashboard-ready retry/saturation/failure/latency views.
 
 ## References (Primary Sources)
 
