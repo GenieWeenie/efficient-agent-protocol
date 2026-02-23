@@ -1,6 +1,6 @@
 # Phase 7 Competitive Roadmap (OpenClaw + Market Positioning)
 
-Status: Planned (2026-02-23)
+Status: In progress (through EAP-078, 2026-02-23)
 
 Current status:
 - [x] `EAP-071` interop spike + compatibility matrix published (`docs/openclaw_interop.md`)
@@ -10,7 +10,8 @@ Current status:
 - [x] `EAP-075` interop CI lane (`.github/workflows/openclaw-interop.yml`)
 - [x] `EAP-076` human approval checkpoints (HITL pause/approve/reject + trace transitions)
 - [x] `EAP-077` crash-safe resume and replay (checkpoint persistence + run resume API)
-- [ ] `EAP-078` onward
+- [x] `EAP-078` MCP interoperability (stdio MCP bridge tool + runtime integration test)
+- [ ] `EAP-079` onward
 
 ## Objective
 
@@ -96,6 +97,7 @@ Optional validation track:
 8. `EAP-078` MCP interoperability
    - Add MCP server export for selected EAP tools or a client bridge for MCP tools
    - Done when: at least one reference MCP tool can be executed via EAP runtime
+   - Status: complete (added `invoke_mcp_tool` bridge + `tests/integration/test_mcp_interop.py`)
 
 9. `EAP-079` Evaluation harness and scorecard
    - Deliverable: repeatable eval suite (reliability + correctness + latency)
