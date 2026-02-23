@@ -93,6 +93,7 @@ python3 -m build
 
 - `STABILITY.md`
 - `ROADMAP.md`
+- GitHub roadmap board: https://github.com/users/GenieWeenie/projects/1
 - `docs/configuration.md`
 - `docs/architecture.md`
 - `docs/tools.md`
