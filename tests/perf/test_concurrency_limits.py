@@ -68,12 +68,15 @@ class ConcurrencyLimitsPerfTest(unittest.TestCase):
             retry_policy=RetryPolicy(max_attempts=1, initial_delay_seconds=0.0, backoff_multiplier=1.0),
             execution_limits=ExecutionLimits(max_global_concurrency=3),
         )
+        started = time.perf_counter()
         result = asyncio.run(executor.execute_macro(macro))
+        elapsed = time.perf_counter() - started
         metrics = result["metadata"]["saturation_metrics"]
 
         self.assertLessEqual(tracker.max_inflight, 3)
         self.assertLessEqual(metrics["max_inflight_global"], 3)
         self.assertGreater(metrics["global_concurrency_wait_count"], 0)
+        self.assertLess(elapsed, 2.0)
 
     def test_rate_limit_generates_saturation_metrics(self) -> None:
         tracker = _ConcurrencyTrackerTool(sleep_seconds=0.01)
@@ -103,6 +106,7 @@ class ConcurrencyLimitsPerfTest(unittest.TestCase):
         metrics = result["metadata"]["saturation_metrics"]
 
         self.assertGreaterEqual(elapsed, 1.3)
+        self.assertLess(elapsed, 4.0)
         self.assertGreater(metrics["global_rate_wait_count"], 0)
         self.assertGreater(metrics["global_rate_wait_seconds"], 0.0)
         self.assertGreater(metrics["total_rate_limited_attempts"], 0)
