@@ -37,3 +37,5 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Release workflow stabilized and validated on tagged release runs.
 - Phase 1 contract draft published (`docs/v1_contract.md`).
 - Release notes template published (`docs/release_notes_template.md`).
+- Phase 2 reliability/contract/perf tranche completed (issue #2).
+- Phase 3 release and security hardening shipped (issue #3).

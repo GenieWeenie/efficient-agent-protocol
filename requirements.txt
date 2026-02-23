@@ -5,8 +5,8 @@
 # Core data validation and lightweight payload structuring
 pydantic==2.6.1
 
-# (Optional) Required if using the requests library to hit local model APIs 
-requests==2.31.0
+# (Optional) Required if using the requests library to hit local model APIs
+requests==2.32.4
 
 # Required for HTML parsing in web_tools.py
 beautifulsoup4==4.12.3

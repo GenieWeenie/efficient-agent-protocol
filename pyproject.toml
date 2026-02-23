@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
   "pydantic==2.6.1",
-  "requests==2.31.0",
+  "requests==2.32.4",
   "beautifulsoup4==4.12.3",
 ]
 
@@ -19,6 +19,7 @@ dev = [
   "pytest>=8.0.0",
   "pytest-cov>=5.0.0",
   "ruff>=0.6.0",
+  "pre-commit>=3.7.0",
 ]
 storage = [
   "redis>=5.0.0",

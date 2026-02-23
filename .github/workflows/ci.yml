@@ -33,7 +33,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-          pip install ruff
+          pip install ruff pre-commit pip-audit
 
       - name: Lint (Ruff syntax/runtime checks)
         if: matrix.python-version == '3.11'
@@ -80,6 +80,16 @@ jobs:
               print("Branch coverage gate failed.", file=sys.stderr)
               sys.exit(1)
           PY
+
+      - name: Pre-commit checks
+        if: matrix.python-version == '3.11'
+        run: |
+          pre-commit run --all-files
+
+      - name: Dependency vulnerability audit
+        if: matrix.python-version == '3.11'
+        run: |
+          python -m pip_audit -r requirements.txt
 
   build:
     name: Build package (py3.11)
