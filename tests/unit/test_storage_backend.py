@@ -196,6 +196,66 @@ class FakePostgresPointerClient:
         return self.rows.pop(pointer_id, None) is not None
 
 
+class UnavailableRedisClient:
+    def _fail(self) -> None:
+        raise ConnectionError("redis unavailable")
+
+    def hset(self, key: str, mapping: Dict[str, str]) -> int:
+        self._fail()
+
+    def hget(self, key: str, field: str) -> Optional[str]:
+        self._fail()
+
+    def hgetall(self, key: str) -> Dict[str, str]:
+        self._fail()
+
+    def sadd(self, key: str, *members: str) -> int:
+        self._fail()
+
+    def smembers(self, key: str) -> set[str]:
+        self._fail()
+
+    def srem(self, key: str, *members: str) -> int:
+        self._fail()
+
+    def delete(self, key: str) -> int:
+        self._fail()
+
+
+class UnavailablePostgresPointerClient(FakePostgresPointerClient):
+    def _fail(self) -> None:
+        raise ConnectionError("postgres unavailable")
+
+    def initialize(self) -> None:
+        self._fail()
+
+    def insert_pointer(
+        self,
+        pointer_id: str,
+        raw_data: str,
+        summary: str,
+        metadata: Dict[str, Any],
+        created_at_utc: str,
+        ttl_seconds: Optional[int],
+        expires_at_utc: Optional[str],
+    ) -> None:
+        self._fail()
+
+    def retrieve_pointer(self, pointer_id: str) -> Any:
+        self._fail()
+
+    def list_pointers(
+        self,
+        include_expired: bool = True,
+        now_utc: Optional[str] = None,
+        limit: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        self._fail()
+
+    def delete_pointer(self, pointer_id: str) -> bool:
+        self._fail()
+
+
 class PointerStoreContractMixin:
     def build_store(self) -> PointerStoreBackend:
         raise NotImplementedError
@@ -291,6 +351,29 @@ class StateManagerStorageInjectionTest(unittest.TestCase):
         manager.delete_pointer(pointer["pointer_id"])
         with self.assertRaises(KeyError):
             manager.retrieve(pointer["pointer_id"])
+
+
+class PointerStoreOutageTest(unittest.TestCase):
+    def test_redis_backend_outage_propagates_connection_error(self) -> None:
+        store = RedisPointerStore(client=UnavailableRedisClient(), key_prefix="eap:test:outage")
+        with self.assertRaises(ConnectionError):
+            store.store_pointer(
+                pointer_id="ptr_outage",
+                raw_data="{}",
+                summary="outage",
+                metadata={},
+                created_at_utc="2026-02-23T00:00:00+00:00",
+                ttl_seconds=None,
+                expires_at_utc=None,
+            )
+
+    def test_postgres_backend_outage_propagates_connection_error(self) -> None:
+        store = PostgresPointerStore(client=UnavailablePostgresPointerClient())
+        with self.assertRaises(ConnectionError):
+            store.initialize()
+
+        with self.assertRaises(ConnectionError):
+            store.list_pointers()
 
 
 if __name__ == "__main__":

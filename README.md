@@ -104,6 +104,7 @@ python3 -m build
 - `ROADMAP.md`
 - `docs/v1_contract.md`
 - `docs/release_notes_template.md`
+- `docs/benchmarks.md`
 - GitHub roadmap board: https://github.com/users/GenieWeenie/projects/1
 - `docs/configuration.md`
 - `docs/architecture.md`

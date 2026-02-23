@@ -41,8 +41,45 @@ jobs:
           ruff check . --select E9,F63,F7,F82
 
       - name: Run tests
+        if: matrix.python-version != '3.11'
         run: |
           python -m pytest -q
+
+      - name: Run tests with coverage gates
+        if: matrix.python-version == '3.11'
+        run: |
+          python -m pytest -q \
+            --cov=protocol \
+            --cov=agent \
+            --cov=environment \
+            --cov=eap \
+            --cov-branch \
+            --cov-report=term-missing \
+            --cov-report=json:coverage.json
+          python - <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          totals = json.loads(Path("coverage.json").read_text(encoding="utf-8"))["totals"]
+          line_coverage = float(totals["percent_covered"])
+          num_branches = int(totals.get("num_branches", 0))
+          covered_branches = int(totals.get("covered_branches", 0))
+          branch_coverage = 100.0 if num_branches == 0 else (covered_branches / num_branches) * 100.0
+
+          line_threshold = 80.0
+          branch_threshold = 65.0
+          print(
+              f"Coverage gates: line={line_coverage:.2f}% (min {line_threshold:.2f}%), "
+              f"branch={branch_coverage:.2f}% (min {branch_threshold:.2f}%)"
+          )
+          if line_coverage < line_threshold:
+              print("Line coverage gate failed.", file=sys.stderr)
+              sys.exit(1)
+          if branch_coverage < branch_threshold:
+              print("Branch coverage gate failed.", file=sys.stderr)
+              sys.exit(1)
+          PY
 
   build:
     name: Build package (py3.11)
