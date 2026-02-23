@@ -38,5 +38,6 @@ This runbook captures core maintainer operations to reduce bus factor.
 ## Credentials and Access
 
 - Keep repository admin and package publish access documented and rotated.
+- Prefer PyPI Trusted Publishing for stable releases (avoid long-lived PyPI tokens in GitHub secrets).
 - Keep branch protection enabled on `main`.
 - Ensure at least two maintainers have workflow/release access when team size allows.

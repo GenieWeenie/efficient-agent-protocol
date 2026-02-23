@@ -95,8 +95,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    env:
-      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
 
     steps:
       - name: Download dist artifacts
@@ -105,17 +103,8 @@ jobs:
           name: dist
           path: dist/
 
-      - name: Validate PyPI token configuration
-        run: |
-          if [ -z "${PYPI_API_TOKEN}" ]; then
-            echo "::error title=Missing PYPI_API_TOKEN::Set repository secret PYPI_API_TOKEN to publish stable releases."
-            exit 1
-          fi
-
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ env.PYPI_API_TOKEN }}
 
   verify-pypi-install:
     name: Verify PyPI install smoke (stable tags)
