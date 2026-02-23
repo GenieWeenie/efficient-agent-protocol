@@ -1,0 +1,12 @@
+{
+  "metadata": {
+    "captured_at_utc": "2026-02-23T00:00:00Z",
+    "note": "Bootstrap baseline for EAP-079 scorecard regression checks."
+  },
+  "metrics": {
+    "correctness_pass_rate": 1.0,
+    "reliability_pass_rate": 1.0,
+    "latency_p95_ms": 120.0,
+    "latency_max_ms": 220.0
+  }
+}

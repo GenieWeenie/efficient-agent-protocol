@@ -70,3 +70,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 7 `EAP-076` HITL checkpoints added (step-level pause/approve/reject semantics with trace transitions).
 - Phase 7 `EAP-077` crash-safe resume/replay added with persisted run checkpoints and resume endpoint.
 - Phase 7 `EAP-078` MCP interoperability added via `invoke_mcp_tool` stdio bridge and runtime integration test.
+- Phase 7 `EAP-079` evaluation harness shipped with CI scorecard artifacts and regression threshold gate.

@@ -20,6 +20,15 @@ Run the performance test subset:
 python3 -m pytest -q tests/perf --durations=10
 ```
 
+Run the Phase 7 scorecard harness (correctness + reliability + latency):
+
+```bash
+python scripts/eval_scorecard.py \
+  --output-dir artifacts/eval \
+  --threshold-config docs/eval_thresholds.json \
+  --baseline docs/eval_baseline.json
+```
+
 ## Baseline (2026-02-23)
 
 Measured on local macOS development machine, Python 3.9:
