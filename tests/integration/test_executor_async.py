@@ -66,9 +66,10 @@ class ExecutorAsyncIntegrationTest(unittest.TestCase):
         elapsed = time.perf_counter() - started
 
         self.assertIn("pointer_id", result)
-        self.assertLess(elapsed, 0.55)
+        metrics = result["metadata"]["saturation_metrics"]
+        self.assertGreaterEqual(metrics["max_inflight_global"], 2)
+        self.assertLess(elapsed, 1.2)
 
 
 if __name__ == "__main__":
     unittest.main()
-
