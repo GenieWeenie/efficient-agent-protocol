@@ -37,8 +37,8 @@ Updated: 2026-02-24
 | 7 | `EAP-090` | `GEN-50` | `Done` | v1 compatibility enforcement |
 | 8 | `EAP-091` | `GEN-51` | `Done` | One-command bootstrap |
 | 9 | `EAP-092` | `GEN-52` | `Done` | Guided onboarding + doctor |
-| 10 | `EAP-093` | `GEN-53` | `Todo` | Self-hosted control-plane reference |
-| 11 | `EAP-094` | `GEN-54` | `Todo (Blocked)` | Blocked by `GEN-53` |
+| 10 | `EAP-093` | `GEN-53` | `Done` | Self-hosted control-plane reference |
+| 11 | `EAP-094` | `GEN-54` | `Todo` | Remote operations governance baseline |
 
 ## Execution Rule
 
