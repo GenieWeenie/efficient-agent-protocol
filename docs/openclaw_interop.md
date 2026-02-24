@@ -1,8 +1,8 @@
 # OpenClaw Interop Spike (EAP-071)
 
-Status: Updated through EAP-080 (2026-02-23)  
+Status: Updated through EAP-081 (2026-02-23)  
 Owner: EAP maintainers  
-Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080)
+Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080, EAP-081)
 
 ## 1) Version Snapshot
 
@@ -175,8 +175,22 @@ Recommended sequence:
   - `docs/starter_packs/local_etl.md`
   - `docs/starter_packs/fixtures/*`
 
-Proceed to **EAP-081**:
-- Add operator telemetry pack with dashboard-ready retry/saturation/failure/latency views.
+`EAP-081` follow-up is now complete (see section 11 below).
+
+## 11) Implemented Operator Telemetry Pack (EAP-081)
+
+`EAP-081` is now implemented in-repo with:
+- telemetry exporter:
+  - `scripts/export_telemetry_pack.py`
+- persisted run diagnostics for saturation and approval metadata:
+  - `execution_run_diagnostics` store via `StateManager`
+- operator-focused telemetry guide:
+  - `docs/operator_telemetry_pack.md`
+- integration validation:
+  - `tests/integration/test_telemetry_pack.py`
+
+Proceed to **EAP-082**:
+- refresh competitive proof sheet with interop + eval + telemetry evidence.
 
 ## References (Primary Sources)
 

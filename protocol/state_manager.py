@@ -99,6 +99,21 @@ class StateManager:
             )
             conn.execute(
                 """
+                CREATE TABLE IF NOT EXISTS execution_run_diagnostics (
+                    run_id TEXT PRIMARY KEY,
+                    updated_at_utc TEXT NOT NULL,
+                    payload_json TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_execution_run_diagnostics_updated
+                ON execution_run_diagnostics(updated_at_utc)
+                """
+            )
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS conversation_sessions (
                     session_id TEXT PRIMARY KEY,
                     created_at_utc TEXT NOT NULL,
@@ -425,6 +440,66 @@ class StateManager:
             "final_pointer_id": row[6],
         }
 
+    def store_execution_diagnostics(self, run_id: str, payload: Dict[str, Any]) -> None:
+        updated_at_utc = self._now_utc_iso()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO execution_run_diagnostics (
+                    run_id, updated_at_utc, payload_json
+                ) VALUES (?, ?, ?)
+                """,
+                (
+                    run_id,
+                    updated_at_utc,
+                    json.dumps(payload),
+                ),
+            )
+
+    def get_execution_diagnostics(self, run_id: str) -> Dict[str, Any]:
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                """
+                SELECT updated_at_utc, payload_json
+                FROM execution_run_diagnostics
+                WHERE run_id = ?
+                """,
+                (run_id,),
+            ).fetchone()
+
+        if not row:
+            raise KeyError(f"Execution diagnostics for run {run_id} not found.")
+
+        payload = json.loads(row[1]) if row[1] else {}
+        return {
+            "run_id": run_id,
+            "updated_at_utc": row[0],
+            "payload": payload,
+        }
+
+    def list_execution_diagnostics(self, limit: int = 100) -> List[Dict[str, Any]]:
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                """
+                SELECT run_id, updated_at_utc, payload_json
+                FROM execution_run_diagnostics
+                ORDER BY updated_at_utc DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+
+        diagnostics: List[Dict[str, Any]] = []
+        for row in rows:
+            diagnostics.append(
+                {
+                    "run_id": row[0],
+                    "updated_at_utc": row[1],
+                    "payload": json.loads(row[2]) if row[2] else {},
+                }
+            )
+        return diagnostics
+
     def _generate_session_id(self) -> str:
         return f"sess_{uuid.uuid4().hex[:10]}"
 
@@ -734,6 +809,9 @@ class StateManager:
                 """
             ).fetchall()
             trace_event_total = conn.execute("SELECT COUNT(*) FROM execution_trace_events").fetchone()[0]
+            diagnostics_run_count = conn.execute(
+                "SELECT COUNT(*) FROM execution_run_diagnostics"
+            ).fetchone()[0]
 
             session_count = conn.execute("SELECT COUNT(*) FROM conversation_sessions").fetchone()[0]
             turn_count = conn.execute("SELECT COUNT(*) FROM conversation_turns").fetchone()[0]
@@ -754,6 +832,7 @@ class StateManager:
                 "failed_steps": int(run_row[3]),
                 "avg_duration_ms": float(run_row[4]),
                 "trace_event_total": int(trace_event_total),
+                "diagnostics_run_count": int(diagnostics_run_count),
                 "trace_events_by_type": {row[0]: int(row[1]) for row in event_rows},
             },
             "conversation": {

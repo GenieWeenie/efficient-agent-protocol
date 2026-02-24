@@ -58,7 +58,7 @@ class SqliteMigrationTest(unittest.TestCase):
         self.assertEqual([step.version for step in pending], list(range(1, LATEST_SCHEMA_VERSION + 1)))
 
         result = apply_sqlite_migrations(self.db_path, dry_run=True)
-        self.assertEqual(result["planned_versions"], [1, 2, 3])
+        self.assertEqual(result["planned_versions"], [1, 2, 3, 4])
         self.assertEqual(result["applied_versions"], [])
 
         with sqlite3.connect(self.db_path) as conn:
@@ -69,7 +69,7 @@ class SqliteMigrationTest(unittest.TestCase):
 
     def test_apply_migrations_is_idempotent(self) -> None:
         first = apply_sqlite_migrations(self.db_path)
-        self.assertEqual(first["applied_versions"], [1, 2, 3])
+        self.assertEqual(first["applied_versions"], [1, 2, 3, 4])
         self.assertEqual(first["final_version"], LATEST_SCHEMA_VERSION)
 
         with sqlite3.connect(self.db_path) as conn:
@@ -80,7 +80,8 @@ class SqliteMigrationTest(unittest.TestCase):
                 WHERE type='index'
                 AND name IN (
                     'idx_execution_trace_events_step_id',
-                    'idx_execution_run_summaries_completed_at'
+                    'idx_execution_run_summaries_completed_at',
+                    'idx_execution_run_diagnostics_updated'
                 )
                 ORDER BY name
                 """
@@ -88,10 +89,16 @@ class SqliteMigrationTest(unittest.TestCase):
             self.assertEqual(
                 [row[0] for row in idx_rows],
                 [
+                    "idx_execution_run_diagnostics_updated",
                     "idx_execution_run_summaries_completed_at",
                     "idx_execution_trace_events_step_id",
                 ],
             )
+
+            diagnostics_row = conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='execution_run_diagnostics'"
+            ).fetchone()
+            self.assertIsNotNone(diagnostics_row)
 
         second = apply_sqlite_migrations(self.db_path)
         self.assertEqual(second["applied_versions"], [])

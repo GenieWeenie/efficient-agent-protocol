@@ -72,3 +72,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 7 `EAP-078` MCP interoperability added via `invoke_mcp_tool` stdio bridge and runtime integration test.
 - Phase 7 `EAP-079` evaluation harness shipped with CI scorecard artifacts and regression threshold gate.
 - Phase 7 `EAP-080` vertical starter packs added with runnable walkthroughs and smoke tests.
+- Phase 7 `EAP-081` operator telemetry pack added with dashboard-ready diagnostics and failed-run triage artifacts.

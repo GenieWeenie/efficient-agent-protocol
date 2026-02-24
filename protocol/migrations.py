@@ -41,6 +41,23 @@ MIGRATIONS: List[MigrationStep] = [
             "CREATE INDEX IF NOT EXISTS idx_execution_run_summaries_completed_at ON execution_run_summaries(completed_at_utc)"
         ],
     ),
+    MigrationStep(
+        version=4,
+        description="Add execution run diagnostics table for telemetry exports",
+        statements=[
+            """
+            CREATE TABLE IF NOT EXISTS execution_run_diagnostics (
+                run_id TEXT PRIMARY KEY,
+                updated_at_utc TEXT NOT NULL,
+                payload_json TEXT NOT NULL
+            )
+            """,
+            """
+            CREATE INDEX IF NOT EXISTS idx_execution_run_diagnostics_updated
+            ON execution_run_diagnostics(updated_at_utc)
+            """,
+        ],
+    ),
 ]
 
 
