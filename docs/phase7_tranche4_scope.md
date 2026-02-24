@@ -1,6 +1,6 @@
 # Phase 7 Tranche 4 Scope (EAP-085)
 
-Updated: 2026-02-24 (execution through EAP-088 in progress)  
+Updated: 2026-02-24 (execution through EAP-088 complete)  
 Source of truth: Linear project `Efficient Agent Protocol Roadmap`
 
 ## Objective
@@ -22,4 +22,4 @@ Close the remaining high-impact OpenClaw interoperability gaps identified in `do
 
 ## Execution Constraint
 
-Only the first non-blocked `Todo` item may be started (currently `EAP-088`).
+Tranche complete: no remaining open items in this scoped sequence.
