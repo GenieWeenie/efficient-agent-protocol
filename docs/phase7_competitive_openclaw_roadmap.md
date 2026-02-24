@@ -1,6 +1,6 @@
 # Phase 7 Competitive Roadmap (OpenClaw + Market Positioning)
 
-Status: In progress (through EAP-082, 2026-02-24)
+Status: In progress (through EAP-083, 2026-02-24)
 
 Current status:
 - [x] `EAP-071` interop spike + compatibility matrix published (`docs/openclaw_interop.md`)
@@ -15,7 +15,8 @@ Current status:
 - [x] `EAP-080` vertical starter packs (research assistant, doc ops, local ETL)
 - [x] `EAP-081` operator telemetry pack (dashboard-ready triage artifacts)
 - [x] `EAP-082` "Why EAP now" competitive proof sheet refresh
-- [ ] `EAP-083` onward
+- [x] `EAP-083` proof sheet contract checks in CI
+- [ ] `EAP-084` onward
 
 ## Objective
 
@@ -124,6 +125,11 @@ Optional validation track:
     - Deliverable: refresh `docs/eap_proof_sheet.md` with new interop and eval evidence
     - Done when: proof sheet includes side-by-side capability table + reproducible commands
     - Status: complete (`docs/eap_proof_sheet.md`)
+
+13. `EAP-083` Proof sheet contract checks
+    - Deliverable: add automated checks that fail when proof sheet evidence/commands drift from repo reality
+    - Done when: CI validates referenced evidence paths and command paths in `docs/eap_proof_sheet.md`
+    - Status: complete (`scripts/verify_proof_sheet.py`, `tests/contract/test_eap_proof_sheet_contract.py`, `.github/workflows/ci.yml`)
 
 ## Guardrails
 

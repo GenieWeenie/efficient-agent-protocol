@@ -1,8 +1,8 @@
 # OpenClaw Interop Spike (EAP-071)
 
-Status: Updated through EAP-082 (2026-02-24)  
+Status: Updated through EAP-083 (2026-02-24)  
 Owner: EAP maintainers  
-Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080, EAP-081, EAP-082)
+Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080, EAP-081, EAP-082, EAP-083)
 
 ## 1) Version Snapshot
 
@@ -212,7 +212,24 @@ Recommended sequence:
   - scorecard/eval gate generation
   - telemetry pack export
 
-Proceed to **EAP-083**.
+`EAP-083` target:
+- add proof sheet contract checks to prevent evidence drift.
+
+`EAP-083` follow-up is now complete (see section 13 below).
+
+## 13) Implemented Proof Sheet Contract Checks (EAP-083)
+
+`EAP-083` is now implemented in-repo with:
+- proof-sheet verifier script:
+  - `scripts/verify_proof_sheet.py`
+- contract test coverage:
+  - `tests/contract/test_eap_proof_sheet_contract.py`
+- CI enforcement in py3.11 lane:
+  - `.github/workflows/ci.yml` (`Proof sheet contract checks`)
+- proof sheet command references now include verifier execution:
+  - `docs/eap_proof_sheet.md`
+
+Proceed to **EAP-084**.
 
 ## References (Primary Sources)
 

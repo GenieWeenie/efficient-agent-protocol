@@ -57,6 +57,13 @@ Expected output:
 - `artifacts/telemetry/failed_run_diagnostics.json`
 - `artifacts/telemetry/operator_report.md`
 
+### 4) Proof sheet contract verification
+
+```bash
+python scripts/verify_proof_sheet.py
+python -m pytest -q tests/contract/test_eap_proof_sheet_contract.py
+```
+
 ## Evidence Snapshot
 
 Source: `docs/benchmarks.md` and `docs/eval_thresholds.json`

@@ -86,6 +86,12 @@ jobs:
         run: |
           pre-commit run --all-files
 
+      - name: Proof sheet contract checks
+        if: matrix.python-version == '3.11'
+        run: |
+          python scripts/verify_proof_sheet.py
+          python -m pytest -q tests/contract/test_eap_proof_sheet_contract.py
+
       - name: Dependency vulnerability audit
         if: matrix.python-version == '3.11'
         run: |
