@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+import requests
+
 from eap.agent import (
     AnthropicProvider,
     CompletionRequest,
@@ -108,6 +110,50 @@ class ProviderAdaptersTest(unittest.TestCase):
         kwargs = post.call_args.kwargs
         self.assertEqual(kwargs["headers"]["x-api-key"], "anthro-key")
         self.assertIn("system", kwargs["json"])
+
+    def test_openai_responses_mode_normalizes_output_text(self) -> None:
+        provider = OpenAIProvider(
+            endpoint="http://localhost:1234/v1/responses",
+            api_key="secret",
+            timeout_seconds=10,
+            api_mode="responses",
+        )
+        request = CompletionRequest(
+            model="gpt-4.1-mini",
+            messages=[ProviderMessage(role="user", content="hello")],
+            temperature=0.0,
+        )
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"id": "resp_1", "output_text": "responses-ok"}
+        mock_response.raise_for_status.return_value = None
+        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+            response = provider.complete(request)
+
+        self.assertEqual(response.text, "responses-ok")
+        kwargs = post.call_args.kwargs
+        self.assertIn("input", kwargs["json"])
+        self.assertEqual(kwargs["json"]["input"][0]["content"][0]["text"], "hello")
+        self.assertEqual(kwargs["headers"]["Authorization"], "Bearer secret")
+
+    def test_openai_responses_mode_unavailable_endpoint_has_explicit_error(self) -> None:
+        provider = OpenAIProvider(
+            endpoint="http://localhost:1234/v1/responses",
+            api_key="secret",
+            timeout_seconds=10,
+            api_mode="responses",
+        )
+        request = CompletionRequest(
+            model="gpt-4.1-mini",
+            messages=[ProviderMessage(role="user", content="hello")],
+            temperature=0.0,
+        )
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.raise_for_status.side_effect = requests.HTTPError("404 Not Found")
+        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response):
+            with self.assertRaises(RuntimeError) as context:
+                provider.complete(request)
+        self.assertIn("Responses API path is unavailable", str(context.exception))
 
     def test_google_provider_normalizes_response_and_tools(self) -> None:
         provider = GoogleProvider(

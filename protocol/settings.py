@@ -8,6 +8,7 @@ DEFAULT_BASE_URL = "http://localhost:1234"
 DEFAULT_MODEL = "nemotron-orchestrator-8b"
 DEFAULT_TIMEOUT_SECONDS = 60
 DEFAULT_TEMPERATURE = 0.0
+DEFAULT_OPENAI_API_MODE = "chat_completions"
 DEFAULT_EXECUTOR_MAX_CONCURRENCY = 8
 
 
@@ -18,6 +19,7 @@ class LLMClientSettings:
     api_key: str
     timeout_seconds: int
     temperature: float
+    openai_api_mode: str
     extra_headers: Dict[str, str]
 
 
@@ -100,6 +102,15 @@ def _parse_extra_headers(value: str, field_name: str) -> Dict[str, str]:
     return headers
 
 
+def _parse_openai_api_mode(value: str, field_name: str) -> str:
+    normalized = value.strip().lower()
+    if normalized in {"chat_completions", "responses"}:
+        return normalized
+    raise ValueError(
+        f"{field_name} must be one of: chat_completions, responses"
+    )
+
+
 def _build_client_settings(role_prefix: str) -> LLMClientSettings:
     base_url = _validate_base_url(
         os.getenv(f"{role_prefix}_BASE_URL", os.getenv("EAP_BASE_URL", DEFAULT_BASE_URL)),
@@ -124,6 +135,14 @@ def _build_client_settings(role_prefix: str) -> LLMClientSettings:
     if temperature < 0:
         raise ValueError(f"{role_prefix}_TEMPERATURE must be >= 0")
 
+    openai_api_mode = _parse_openai_api_mode(
+        os.getenv(
+            f"{role_prefix}_OPENAI_API_MODE",
+            os.getenv("EAP_OPENAI_API_MODE", DEFAULT_OPENAI_API_MODE),
+        ),
+        f"{role_prefix}_OPENAI_API_MODE",
+    )
+
     global_extra_headers = _parse_extra_headers(
         os.getenv("EAP_EXTRA_HEADERS_JSON", "{}"),
         "EAP_EXTRA_HEADERS_JSON",
@@ -141,6 +160,7 @@ def _build_client_settings(role_prefix: str) -> LLMClientSettings:
         api_key=api_key,
         timeout_seconds=timeout_seconds,
         temperature=temperature,
+        openai_api_mode=openai_api_mode,
         extra_headers=extra_headers,
     )
 

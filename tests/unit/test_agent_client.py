@@ -60,6 +60,25 @@ class AgentClientTest(unittest.TestCase):
         self.assertIn("### MEMORY CONTEXT ###", user_message)
         self.assertIn("prior question", user_message)
 
+    def test_chat_can_use_responses_api_mode(self) -> None:
+        client = AgentClient(
+            base_url="http://localhost:1234",
+            model_name="model-a",
+            openai_api_mode="responses",
+        )
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"output_text": "ok"}
+        mock_response.raise_for_status.return_value = None
+
+        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+            result = client.chat("hello")
+
+        self.assertEqual(result, "ok")
+        kwargs = post.call_args.kwargs
+        self.assertTrue(client.provider.endpoint.endswith("/v1/responses"))
+        self.assertIn("input", kwargs["json"])
+        self.assertEqual(kwargs["json"]["input"][1]["content"][0]["text"], "hello")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -17,6 +17,7 @@ Global defaults:
 - `EAP_API_KEY`
 - `EAP_TIMEOUT_SECONDS`
 - `EAP_TEMPERATURE`
+- `EAP_OPENAI_API_MODE` (`chat_completions` or `responses`, default: `chat_completions`)
 - `EAP_EXTRA_HEADERS_JSON` (optional JSON object of HTTP headers)
 
 Role-specific overrides:
@@ -25,12 +26,14 @@ Role-specific overrides:
 - `EAP_ARCHITECT_API_KEY`
 - `EAP_ARCHITECT_TIMEOUT_SECONDS`
 - `EAP_ARCHITECT_TEMPERATURE`
+- `EAP_ARCHITECT_OPENAI_API_MODE` (`chat_completions` or `responses`)
 - `EAP_ARCHITECT_EXTRA_HEADERS_JSON` (optional JSON object of HTTP headers)
 - `EAP_AUDITOR_BASE_URL`
 - `EAP_AUDITOR_MODEL`
 - `EAP_AUDITOR_API_KEY`
 - `EAP_AUDITOR_TIMEOUT_SECONDS`
 - `EAP_AUDITOR_TEMPERATURE`
+- `EAP_AUDITOR_OPENAI_API_MODE` (`chat_completions` or `responses`)
 - `EAP_AUDITOR_EXTRA_HEADERS_JSON` (optional JSON object of HTTP headers)
 
 Logging:
@@ -55,12 +58,24 @@ OpenClaw routing header example:
 - Global: `EAP_EXTRA_HEADERS_JSON='{"x-openclaw-agent-id":"my-agent"}'`
 - Architect-only override: `EAP_ARCHITECT_EXTRA_HEADERS_JSON='{"x-openclaw-agent-id":"architect-agent"}'`
 
+OpenAI Responses API mode example:
+- Global responses path: `EAP_OPENAI_API_MODE=responses`
+- Architect responses + auditor chat-completions split:
+  - `EAP_ARCHITECT_OPENAI_API_MODE=responses`
+  - `EAP_AUDITOR_OPENAI_API_MODE=chat_completions`
+
+Mode guidance:
+- Use `chat_completions` when you need streaming token output (`stream=true` path).
+- Use `responses` when your gateway exposes `POST /v1/responses` and you want explicit Responses API compatibility.
+- If `responses` endpoint is disabled/unsupported, EAP surfaces an explicit runtime error and you should switch mode back to `chat_completions`.
+
 ## Validation Rules
 
 - Base URLs must start with `http://` or `https://`.
 - Models and API keys cannot be empty strings.
 - Timeout values must be integers greater than zero.
 - Temperature must be a float greater than or equal to zero.
+- OpenAI API mode must be `chat_completions` or `responses`.
 - Extra header JSON values must be objects with non-empty string keys and values.
 - Executor global concurrency must be a positive integer.
 - Global burst capacity requires global RPS to be set.

@@ -16,6 +16,7 @@ class AgentClient:
         temperature: float = 0.0,
         timeout_seconds: int = 60,
         provider_name: str = "local",
+        openai_api_mode: str = "chat_completions",
         fallback_provider_name: Optional[str] = None,
         provider: Optional[LLMProvider] = None,
         extra_headers: Optional[Dict[str, str]] = None,
@@ -28,6 +29,7 @@ class AgentClient:
         self.temperature = temperature
         self.timeout_seconds = timeout_seconds
         self.provider_name = provider_name
+        self.openai_api_mode = openai_api_mode
         self.extra_headers = dict(extra_headers or {})
         self.fallback_provider_name = fallback_provider_name
         self.provider = provider or create_provider(
@@ -36,6 +38,7 @@ class AgentClient:
             api_key=api_key,
             timeout_seconds=timeout_seconds,
             extra_headers=self.extra_headers,
+            openai_api_mode=openai_api_mode,
             fallback_provider_name=fallback_provider_name,
         )
         self.compiler = MacroCompiler()
