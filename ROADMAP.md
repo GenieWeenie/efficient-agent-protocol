@@ -90,3 +90,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 7 `EAP-088` OpenAI Responses API adapter path completed (`GEN-47`).
 - Phase 8 `EAP-089` Responses streaming parity completed (`GEN-49`, PR #42).
 - Phase 8 `EAP-090` v1 compatibility enforcement completed (`GEN-50`, PR #44).
+- Phase 8 `EAP-091` one-command bootstrap completed (`GEN-51`, PR #46).

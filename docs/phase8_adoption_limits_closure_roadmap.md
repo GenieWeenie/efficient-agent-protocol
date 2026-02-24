@@ -6,7 +6,7 @@ Source of truth: Linear project `Efficient Agent Protocol Roadmap`
 Current status:
 - [x] `EAP-089` Responses streaming parity (`GEN-49`)
 - [x] `EAP-090` v1 compatibility enforcement (`GEN-50`)
-- [ ] `EAP-091` one-command bootstrap (`GEN-51`)
+- [x] `EAP-091` one-command bootstrap (`GEN-51`)
 - [ ] `EAP-092` guided onboarding + doctor (`GEN-52`)
 - [ ] `EAP-093` self-hosted control-plane reference (`GEN-53`)
 - [ ] `EAP-094` remote operations governance baseline (`GEN-54`)
@@ -45,4 +45,4 @@ Turn README caveats (`Not ideal yet` and `Current limits`) into concrete deliver
 
 ## Execution Constraint
 
-Only the first non-blocked `Todo` item may be started (currently `EAP-091`).
+Only the first non-blocked `Todo` item may be started (currently `EAP-092`).
