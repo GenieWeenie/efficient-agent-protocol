@@ -32,3 +32,26 @@ Snapshot fields include:
 - conversation session/turn counts
 
 This path is intended for operational diagnostics and periodic health snapshots.
+
+## Telemetry Pack Export
+
+For dashboard-ready diagnostics with retries, saturation, failure reasons, and latency percentiles:
+
+```bash
+python3 scripts/export_telemetry_pack.py \
+  --db-path agent_state.db \
+  --output-dir artifacts/telemetry
+```
+
+This writes structured artifacts plus a triage report:
+
+- `overview.json`
+- `retries.json`
+- `fail_reasons.json`
+- `latency_percentiles.json`
+- `saturation.json`
+- `failed_run_diagnostics.json`
+- `operator_report.md`
+- `manifest.json`
+
+Use `failed_run_diagnostics.json` and `operator_report.md` as the first stop for root-cause analysis.

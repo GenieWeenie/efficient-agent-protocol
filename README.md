@@ -113,6 +113,7 @@ python3 -m pytest -q
 pre-commit run --all-files
 python3 scripts/migrate_state_db.py --db-path agent_state.db --dry-run
 python3 scripts/export_metrics.py --db-path agent_state.db --output metrics/latest.json
+python3 scripts/export_telemetry_pack.py --db-path agent_state.db --output-dir artifacts/telemetry
 ./scripts/interop_openclaw_smoke.sh v2026.2.22
 python3 -m build
 ```
@@ -128,6 +129,7 @@ python3 -m build
 - `docs/v1_stabilization_checklist.md`
 - `docs/migrations.md`
 - `docs/observability.md`
+- `docs/operator_telemetry_pack.md`
 - `docs/maintainer_runbook.md`
 - `SECURITY.md`
 - `CONTRIBUTING.md`

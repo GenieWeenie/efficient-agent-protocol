@@ -47,6 +47,21 @@ class OperationalMetricsTest(unittest.TestCase):
                 attempt=1,
             )
         )
+        self.manager.store_execution_diagnostics(
+            run_id=run_id,
+            payload={
+                "saturation_metrics": {
+                    "global_concurrency_wait_seconds": 0.5,
+                    "global_rate_wait_seconds": 0.2,
+                },
+                "approval_metrics": {
+                    "required_steps": 0,
+                    "approved_steps": 0,
+                    "rejected_steps": 0,
+                    "paused_steps": 0,
+                },
+            },
+        )
 
         future_now = "2099-01-01T00:00:00+00:00"
         metrics = self.manager.collect_operational_metrics(now_utc=future_now)
@@ -57,6 +72,7 @@ class OperationalMetricsTest(unittest.TestCase):
         self.assertEqual(metrics["conversation"]["turn_count"], 1)
         self.assertEqual(metrics["execution"]["run_count"], 1)
         self.assertEqual(metrics["execution"]["failed_run_count"], 1)
+        self.assertEqual(metrics["execution"]["diagnostics_run_count"], 1)
         self.assertEqual(metrics["execution"]["trace_events_by_type"]["queued"], 1)
 
         with tempfile.TemporaryDirectory(prefix="eap-metrics-out-") as tmpdir:
@@ -68,6 +84,13 @@ class OperationalMetricsTest(unittest.TestCase):
             payload = json.loads(open(output_path, "r", encoding="utf-8").read())
             self.assertEqual(payload["execution"]["run_count"], 1)
             self.assertEqual(payload["conversation"]["turn_count"], 1)
+
+        diagnostics = self.manager.get_execution_diagnostics(run_id)
+        self.assertEqual(diagnostics["run_id"], run_id)
+        self.assertEqual(
+            diagnostics["payload"]["saturation_metrics"]["global_concurrency_wait_seconds"],
+            0.5,
+        )
 
 
 if __name__ == "__main__":

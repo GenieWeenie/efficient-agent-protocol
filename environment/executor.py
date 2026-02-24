@@ -780,6 +780,27 @@ class AsyncLocalExecutor:
             0,
             approval_required_steps - approval_paused_steps - approval_rejected_steps,
         )
+        final_saturation_metrics = {
+            **saturation_metrics,
+            "global_concurrency_wait_seconds": round(
+                saturation_metrics["global_concurrency_wait_seconds"], 6
+            ),
+            "per_tool_concurrency_wait_seconds": round(
+                saturation_metrics["per_tool_concurrency_wait_seconds"], 6
+            ),
+            "global_rate_wait_seconds": round(
+                saturation_metrics["global_rate_wait_seconds"], 6
+            ),
+            "per_tool_rate_wait_seconds": round(
+                saturation_metrics["per_tool_rate_wait_seconds"], 6
+            ),
+        }
+        approval_metrics = {
+            "required_steps": approval_required_steps,
+            "approved_steps": approval_approved_steps,
+            "rejected_steps": approval_rejected_steps,
+            "paused_steps": approval_paused_steps,
+        }
         total_duration_ms = round(
             max(0.0, (run_completed_at - run_started_at).total_seconds() * 1000.0),
             3,
@@ -799,6 +820,19 @@ class AsyncLocalExecutor:
             total_duration_ms=total_duration_ms,
             final_pointer_id=final_result["pointer_id"] if final_result else None,
         )
+        self.state_manager.store_execution_diagnostics(
+            run_id=run_id,
+            payload={
+                "run_id": run_id,
+                "captured_at_utc": run_completed_at.isoformat(),
+                "checkpoint_status": checkpoint_status,
+                "resumed_from_checkpoint": resume,
+                "replayed_steps": sorted(replayed_step_ids),
+                "approval_metrics": approval_metrics,
+                "saturation_metrics": final_saturation_metrics,
+                "step_status": step_status,
+            },
+        )
 
         if final_result:
             final_result.setdefault("metadata", {})
@@ -806,27 +840,8 @@ class AsyncLocalExecutor:
             final_result["metadata"]["checkpoint_status"] = checkpoint_status
             final_result["metadata"]["resumed_from_checkpoint"] = resume
             final_result["metadata"]["replayed_steps"] = sorted(replayed_step_ids)
-            final_result["metadata"]["approval_metrics"] = {
-                "required_steps": approval_required_steps,
-                "approved_steps": approval_approved_steps,
-                "rejected_steps": approval_rejected_steps,
-                "paused_steps": approval_paused_steps,
-            }
-            final_result["metadata"]["saturation_metrics"] = {
-                **saturation_metrics,
-                "global_concurrency_wait_seconds": round(
-                    saturation_metrics["global_concurrency_wait_seconds"], 6
-                ),
-                "per_tool_concurrency_wait_seconds": round(
-                    saturation_metrics["per_tool_concurrency_wait_seconds"], 6
-                ),
-                "global_rate_wait_seconds": round(
-                    saturation_metrics["global_rate_wait_seconds"], 6
-                ),
-                "per_tool_rate_wait_seconds": round(
-                    saturation_metrics["per_tool_rate_wait_seconds"], 6
-                ),
-            }
+            final_result["metadata"]["approval_metrics"] = approval_metrics
+            final_result["metadata"]["saturation_metrics"] = final_saturation_metrics
         return final_result
 
     async def resume_run(

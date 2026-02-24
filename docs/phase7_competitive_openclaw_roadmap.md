@@ -1,6 +1,6 @@
 # Phase 7 Competitive Roadmap (OpenClaw + Market Positioning)
 
-Status: In progress (through EAP-080, 2026-02-23)
+Status: In progress (through EAP-081, 2026-02-23)
 
 Current status:
 - [x] `EAP-071` interop spike + compatibility matrix published (`docs/openclaw_interop.md`)
@@ -13,7 +13,8 @@ Current status:
 - [x] `EAP-078` MCP interoperability (stdio MCP bridge tool + runtime integration test)
 - [x] `EAP-079` evaluation harness + scorecard (CI artifact + regression gate)
 - [x] `EAP-080` vertical starter packs (research assistant, doc ops, local ETL)
-- [ ] `EAP-081` onward
+- [x] `EAP-081` operator telemetry pack (dashboard-ready triage artifacts)
+- [ ] `EAP-082` onward
 
 ## Objective
 
@@ -116,6 +117,7 @@ Optional validation track:
 11. `EAP-081` Operator telemetry pack
     - Deliverable: first-party dashboards/charts for retries, saturation, fail reasons, and step latency percentiles
     - Done when: maintainer can diagnose a failed run from telemetry alone
+    - Status: complete (`scripts/export_telemetry_pack.py`, `docs/operator_telemetry_pack.md`, `tests/integration/test_telemetry_pack.py`)
 
 12. `EAP-082` "Why EAP now" competitive page refresh
     - Deliverable: refresh `docs/eap_proof_sheet.md` with new interop and eval evidence
