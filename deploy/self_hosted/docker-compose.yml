@@ -1,0 +1,45 @@
+services:
+  runtime:
+    build:
+      context: ../..
+      dockerfile: deploy/self_hosted/Dockerfile
+    command:
+      - python
+      - scripts/eap_runtime_service.py
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --db-path
+      - /var/lib/eap/agent_state.db
+      - --bearer-token
+      - ${EAP_RUNTIME_BEARER_TOKEN:?Set EAP_RUNTIME_BEARER_TOKEN}
+    ports:
+      - "${EAP_RUNTIME_PORT:-8080}:8080"
+    volumes:
+      - eap_state:/var/lib/eap
+    restart: unless-stopped
+
+  operator-ui:
+    build:
+      context: ../..
+      dockerfile: deploy/self_hosted/Dockerfile
+    command:
+      - python
+      - scripts/eap_operator_ui.py
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8501"
+      - --db-path
+      - /var/lib/eap/agent_state.db
+    ports:
+      - "${EAP_OPERATOR_UI_PORT:-8501}:8501"
+    volumes:
+      - eap_state:/var/lib/eap
+    depends_on:
+      - runtime
+    restart: unless-stopped
+
+volumes:
+  eap_state:
