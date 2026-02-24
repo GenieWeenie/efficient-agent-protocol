@@ -17,6 +17,7 @@ Global defaults:
 - `EAP_API_KEY`
 - `EAP_TIMEOUT_SECONDS`
 - `EAP_TEMPERATURE`
+- `EAP_EXTRA_HEADERS_JSON` (optional JSON object of HTTP headers)
 
 Role-specific overrides:
 - `EAP_ARCHITECT_BASE_URL`
@@ -24,11 +25,13 @@ Role-specific overrides:
 - `EAP_ARCHITECT_API_KEY`
 - `EAP_ARCHITECT_TIMEOUT_SECONDS`
 - `EAP_ARCHITECT_TEMPERATURE`
+- `EAP_ARCHITECT_EXTRA_HEADERS_JSON` (optional JSON object of HTTP headers)
 - `EAP_AUDITOR_BASE_URL`
 - `EAP_AUDITOR_MODEL`
 - `EAP_AUDITOR_API_KEY`
 - `EAP_AUDITOR_TIMEOUT_SECONDS`
 - `EAP_AUDITOR_TEMPERATURE`
+- `EAP_AUDITOR_EXTRA_HEADERS_JSON` (optional JSON object of HTTP headers)
 
 Logging:
 - `EAP_LOG_LEVEL` (`DEBUG`, `INFO`, `WARNING`, `ERROR`)
@@ -48,12 +51,17 @@ Pointer janitor (dashboard):
 - `EAP_POINTER_JANITOR_INTERVAL_SECONDS` (default: `300`)
 - `EAP_POINTER_JANITOR_MAX_DELETE` (default: `200`)
 
+OpenClaw routing header example:
+- Global: `EAP_EXTRA_HEADERS_JSON='{"x-openclaw-agent-id":"my-agent"}'`
+- Architect-only override: `EAP_ARCHITECT_EXTRA_HEADERS_JSON='{"x-openclaw-agent-id":"architect-agent"}'`
+
 ## Validation Rules
 
 - Base URLs must start with `http://` or `https://`.
 - Models and API keys cannot be empty strings.
 - Timeout values must be integers greater than zero.
 - Temperature must be a float greater than or equal to zero.
+- Extra header JSON values must be objects with non-empty string keys and values.
 - Executor global concurrency must be a positive integer.
 - Global burst capacity requires global RPS to be set.
 - Per-tool limits JSON must be an object keyed by non-empty tool names.

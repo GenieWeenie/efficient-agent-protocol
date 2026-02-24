@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Optional
 
 import requests
 
@@ -9,15 +9,23 @@ from .base import CompletionRequest, CompletionResponse, LLMProvider
 class OpenAIProvider(LLMProvider):
     """Adapter for OpenAI-compatible `/v1/chat/completions` APIs."""
 
-    def __init__(self, endpoint: str, api_key: str, timeout_seconds: int):
+    def __init__(
+        self,
+        endpoint: str,
+        api_key: str,
+        timeout_seconds: int,
+        extra_headers: Optional[Dict[str, str]] = None,
+    ):
         self.endpoint = endpoint
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
+        self.extra_headers = dict(extra_headers or {})
 
     def _headers(self) -> Dict[str, str]:
+        headers = dict(self.extra_headers)
         if self.api_key and self.api_key != "not-needed":
-            return {"Authorization": f"Bearer {self.api_key}"}
-        return {}
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        return headers
 
     def _request(self, request: CompletionRequest) -> CompletionResponse:
         payload = {

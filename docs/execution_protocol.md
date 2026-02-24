@@ -30,7 +30,7 @@ Updated: 2026-02-24
 | --- | --- | --- | --- | --- |
 | 1 | `EAP-084` | `GEN-45` | `Done` | Establish execution protocol + queue mirror |
 | 2 | `EAP-085` | `GEN-44` | `Done` | Tranche 4 scope and acceptance criteria defined |
-| 3 | `EAP-086` | `GEN-46` | `Todo` | OpenClaw agent-routing header support |
+| 3 | `EAP-086` | `GEN-46` | `In Progress` | OpenClaw agent-routing header support |
 | 4 | `EAP-087` | `GEN-48` | `Backlog` | Blocked by `EAP-086` |
 | 5 | `EAP-088` | `GEN-47` | `Backlog` | Blocked by `EAP-087` |
 

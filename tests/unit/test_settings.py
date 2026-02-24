@@ -11,6 +11,8 @@ class SettingsTest(unittest.TestCase):
             settings = load_settings()
             self.assertEqual(settings.architect.base_url, "http://localhost:1234")
             self.assertEqual(settings.auditor.base_url, "http://localhost:1234")
+            self.assertEqual(settings.architect.extra_headers, {})
+            self.assertEqual(settings.auditor.extra_headers, {})
             self.assertEqual(settings.executor.max_global_concurrency, 8)
             self.assertEqual(settings.executor.per_tool_limits, {})
 
@@ -20,12 +22,17 @@ class SettingsTest(unittest.TestCase):
             {
                 "EAP_ARCHITECT_MODEL": "arch-model",
                 "EAP_AUDITOR_MODEL": "audit-model",
+                "EAP_EXTRA_HEADERS_JSON": '{"x-shared":"one","x-role":"global"}',
+                "EAP_ARCHITECT_EXTRA_HEADERS_JSON": '{"x-role":"architect"}',
             },
             clear=True,
         ):
             settings = load_settings()
             self.assertEqual(settings.architect.model_name, "arch-model")
             self.assertEqual(settings.auditor.model_name, "audit-model")
+            self.assertEqual(settings.architect.extra_headers["x-shared"], "one")
+            self.assertEqual(settings.architect.extra_headers["x-role"], "architect")
+            self.assertEqual(settings.auditor.extra_headers["x-role"], "global")
 
     def test_invalid_base_url_fails_fast(self) -> None:
         with mock.patch.dict(os.environ, {"EAP_BASE_URL": "localhost:1234"}, clear=True):
@@ -48,6 +55,15 @@ class SettingsTest(unittest.TestCase):
             settings = load_settings()
             self.assertEqual(settings.executor.per_tool_limits["tool_a"].max_concurrency, 2)
             self.assertEqual(settings.executor.per_tool_limits["tool_a"].requests_per_second, 5.0)
+
+    def test_invalid_extra_headers_validation(self) -> None:
+        with mock.patch.dict(os.environ, {"EAP_EXTRA_HEADERS_JSON": '["bad"]'}, clear=True):
+            with self.assertRaises(ValueError):
+                load_settings()
+
+        with mock.patch.dict(os.environ, {"EAP_AUDITOR_EXTRA_HEADERS_JSON": '{"x-one": 1}'}, clear=True):
+            with self.assertRaises(ValueError):
+                load_settings()
 
 
 if __name__ == "__main__":
