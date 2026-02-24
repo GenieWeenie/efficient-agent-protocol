@@ -135,7 +135,7 @@ jobs:
 
       - name: Run doctor diagnostics
         run: |
-          python scripts/eap_doctor.py doctor \
+          .venv-bootstrap/bin/python scripts/eap_doctor.py doctor \
             --env-file .env \
             --skip-connectivity \
             --state-db-path artifacts/bootstrap/doctor_state.db \
