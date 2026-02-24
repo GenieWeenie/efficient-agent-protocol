@@ -9,6 +9,7 @@
 
 Efficient Agent Protocol is a local-first framework for multi-step tool workflows.
 It stores large outputs as pointer-backed state (`ptr_*`) and runs dependency-aware DAG steps in parallel.
+It also ships OpenClaw interop paths for gateway/tool integration.
 
 ## Who This Is For
 
@@ -26,6 +27,10 @@ Not ideal yet for:
 - Built-in chat UI (Streamlit) with trace + data inspection
 - Conversation memory (full/window/summary)
 - Pluggable pointer storage backends (SQLite, Redis, PostgreSQL)
+- OpenClaw interop support:
+  - OpenAI-compatible modes: `chat_completions` and `responses`
+  - Gateway tool bridge for `POST /tools/invoke`
+  - OpenClaw plugin + skills starter package in `integrations/openclaw/eap-runtime-plugin`
 
 ## Quickstart (GitHub-first)
 
@@ -80,6 +85,12 @@ streamlit run app.py
 python -m starter_packs.research_assistant --question "What are launch risks?"
 python -m starter_packs.doc_ops --focus "summarize priorities and actions"
 python -m starter_packs.local_etl
+```
+
+7. Optional OpenClaw smoke check
+
+```bash
+./scripts/interop_openclaw_smoke.sh v2026.2.22
 ```
 
 ## Programmatic Example
