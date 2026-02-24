@@ -1,8 +1,8 @@
 # OpenClaw Interop Spike (EAP-071)
 
-Status: Updated through EAP-081 (2026-02-23)  
+Status: Updated through EAP-082 (2026-02-24)  
 Owner: EAP maintainers  
-Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080, EAP-081)
+Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080, EAP-081, EAP-082)
 
 ## 1) Version Snapshot
 
@@ -189,8 +189,30 @@ Recommended sequence:
 - integration validation:
   - `tests/integration/test_telemetry_pack.py`
 
-Proceed to **EAP-082**:
+`EAP-082` target:
 - refresh competitive proof sheet with interop + eval + telemetry evidence.
+
+`EAP-082` follow-up is now complete (see section 12 below).
+
+## 12) Implemented Competitive Proof Sheet Refresh (EAP-082)
+
+`EAP-082` is now implemented in-repo with:
+- refreshed decision brief:
+  - `docs/eap_proof_sheet.md`
+- side-by-side capability table covering:
+  - runtime API
+  - OpenClaw plugin/skills interop
+  - approval checkpoints
+  - resume/replay
+  - MCP bridge
+  - eval gating
+  - telemetry diagnostics
+- reproducible command set for:
+  - OpenClaw interop validation
+  - scorecard/eval gate generation
+  - telemetry pack export
+
+Proceed to **EAP-083**.
 
 ## References (Primary Sources)
 

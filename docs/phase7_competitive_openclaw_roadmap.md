@@ -1,6 +1,6 @@
 # Phase 7 Competitive Roadmap (OpenClaw + Market Positioning)
 
-Status: In progress (through EAP-081, 2026-02-23)
+Status: In progress (through EAP-082, 2026-02-24)
 
 Current status:
 - [x] `EAP-071` interop spike + compatibility matrix published (`docs/openclaw_interop.md`)
@@ -14,7 +14,8 @@ Current status:
 - [x] `EAP-079` evaluation harness + scorecard (CI artifact + regression gate)
 - [x] `EAP-080` vertical starter packs (research assistant, doc ops, local ETL)
 - [x] `EAP-081` operator telemetry pack (dashboard-ready triage artifacts)
-- [ ] `EAP-082` onward
+- [x] `EAP-082` "Why EAP now" competitive proof sheet refresh
+- [ ] `EAP-083` onward
 
 ## Objective
 
@@ -122,6 +123,7 @@ Optional validation track:
 12. `EAP-082` "Why EAP now" competitive page refresh
     - Deliverable: refresh `docs/eap_proof_sheet.md` with new interop and eval evidence
     - Done when: proof sheet includes side-by-side capability table + reproducible commands
+    - Status: complete (`docs/eap_proof_sheet.md`)
 
 ## Guardrails
 
