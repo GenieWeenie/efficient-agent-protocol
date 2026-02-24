@@ -16,19 +16,19 @@ Ship `v1.0` with a stable contract for core runtime APIs, workflow schema, and u
 
 ### API and Namespace Freeze
 
-- [ ] Freeze exported symbols in `eap.protocol`, `eap.environment`, and `eap.agent`.
-- [ ] Document all symbols considered `v1.0` contract surface.
+- [x] Freeze exported symbols in `eap.protocol`, `eap.environment`, and `eap.agent`.
+- [x] Document all symbols considered `v1.0` contract surface.
 - [ ] Identify and remove or deprecate unstable public entry points before tag cut.
 
 ### Workflow and Data Contract Freeze
 
-- [ ] Freeze `PersistedWorkflowGraph` required/optional fields and validation rules.
-- [ ] Freeze executor error payload contract (`validation_error`, `dependency_error`, `tool_execution_error`).
+- [x] Freeze `PersistedWorkflowGraph` required/optional fields and validation rules.
+- [x] Freeze executor error payload contract (`validation_error`, `dependency_error`, `tool_execution_error`).
 - [ ] Freeze pointer lifecycle semantics (TTL and cleanup behavior).
 
 ### Configuration and Operational Defaults
 
-- [ ] Freeze required environment variables and defaults.
+- [x] Freeze required environment variables and defaults.
 - [ ] Verify migration scripts and migration docs cover upgrade from latest `0.x`.
 - [ ] Verify observability defaults (structured logs + metrics export) remain compatible.
 
@@ -46,7 +46,7 @@ Ship `v1.0` with a stable contract for core runtime APIs, workflow schema, and u
 
 ### Documentation and Operator Readiness
 
-- [ ] Update `docs/v1_contract.md` from draft to final `v1.0` contract.
+- [x] Update `docs/v1_contract.md` from draft to final `v1.0` contract.
 - [ ] Ensure README quickstart and docs links are current.
 - [ ] Confirm release runbook and maintainer runbook reflect final `v1.0` process.
 

@@ -1,0 +1,168 @@
+{
+  "generated_from_package_version": "0.1.7",
+  "lock_format_version": 1,
+  "snapshot": {
+    "public_api_exports": {
+      "eap.agent": [
+        "AgentClient",
+        "AnthropicProvider",
+        "CompletionRequest",
+        "CompletionResponse",
+        "GoogleProvider",
+        "LLMProvider",
+        "MacroCompiler",
+        "OpenAIProvider",
+        "ProviderMessage",
+        "WorkflowGraphCompiler",
+        "create_provider"
+      ],
+      "eap.environment": [
+        "AsyncLocalExecutor",
+        "DEFAULT_PLUGIN_ENTRYPOINT_GROUP",
+        "DistributedCoordinator",
+        "InputValidationError",
+        "PluginLoadError",
+        "PluginManifestError",
+        "ToolDefinition",
+        "ToolRegistry",
+        "discover_plugin_entry_points",
+        "load_plugins_into_registry"
+      ],
+      "eap.protocol": [
+        "BatchedMacroRequest",
+        "BranchingRule",
+        "ConversationSession",
+        "ConversationTurn",
+        "EAPSettings",
+        "ExecutionLimits",
+        "ExecutionTraceEvent",
+        "ExecutionTraceEventType",
+        "ExecutorLimitSettings",
+        "LLMClientSettings",
+        "MemoryStrategy",
+        "PersistedWorkflowGraph",
+        "PointerResponse",
+        "PointerStoreBackend",
+        "PostgresPointerStore",
+        "RedisPointerStore",
+        "RetryPolicy",
+        "SQLitePointerStore",
+        "StateManager",
+        "StepApprovalCheckpoint",
+        "StepApprovalDecision",
+        "StepApprovalDecisionType",
+        "ToolCall",
+        "ToolErrorPayload",
+        "ToolExecutionLimit",
+        "ToolLimitSettings",
+        "WorkflowEdgeKind",
+        "WorkflowGraphEdge",
+        "WorkflowGraphNode",
+        "configure_logging",
+        "load_settings"
+      ]
+    },
+    "sdk_http_paths": [
+      "/v1/eap/chat",
+      "/v1/eap/macro/execute",
+      "/v1/eap/macro/generate",
+      "/v1/eap/runs/"
+    ],
+    "settings_env_keys": [
+      "EAP_API_KEY",
+      "EAP_ARCHITECT_API_KEY",
+      "EAP_ARCHITECT_BASE_URL",
+      "EAP_ARCHITECT_EXTRA_HEADERS_JSON",
+      "EAP_ARCHITECT_MODEL",
+      "EAP_ARCHITECT_OPENAI_API_MODE",
+      "EAP_ARCHITECT_TEMPERATURE",
+      "EAP_ARCHITECT_TIMEOUT_SECONDS",
+      "EAP_AUDITOR_API_KEY",
+      "EAP_AUDITOR_BASE_URL",
+      "EAP_AUDITOR_EXTRA_HEADERS_JSON",
+      "EAP_AUDITOR_MODEL",
+      "EAP_AUDITOR_OPENAI_API_MODE",
+      "EAP_AUDITOR_TEMPERATURE",
+      "EAP_AUDITOR_TIMEOUT_SECONDS",
+      "EAP_BASE_URL",
+      "EAP_EXECUTOR_GLOBAL_BURST",
+      "EAP_EXECUTOR_GLOBAL_RPS",
+      "EAP_EXECUTOR_MAX_CONCURRENCY",
+      "EAP_EXECUTOR_PER_TOOL_LIMITS_JSON",
+      "EAP_EXTRA_HEADERS_JSON",
+      "EAP_MODEL",
+      "EAP_OPENAI_API_MODE",
+      "EAP_TEMPERATURE",
+      "EAP_TIMEOUT_SECONDS"
+    ],
+    "tool_error_payload_contract": {
+      "allowed_error_types": [
+        "validation_error",
+        "dependency_error",
+        "tool_execution_error",
+        "approval_rejected"
+      ],
+      "fields": [
+        "details",
+        "error_type",
+        "message",
+        "step_id",
+        "tool_name"
+      ],
+      "schema_required": [
+        "error_type",
+        "message",
+        "step_id",
+        "tool_name"
+      ]
+    },
+    "workflow_schema": {
+      "persisted_workflow_graph": {
+        "properties": [
+          "created_at_utc",
+          "edges",
+          "metadata",
+          "nodes",
+          "updated_at_utc",
+          "version",
+          "workflow_id"
+        ],
+        "required": [
+          "nodes",
+          "workflow_id"
+        ]
+      },
+      "workflow_edge_kind_values": [
+        "branch_fallback",
+        "branch_false",
+        "branch_true",
+        "dependency"
+      ],
+      "workflow_graph_edge": {
+        "properties": [
+          "kind",
+          "source_node_id",
+          "target_node_id"
+        ],
+        "required": [
+          "source_node_id",
+          "target_node_id"
+        ]
+      },
+      "workflow_graph_node": {
+        "properties": [
+          "label",
+          "node_id",
+          "position_x",
+          "position_y",
+          "step"
+        ],
+        "required": [
+          "node_id",
+          "step"
+        ]
+      }
+    }
+  },
+  "snapshot_version": "1.0.0"
+}

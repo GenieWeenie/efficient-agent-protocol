@@ -22,6 +22,11 @@ Version resolution is label-based:
 
 The draft release body is the source of truth for release notes/changelog content.
 
+Compatibility policy:
+
+- If `docs/v1_contract_lock.json` changes, release version must be bumped in the same PR.
+- CI enforces this via `scripts/check_v1_contract.py`.
+
 ## Release Steps
 
 1. Ensure PR labels (`major`/`minor`/`patch`) are correct for merged changes.
@@ -30,6 +35,9 @@ The draft release body is the source of truth for release notes/changelog conten
 4. Publish the release with tag `vX.Y.Z`.
 5. Confirm release workflow success (`.github/workflows/release.yml`).
 6. Verify published package(s) and attach release link in roadmap/issue tracking.
+7. For releases with contract-surface changes:
+   - confirm `docs/v1_contract_lock.json` was updated intentionally
+   - confirm `Breaking Changes` and `Upgrade Notes` sections are populated
 
 ## Publish Authentication
 
