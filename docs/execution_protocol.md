@@ -6,7 +6,7 @@ This protocol prevents ad-hoc execution and keeps all work in a visible ordered 
 
 1. Linear issue state is the execution authority.
 2. This file mirrors the active order (`Now`, `Next`, `Blocked`).
-3. `docs/phase7_competitive_openclaw_roadmap.md` and `docs/phase8_adoption_limits_closure_roadmap.md` are narrative roadmaps, not the live queue.
+3. `docs/phase7_competitive_openclaw_roadmap.md`, `docs/phase8_adoption_limits_closure_roadmap.md`, and `docs/phase9_production_readiness_roadmap.md` are narrative roadmaps, not the live queue.
 
 ## Start Gate (Must Be True Before Coding)
 
@@ -39,8 +39,13 @@ Updated: 2026-02-24
 | 9 | `EAP-092` | `GEN-52` | `Done` | Guided onboarding + doctor |
 | 10 | `EAP-093` | `GEN-53` | `Done` | Self-hosted control-plane reference |
 | 11 | `EAP-094` | `GEN-54` | `Done` | Remote operations governance baseline |
+| 12 | `EAP-095` | `GEN-55` | `Todo` | Runtime policy profile packs + deny-by-default templates |
+| 13 | `EAP-096` | `GEN-56` | `Blocked` | Runtime rate limits and concurrency guards |
+| 14 | `EAP-097` | `GEN-57` | `Blocked` | Audit log export + signed integrity manifest |
+| 15 | `EAP-098` | `GEN-58` | `Blocked` | Backup/restore workflow for state + diagnostics |
+| 16 | `EAP-099` | `GEN-59` | `Blocked` | Long-run soak + chaos reliability gate |
 
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: no `Todo` items remain in the tracked queue.
+Current state: `EAP-095` is the active top `Todo` item.
