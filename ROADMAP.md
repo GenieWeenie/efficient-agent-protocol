@@ -60,6 +60,15 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Publish a self-hosted control-plane reference path plus remote-ops governance baseline.
 - Checklist: `docs/phase8_adoption_limits_closure_roadmap.md`
 
+## Phase 9: Production Readiness (Now)
+
+- Ship policy profile packs for safer default remote operations.
+- Add runtime rate-limit and concurrency control guardrails.
+- Add signed audit export + integrity verification workflow.
+- Add backup/restore operator workflows and recovery guidance.
+- Add long-run soak + chaos reliability gate in CI.
+- Checklist: `docs/phase9_production_readiness_roadmap.md`
+
 ## Done
 
 - Branch protection on `main` with required CI checks and PR review.
