@@ -40,12 +40,12 @@ Updated: 2026-02-24
 | 10 | `EAP-093` | `GEN-53` | `Done` | Self-hosted control-plane reference |
 | 11 | `EAP-094` | `GEN-54` | `Done` | Remote operations governance baseline |
 | 12 | `EAP-095` | `GEN-55` | `Done` | Runtime policy profile packs + deny-by-default templates |
-| 13 | `EAP-096` | `GEN-56` | `Todo` | Runtime rate limits and concurrency guards |
-| 14 | `EAP-097` | `GEN-57` | `Blocked` | Audit log export + signed integrity manifest |
+| 13 | `EAP-096` | `GEN-56` | `Done` | Runtime rate limits and concurrency guards |
+| 14 | `EAP-097` | `GEN-57` | `Todo` | Audit log export + signed integrity manifest |
 | 15 | `EAP-098` | `GEN-58` | `Blocked` | Backup/restore workflow for state + diagnostics |
 | 16 | `EAP-099` | `GEN-59` | `Blocked` | Long-run soak + chaos reliability gate |
 
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: `EAP-096` is the active top `Todo` item.
+Current state: `EAP-097` is the active top `Todo` item.
