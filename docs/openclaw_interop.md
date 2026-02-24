@@ -1,8 +1,8 @@
 # OpenClaw Interop Spike (EAP-071)
 
-Status: Updated through EAP-084 (2026-02-24)  
+Status: Updated through EAP-085 (2026-02-24)  
 Owner: EAP maintainers  
-Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080, EAP-081, EAP-082, EAP-083, EAP-084)
+Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080, EAP-081, EAP-082, EAP-083, EAP-084, EAP-085)
 
 ## 1) Version Snapshot
 
@@ -243,7 +243,24 @@ Recommended sequence:
 - roadmap sync:
   - `docs/phase7_competitive_openclaw_roadmap.md`
 
-Proceed to **EAP-085**.
+`EAP-085` target:
+- define tranche-4 ordered scope and acceptance criteria.
+
+`EAP-085` follow-up is now complete (see section 15 below).
+
+## 15) Scoped Tranche 4 Gap-Closure Items (EAP-085)
+
+`EAP-085` is now implemented in-repo with:
+- scoped tranche-4 execution doc:
+  - `docs/phase7_tranche4_scope.md`
+- ordered implementation backlog and dependencies:
+  - `EAP-086` / `GEN-46` (OpenClaw agent-routing header support)
+  - `EAP-087` / `GEN-48` (OpenClaw `/tools/invoke` bridge), blocked by `EAP-086`
+  - `EAP-088` / `GEN-47` (Responses API adapter path), blocked by `EAP-087`
+- queue sync:
+  - `docs/execution_protocol.md`
+
+Proceed to **EAP-086**.
 
 ## References (Primary Sources)
 
