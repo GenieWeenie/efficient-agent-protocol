@@ -78,3 +78,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 7 `EAP-084` execution governance protocol added with Linear-first ordered queue (`docs/execution_protocol.md`).
 - Phase 7 `EAP-085` tranche-4 scope defined with ordered dependency chain (`EAP-086` -> `EAP-087` -> `EAP-088`).
 - Phase 7 `EAP-086` OpenClaw routing header support merged (`PR #36`).
+- Phase 7 `EAP-087` OpenClaw `/tools/invoke` bridge merged (`PR #37`).

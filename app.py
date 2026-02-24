@@ -311,6 +311,7 @@ with tab1:
                         api_key=settings.architect.api_key,
                         temperature=settings.architect.temperature,
                         timeout_seconds=settings.architect.timeout_seconds,
+                        openai_api_mode=settings.architect.openai_api_mode,
                         extra_headers=settings.architect.extra_headers,
                         system_prompt="You are the ARCHITECT. Create efficient tool-calling macros."
                     )
@@ -335,6 +336,7 @@ with tab1:
                         api_key=settings.auditor.api_key,
                         temperature=settings.auditor.temperature,
                         timeout_seconds=settings.auditor.timeout_seconds,
+                        openai_api_mode=settings.auditor.openai_api_mode,
                         extra_headers=settings.auditor.extra_headers,
                         system_prompt="Review for safety. Respond APPROVED or DENIED."
                     )

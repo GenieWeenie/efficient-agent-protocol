@@ -21,6 +21,16 @@ class ProviderSelectionIntegrationTest(unittest.TestCase):
         self.assertIsInstance(client.provider, OpenAIProvider)
         self.assertEqual(client._headers()["x-openclaw-agent-id"], "router-abc")
 
+    def test_local_provider_can_select_responses_api_mode(self) -> None:
+        client = AgentClient(
+            base_url="http://localhost:1234",
+            model_name="model-a",
+            openai_api_mode="responses",
+        )
+        self.assertIsInstance(client.provider, OpenAIProvider)
+        self.assertEqual(client.provider.api_mode, "responses")
+        self.assertTrue(client.provider.endpoint.endswith("/v1/responses"))
+
     def test_anthropic_provider_selected_when_configured(self) -> None:
         client = AgentClient(
             base_url="https://api.anthropic.com",
@@ -63,6 +73,14 @@ class ProviderSelectionIntegrationTest(unittest.TestCase):
                 model_name="claude-3-5-sonnet-latest",
                 api_key="not-needed",
                 provider_name="anthropic",
+            )
+
+    def test_invalid_openai_api_mode_fails_fast(self) -> None:
+        with self.assertRaises(ValueError):
+            AgentClient(
+                base_url="http://localhost:1234",
+                model_name="model-a",
+                openai_api_mode="legacy",
             )
 
 

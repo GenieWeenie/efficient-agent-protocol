@@ -14,21 +14,34 @@ def _normalize_provider_name(provider_name: str) -> str:
     return (provider_name or "local").strip().lower()
 
 
+def _normalize_openai_api_mode(openai_api_mode: str) -> str:
+    normalized = (openai_api_mode or "chat_completions").strip().lower()
+    if normalized in {"chat_completions", "responses"}:
+        return normalized
+    raise ValueError(f"Unsupported OpenAI API mode: {openai_api_mode}")
+
+
 def _build_provider(
     provider_name: str,
     base_url: str,
     api_key: str,
     timeout_seconds: int,
     extra_headers: Optional[Dict[str, str]] = None,
+    openai_api_mode: str = "chat_completions",
 ) -> LLMProvider:
     normalized = _normalize_provider_name(provider_name)
     if normalized in {"local", "openai"}:
-        endpoint = f"{base_url.rstrip('/')}/v1/chat/completions"
+        normalized_api_mode = _normalize_openai_api_mode(openai_api_mode)
+        if normalized_api_mode == "responses":
+            endpoint = f"{base_url.rstrip('/')}/v1/responses"
+        else:
+            endpoint = f"{base_url.rstrip('/')}/v1/chat/completions"
         return OpenAIProvider(
             endpoint=endpoint,
             api_key=api_key,
             timeout_seconds=timeout_seconds,
             extra_headers=extra_headers,
+            api_mode=normalized_api_mode,
         )
 
     if normalized == "anthropic":
@@ -54,6 +67,7 @@ def create_provider(
     timeout_seconds: int,
     fallback_provider_name: Optional[str] = None,
     extra_headers: Optional[Dict[str, str]] = None,
+    openai_api_mode: str = "chat_completions",
 ) -> LLMProvider:
     try:
         return _build_provider(
@@ -62,6 +76,7 @@ def create_provider(
             api_key=api_key,
             timeout_seconds=timeout_seconds,
             extra_headers=extra_headers,
+            openai_api_mode=openai_api_mode,
         )
     except ValueError:
         if not fallback_provider_name:
@@ -72,4 +87,5 @@ def create_provider(
             api_key=api_key,
             timeout_seconds=timeout_seconds,
             extra_headers=extra_headers,
+            openai_api_mode=openai_api_mode,
         )

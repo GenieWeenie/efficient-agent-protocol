@@ -1,6 +1,6 @@
 # Phase 7 Competitive Roadmap (OpenClaw + Market Positioning)
 
-Status: In progress (through EAP-087 implementation in progress, 2026-02-24)
+Status: In progress (through EAP-088 implementation in progress, 2026-02-24)
 
 Current status:
 - [x] `EAP-071` interop spike + compatibility matrix published (`docs/openclaw_interop.md`)
@@ -19,8 +19,8 @@ Current status:
 - [x] `EAP-084` execution governance protocol + Linear-first queue
 - [x] `EAP-085` tranche 4 scope + acceptance criteria
 - [x] `EAP-086` OpenClaw agent-routing header support
-- [ ] `EAP-087` OpenClaw `/tools/invoke` bridge (in progress)
-- [ ] `EAP-088` onward
+- [x] `EAP-087` OpenClaw `/tools/invoke` bridge
+- [ ] `EAP-088` OpenAI Responses adapter path (in progress)
 
 ## Objective
 
@@ -152,9 +152,10 @@ Optional validation track:
     - Status: complete (PR #36 merged to `main`)
 17. `EAP-087` OpenClaw `/tools/invoke` client bridge
     - Linear: `GEN-48`
-    - Status: in progress (typed tools-invoke client + runtime bridge + integration tests in branch)
+    - Status: complete (PR #37 merged to `main`)
 18. `EAP-088` OpenAI Responses API adapter path
-    - Linear: `GEN-47` (blocked by `EAP-087`)
+    - Linear: `GEN-47`
+    - Status: in progress (explicit API-mode selection + provider `/v1/responses` path under implementation)
 
 ## Guardrails
 
