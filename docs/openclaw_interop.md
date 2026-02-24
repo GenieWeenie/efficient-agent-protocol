@@ -1,8 +1,8 @@
 # OpenClaw Interop Spike (EAP-071)
 
-Status: Updated through EAP-083 (2026-02-24)  
+Status: Updated through EAP-084 (2026-02-24)  
 Owner: EAP maintainers  
-Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080, EAP-081, EAP-082, EAP-083)
+Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080, EAP-081, EAP-082, EAP-083, EAP-084)
 
 ## 1) Version Snapshot
 
@@ -229,7 +229,21 @@ Recommended sequence:
 - proof sheet command references now include verifier execution:
   - `docs/eap_proof_sheet.md`
 
-Proceed to **EAP-084**.
+`EAP-084` follow-up is now complete (see section 14 below).
+
+## 14) Implemented Execution Governance Protocol (EAP-084)
+
+`EAP-084` is now implemented in-repo with:
+- Linear-first execution protocol:
+  - `docs/execution_protocol.md`
+- explicit `Now/Next/Blocked` queue mapped to Linear IDs:
+  - `GEN-45` (`EAP-084`)
+  - `GEN-44` (`EAP-085`)
+  - `GEN-46` (`EAP-086`, blocked)
+- roadmap sync:
+  - `docs/phase7_competitive_openclaw_roadmap.md`
+
+Proceed to **EAP-085**.
 
 ## References (Primary Sources)
 

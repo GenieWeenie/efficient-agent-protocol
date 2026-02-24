@@ -75,3 +75,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 7 `EAP-081` operator telemetry pack added with dashboard-ready diagnostics and failed-run triage artifacts.
 - Phase 7 `EAP-082` competitive proof sheet refreshed with side-by-side capability matrix and reproducible validation commands.
 - Phase 7 `EAP-083` proof sheet contract checks added and enforced in CI to prevent evidence/command drift.
+- Phase 7 `EAP-084` execution governance protocol added with Linear-first ordered queue (`docs/execution_protocol.md`).
