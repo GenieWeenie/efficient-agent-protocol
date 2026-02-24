@@ -1,73 +1,84 @@
-# V1 Contract Draft
+# V1 Compatibility Contract
 
-This document defines the intended contract for `v1.0`.
-Until `v1.0` is released, this is a target contract and may still evolve in `0.x`.
+This document defines the enforced compatibility surface that must remain stable
+for `v1.0` consumers.
 
-## V1.0 Scope
+While the project is still `0.x`, this contract is validated by CI to prevent
+accidental drift.
 
-The `v1.0` goal is a stable local-first execution core with a stable public import surface for:
+## Scope
 
-- Macro planning/validation models
-- Dependency-aware local execution
-- Pointer-backed state persistence
-- Basic provider integration through `AgentClient`
+The `v1.0` contract covers:
 
-## V1.0 Non-Goals
+- Public Python entry-point exports in:
+  - `eap.protocol`
+  - `eap.environment`
+  - `eap.agent`
+- Workflow graph schema fields and enum values for:
+  - `PersistedWorkflowGraph`
+  - `WorkflowGraphNode`
+  - `WorkflowGraphEdge`
+  - `WorkflowEdgeKind`
+- Tool error payload envelope (`ToolErrorPayload`) including allowed `error_type`
+  values.
+- Frozen runtime settings key surface used by `load_settings()`.
+- SDK HTTP operation path set for TypeScript and Go clients.
 
-The following are explicitly out of scope for `v1.0` stability guarantees:
+The source-of-truth lock file is:
+
+- `docs/v1_contract_lock.json`
+
+## Non-Goals
+
+The following remain out of scope for `v1.0` stability guarantees:
 
 - Streamlit UI layout and UX details in `app.py`
 - Internal module organization under non-`eap.*` namespaces
 - Experimental plugin manifest fields not exported through `eap.environment`
 - Advanced distributed coordination semantics beyond documented behavior
 
-## Public API Freeze Candidates (for V1.0)
+## Enforcement
 
-The symbols exported by these module entry points are the stability candidates:
+CI enforces contract stability through:
 
-- `eap.protocol`
-- `eap.environment`
-- `eap.agent`
+- `scripts/check_v1_contract.py`
+- `tests/contract/test_v1_contract_lock.py`
+- `tests/unit/test_v1_contract_gate.py`
 
-The current candidate symbol list is the explicit `__all__` set in those files.
-Additions are allowed in minor releases; removals/behavioral breaks are only allowed in major releases after `v1.0`.
+What fails CI:
 
-## Workflow Schema Freeze Candidates (for V1.0)
+1. Runtime surface differs from `docs/v1_contract_lock.json`.
+2. Contract lock changes without an explicit package version bump.
 
-For `PersistedWorkflowGraph` and related types, these fields are intended to be stable:
+This provides a measurable gate for compatibility changes before `v1.0`.
 
-- `workflow_id`
-- `version`
-- `nodes`
-- `edges`
-- `created_at_utc`
-- `updated_at_utc`
-- `metadata`
+## Intentional Contract Changes
 
-For node and edge models, these fields are intended to be stable:
+If you intentionally change the frozen contract surface:
 
-- Node: `node_id`, `step`, `label`, `position_x`, `position_y`
-- Edge: `source_node_id`, `target_node_id`, `kind`
-
-The validation guarantees in `docs/workflow_schema.md` are also intended to be part of the `v1.0` contract.
+1. Bump package version in `pyproject.toml`.
+2. Regenerate lock:
+   - `PYTHONPATH=. python scripts/check_v1_contract.py --write-lock`
+3. Update this document and release notes.
+4. Ensure CI passes with the new lock.
 
 ## Supported User Profile
 
-This project is currently best for:
+Best fit:
 
-- Python developers building local tool-execution agents
-- Teams that want pointer-backed state and execution traces
-- Users comfortable with pre-1.0 iteration and explicit upgrade checks
+- Python developers building local tool-execution agents.
+- Teams that need deterministic execution traces and pointer-backed state.
+- Users comfortable with explicit compatibility gates during pre-`1.0`.
 
-This project is not yet ideal for:
+Not ideal yet:
 
-- Teams needing strict long-term API stability today
-- Non-technical users expecting no-code setup
-- Regulated production environments requiring formal support SLAs
+- Teams requiring long-term, SLA-backed support commitments.
+- Non-technical users expecting no-code setup.
+- Fully managed hosted-control-plane expectations.
 
-## Release Notes Contract (starting now)
+## Release Notes Requirements
 
-Each release notes entry should include, when applicable:
+Every release must include, when applicable:
 
 - `Added`
 - `Changed`

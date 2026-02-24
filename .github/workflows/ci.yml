@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -91,6 +93,14 @@ jobs:
         run: |
           python scripts/verify_proof_sheet.py
           python -m pytest -q tests/contract/test_eap_proof_sheet_contract.py
+
+      - name: V1 compatibility contract gate
+        if: matrix.python-version == '3.11'
+        run: |
+          python scripts/check_v1_contract.py
+          python -m pytest -q \
+            tests/contract/test_v1_contract_lock.py \
+            tests/unit/test_v1_contract_gate.py
 
       - name: Dependency vulnerability audit
         if: matrix.python-version == '3.11'
