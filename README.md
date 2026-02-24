@@ -1,7 +1,7 @@
 # Efficient Agent Protocol (EAP)
 
 [![CI](https://github.com/GenieWeenie/efficient-agent-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/GenieWeenie/efficient-agent-protocol/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+![Python](https://img.shields.io/badge/python-3.9--3.13-blue)
 
 > Status: Experimental (pre-1.0). APIs and schema may change.
 > See `STABILITY.md` and `ROADMAP.md` for guarantees and planned milestones.
@@ -72,13 +72,29 @@ Not ideal yet:
 ## Quickstart (GitHub-first)
 
 Requirements:
-- Python 3.9+
+- Python 3.9-3.13 (3.11 recommended)
 
-1. Install
+Recommended one-command bootstrap (macOS/Linux):
 
 ```bash
 git clone https://github.com/GenieWeenie/efficient-agent-protocol.git
 cd efficient-agent-protocol
+./scripts/bootstrap_local.sh
+```
+
+Expected output includes:
+- `Smoke workflow succeeded.`
+- `Trace artifact: .../artifacts/bootstrap/bootstrap_trace.json`
+
+Windows fallback:
+- Use WSL2 (Ubuntu) and run the same bootstrap command inside WSL.
+- If you are not using WSL2, follow the manual setup path below.
+
+Manual setup (cross-platform):
+
+1. Install package
+
+```bash
 pip install -e .
 ```
 
@@ -157,6 +173,7 @@ macro = architect.generate_macro("Read README.md and summarize setup steps", man
 ## Common Commands
 
 ```bash
+./scripts/bootstrap_local.sh
 python3 -m pytest -q
 pre-commit run --all-files
 python3 scripts/migrate_state_db.py --db-path agent_state.db --dry-run
