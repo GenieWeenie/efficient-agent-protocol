@@ -33,8 +33,8 @@ Updated: 2026-02-24
 | 3 | `EAP-086` | `GEN-46` | `Done` | OpenClaw agent-routing header support |
 | 4 | `EAP-087` | `GEN-48` | `Done` | OpenClaw `/tools/invoke` bridge |
 | 5 | `EAP-088` | `GEN-47` | `Done` | OpenAI Responses API adapter path |
-| 6 | `EAP-089` | `GEN-49` | `Todo` | Responses streaming parity |
-| 7 | `EAP-090` | `GEN-50` | `Todo (Blocked)` | Blocked by `GEN-49` |
+| 6 | `EAP-089` | `GEN-49` | `Done` | Responses streaming parity |
+| 7 | `EAP-090` | `GEN-50` | `Todo` | v1 compatibility enforcement |
 | 8 | `EAP-091` | `GEN-51` | `Todo (Blocked)` | Blocked by `GEN-50` |
 | 9 | `EAP-092` | `GEN-52` | `Todo (Blocked)` | Blocked by `GEN-51` |
 | 10 | `EAP-093` | `GEN-53` | `Todo (Blocked)` | Blocked by `GEN-52` |
