@@ -43,7 +43,7 @@ Not ideal yet:
 ## Current Limits (Honest)
 
 - Pre-1.0 contract: APIs and schema can still change (`STABILITY.md`).
-- `responses` mode does not support streaming yet (`chat_completions` does).
+- `responses` streaming behavior depends on gateway SSE event support and can vary by gateway release/configuration.
 - This is an engineering-first runtime, not a no-code platform.
 
 ## What You Get
