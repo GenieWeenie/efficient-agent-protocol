@@ -104,6 +104,18 @@ Fix:
 - See:
   - `docs/remote_ops_governance.md`
 
+### Runtime service fails with `disallowed by profile` or `unknown template`
+Cause:
+- `--scoped-auth-config` token entry requests scopes not allowed by the selected policy profile
+  or references a template name not defined for that profile.
+
+Fix:
+- Verify `policy_profile` is one of `strict`, `balanced`, `trusted`.
+- Verify token `template` is one of `viewer`, `operator`, `auditor`, `admin`.
+- For strict deployments, remove elevated scopes such as `runs:resume:any`.
+- See:
+  - `docs/remote_ops_governance.md`
+
 ### Operator UI is reachable but no runs appear
 Cause:
 - No workflow has executed yet, or runtime and UI are not sharing the same state volume.

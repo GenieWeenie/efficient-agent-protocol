@@ -77,6 +77,51 @@ Operational controls:
 }
 ```
 
+## Policy Profiles And Templates (EAP-095)
+
+Runtime scoped auth now supports built-in policy profiles with template-based grants.
+
+Default profile: `strict` (deny-by-default for any scope not granted by template/explicit config).
+
+Profiles:
+
+- `strict`
+  - `viewer`: `runs:read`, `pointers:read`
+  - `operator`: `runs:execute`, `runs:resume`, `runs:read`, `pointers:read`
+  - `auditor`: `runs:read`, `pointers:read`, `runs:read:any`, `pointers:read:any`
+  - `admin`: `runs:read`, `pointers:read`, `runs:read:any`, `pointers:read:any`
+- `balanced`
+  - same templates as `strict`, but `admin` also gets resume-any (`runs:resume:any`)
+- `trusted`
+  - same templates as `strict`, but `admin` maps to `*` (full runtime scope)
+
+Policy-profile config format:
+
+```json
+{
+  "policy_profile": "strict",
+  "tokens": [
+    {
+      "token": "token-viewer",
+      "actor_id": "ops-viewer",
+      "template": "viewer"
+    },
+    {
+      "token": "token-operator",
+      "actor_id": "ops-operator",
+      "template": "operator"
+    }
+  ]
+}
+```
+
+Per-token overrides:
+
+- optional `policy_profile` to override the file default for one token
+- optional explicit `scopes` list to add permitted scopes for that token
+- scopes disallowed by selected profile are rejected at startup
+- tokens resolving to zero scopes are rejected (deny-by-default)
+
 Run with scoped config:
 
 ```bash
@@ -84,6 +129,7 @@ python scripts/eap_runtime_service.py \
   --host 0.0.0.0 \
   --port 8080 \
   --db-path /var/lib/eap/agent_state.db \
+  --policy-profile strict \
   --scoped-auth-config /etc/eap/scoped_auth.json
 ```
 

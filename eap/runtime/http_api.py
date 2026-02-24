@@ -11,25 +11,16 @@ from pydantic import ValidationError
 
 from eap.environment import AsyncLocalExecutor
 from eap.protocol import BatchedMacroRequest, StateManager
-
-
-SCOPE_RUNS_EXECUTE = "runs:execute"
-SCOPE_RUNS_RESUME = "runs:resume"
-SCOPE_RUNS_READ = "runs:read"
-SCOPE_POINTERS_READ = "pointers:read"
-SCOPE_RUNS_RESUME_ANY = "runs:resume:any"
-SCOPE_RUNS_READ_ANY = "runs:read:any"
-SCOPE_POINTERS_READ_ANY = "pointers:read:any"
-
-FULL_RUNTIME_SCOPES = {
-    SCOPE_RUNS_EXECUTE,
-    SCOPE_RUNS_RESUME,
-    SCOPE_RUNS_READ,
+from eap.runtime.auth_scopes import (
+    FULL_RUNTIME_SCOPES,
     SCOPE_POINTERS_READ,
-    SCOPE_RUNS_RESUME_ANY,
-    SCOPE_RUNS_READ_ANY,
     SCOPE_POINTERS_READ_ANY,
-}
+    SCOPE_RUNS_EXECUTE,
+    SCOPE_RUNS_READ,
+    SCOPE_RUNS_READ_ANY,
+    SCOPE_RUNS_RESUME,
+    SCOPE_RUNS_RESUME_ANY,
+)
 
 
 def _timestamp_utc() -> str:
@@ -87,6 +78,7 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
                 "actor_id": "anonymous",
                 "scopes": set(FULL_RUNTIME_SCOPES),
                 "auth_subject": "anonymous",
+                "policy_profile": "trusted",
             }
 
         if not token:
@@ -98,6 +90,8 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
                 "actor_id": policy.get("actor_id"),
                 "scopes": set(policy.get("scopes", set())),
                 "auth_subject": policy.get("auth_subject"),
+                "policy_profile": policy.get("policy_profile"),
+                "template": policy.get("template"),
             }
 
         if required and token == required:
@@ -105,6 +99,7 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
                 "actor_id": "runtime-admin",
                 "scopes": set(FULL_RUNTIME_SCOPES),
                 "auth_subject": "required_bearer_token",
+                "policy_profile": "trusted",
             }
         return None
 
@@ -125,13 +120,20 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         return context
 
     def _to_actor_metadata(self, auth_context: Dict[str, Any], operation: str) -> Dict[str, Any]:
-        return {
+        metadata: Dict[str, Any] = {
             "actor_id": auth_context.get("actor_id"),
             "owner_actor_id": auth_context.get("actor_id"),
             "actor_scopes": sorted(set(auth_context.get("scopes", set()))),
             "operation": operation,
             "auth_subject": auth_context.get("auth_subject"),
         }
+        policy_profile = auth_context.get("policy_profile")
+        if policy_profile:
+            metadata["policy_profile"] = policy_profile
+        policy_template = auth_context.get("template")
+        if policy_template:
+            metadata["policy_template"] = policy_template
+        return metadata
 
     def _check_run_access(
         self,

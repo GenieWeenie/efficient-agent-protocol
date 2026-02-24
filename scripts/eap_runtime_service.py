@@ -12,6 +12,7 @@ from eap.environment import AsyncLocalExecutor, ToolRegistry
 from eap.environment.tools import ANALYZE_SCHEMA, FETCH_SCHEMA, analyze_data, fetch_user_data
 from eap.protocol import StateManager
 from eap.runtime import EAPRuntimeHTTPServer
+from eap.runtime.policy_profiles import DEFAULT_POLICY_PROFILE, build_scoped_token_policies
 
 
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -42,7 +43,17 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="",
         help=(
             "Optional JSON file defining scoped bearer tokens. "
-            "Format: {\"tokens\":[{\"token\":\"...\",\"actor_id\":\"...\",\"scopes\":[\"runs:read\", ...]}]}"
+            "Format supports policy profiles + templates: "
+            "{\"policy_profile\":\"strict\",\"tokens\":[{\"token\":\"...\",\"actor_id\":\"...\",\"template\":\"viewer\"}]}"
+        ),
+    )
+    parser.add_argument(
+        "--policy-profile",
+        default=DEFAULT_POLICY_PROFILE,
+        choices=("strict", "balanced", "trusted"),
+        help=(
+            "Default policy profile applied to scoped token entries when per-token profile is omitted "
+            "(default: strict)."
         ),
     )
     return parser.parse_args(argv)
@@ -54,36 +65,19 @@ def _register_default_tools(registry: ToolRegistry) -> None:
     registry.register("analyze_data", analyze_data, ANALYZE_SCHEMA)
 
 
-def _load_scoped_auth_config(path: str) -> Dict[str, Dict[str, Any]]:
+def _load_scoped_auth_config(
+    path: str,
+    *,
+    default_policy_profile: str,
+) -> tuple[Dict[str, Dict[str, Any]], str]:
     if not path.strip():
-        return {}
+        return {}, default_policy_profile
     config_path = Path(path).resolve()
     payload = json.loads(config_path.read_text(encoding="utf-8"))
-    tokens = payload.get("tokens")
-    if not isinstance(tokens, list):
-        raise ValueError("scoped auth config must include a 'tokens' array.")
-
-    scoped_tokens: Dict[str, Dict[str, Any]] = {}
-    for item in tokens:
-        if not isinstance(item, dict):
-            continue
-        token = str(item.get("token", "")).strip()
-        actor_id = str(item.get("actor_id", "")).strip()
-        scopes = item.get("scopes", [])
-        if isinstance(scopes, str):
-            scopes = [part.strip() for part in scopes.split(",") if part.strip()]
-        elif isinstance(scopes, list):
-            scopes = [str(part).strip() for part in scopes if str(part).strip()]
-        else:
-            scopes = []
-        if not token or not actor_id or not scopes:
-            continue
-        scoped_tokens[token] = {
-            "actor_id": actor_id,
-            "auth_subject": str(item.get("auth_subject", "")).strip() or f"scoped_token:{actor_id}",
-            "scopes": scopes,
-        }
-    return scoped_tokens
+    return build_scoped_token_policies(
+        payload,
+        default_policy_profile=default_policy_profile,
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -94,7 +88,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
     bearer_token = args.bearer_token.strip()
     try:
-        scoped_tokens = _load_scoped_auth_config(args.scoped_auth_config)
+        scoped_tokens, active_policy_profile = _load_scoped_auth_config(
+            args.scoped_auth_config,
+            default_policy_profile=args.policy_profile,
+        )
     except Exception as exc:
         print(f"[runtime:error] failed to load --scoped-auth-config: {exc}")
         return 1
@@ -132,6 +129,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print("[runtime] EAP runtime server started.")
     print(f"[runtime] base_url={server.base_url}")
     print(f"[runtime] db_path={db_path}")
+    print(f"[runtime] policy_profile={active_policy_profile}")
     print(f"[runtime] scoped_auth_tokens={len(scoped_tokens)}")
     print("[runtime] tools=fetch_user_data,analyze_data")
 
