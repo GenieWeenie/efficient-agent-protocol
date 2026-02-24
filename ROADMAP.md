@@ -52,7 +52,7 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Publish updated competitive proof artifacts with reproducible evidence.
 - Checklist: `docs/phase7_competitive_openclaw_roadmap.md`
 
-## Phase 8: Adoption + Limits Closure (Now)
+## Phase 8: Adoption + Limits Closure (Completed)
 
 - Close remaining `responses`-mode parity gaps.
 - Convert pre-`1.0` uncertainty into explicit `v1` compatibility gates.
@@ -93,3 +93,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 8 `EAP-091` one-command bootstrap completed (`GEN-51`, PR #46).
 - Phase 8 `EAP-092` guided onboarding + doctor completed (`GEN-52`, PR #48).
 - Phase 8 `EAP-093` self-hosted control-plane reference completed (`GEN-53`, PR #50).
+- Phase 8 `EAP-094` remote operations governance baseline completed (`GEN-54`, PR #52).
