@@ -88,3 +88,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 7 `EAP-086` OpenClaw routing header support merged (`PR #36`).
 - Phase 7 `EAP-087` OpenClaw `/tools/invoke` bridge merged (`PR #37`).
 - Phase 7 `EAP-088` OpenAI Responses API adapter path completed (`GEN-47`).
+- Phase 8 `EAP-089` Responses streaming parity completed (`GEN-49`, PR #42).
