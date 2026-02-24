@@ -34,8 +34,12 @@ The exporter writes:
 - `saturation.json`
   - aggregate and per-run saturation metrics
   - includes wait times and rate-limit pressure
+- `actors.json`
+  - ownership and last-actor counts across analyzed runs
+  - per-run actor metadata (`owner_actor_id`, `actor_id`, `operation`, scopes)
 - `failed_run_diagnostics.json`
   - run summary
+  - actor metadata for the diagnosed run
   - root failure event
   - event timeline
   - dependency cascade count

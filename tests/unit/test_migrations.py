@@ -41,6 +41,20 @@ def _create_legacy_schema(db_path: str) -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS execution_run_checkpoints (
+                run_id TEXT PRIMARY KEY,
+                started_at_utc TEXT NOT NULL,
+                updated_at_utc TEXT NOT NULL,
+                status TEXT NOT NULL,
+                macro_payload TEXT NOT NULL,
+                step_status_payload TEXT NOT NULL,
+                branch_decisions_payload TEXT NOT NULL,
+                final_pointer_id TEXT
+            )
+            """
+        )
 
 
 class SqliteMigrationTest(unittest.TestCase):
@@ -58,7 +72,7 @@ class SqliteMigrationTest(unittest.TestCase):
         self.assertEqual([step.version for step in pending], list(range(1, LATEST_SCHEMA_VERSION + 1)))
 
         result = apply_sqlite_migrations(self.db_path, dry_run=True)
-        self.assertEqual(result["planned_versions"], [1, 2, 3, 4])
+        self.assertEqual(result["planned_versions"], [1, 2, 3, 4, 5])
         self.assertEqual(result["applied_versions"], [])
 
         with sqlite3.connect(self.db_path) as conn:
@@ -69,7 +83,7 @@ class SqliteMigrationTest(unittest.TestCase):
 
     def test_apply_migrations_is_idempotent(self) -> None:
         first = apply_sqlite_migrations(self.db_path)
-        self.assertEqual(first["applied_versions"], [1, 2, 3, 4])
+        self.assertEqual(first["applied_versions"], [1, 2, 3, 4, 5])
         self.assertEqual(first["final_version"], LATEST_SCHEMA_VERSION)
 
         with sqlite3.connect(self.db_path) as conn:
@@ -99,6 +113,11 @@ class SqliteMigrationTest(unittest.TestCase):
                 "SELECT 1 FROM sqlite_master WHERE type='table' AND name='execution_run_diagnostics'"
             ).fetchone()
             self.assertIsNotNone(diagnostics_row)
+            checkpoint_columns = {
+                row[1]
+                for row in conn.execute("PRAGMA table_info(execution_run_checkpoints)").fetchall()
+            }
+            self.assertIn("actor_metadata_payload", checkpoint_columns)
 
         second = apply_sqlite_migrations(self.db_path)
         self.assertEqual(second["applied_versions"], [])

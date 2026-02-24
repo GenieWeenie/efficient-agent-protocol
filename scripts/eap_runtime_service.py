@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 import signal
 import threading
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Dict, Sequence
 
 from eap.environment import AsyncLocalExecutor, ToolRegistry
 from eap.environment.tools import ANALYZE_SCHEMA, FETCH_SCHEMA, analyze_data, fetch_user_data
@@ -33,8 +34,16 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--bearer-token",
-        required=True,
-        help="Required bearer token for /v1/eap/* endpoints.",
+        default="",
+        help="Optional admin bearer token for /v1/eap/* endpoints.",
+    )
+    parser.add_argument(
+        "--scoped-auth-config",
+        default="",
+        help=(
+            "Optional JSON file defining scoped bearer tokens. "
+            "Format: {\"tokens\":[{\"token\":\"...\",\"actor_id\":\"...\",\"scopes\":[\"runs:read\", ...]}]}"
+        ),
     )
     return parser.parse_args(argv)
 
@@ -45,14 +54,53 @@ def _register_default_tools(registry: ToolRegistry) -> None:
     registry.register("analyze_data", analyze_data, ANALYZE_SCHEMA)
 
 
+def _load_scoped_auth_config(path: str) -> Dict[str, Dict[str, Any]]:
+    if not path.strip():
+        return {}
+    config_path = Path(path).resolve()
+    payload = json.loads(config_path.read_text(encoding="utf-8"))
+    tokens = payload.get("tokens")
+    if not isinstance(tokens, list):
+        raise ValueError("scoped auth config must include a 'tokens' array.")
+
+    scoped_tokens: Dict[str, Dict[str, Any]] = {}
+    for item in tokens:
+        if not isinstance(item, dict):
+            continue
+        token = str(item.get("token", "")).strip()
+        actor_id = str(item.get("actor_id", "")).strip()
+        scopes = item.get("scopes", [])
+        if isinstance(scopes, str):
+            scopes = [part.strip() for part in scopes.split(",") if part.strip()]
+        elif isinstance(scopes, list):
+            scopes = [str(part).strip() for part in scopes if str(part).strip()]
+        else:
+            scopes = []
+        if not token or not actor_id or not scopes:
+            continue
+        scoped_tokens[token] = {
+            "actor_id": actor_id,
+            "auth_subject": str(item.get("auth_subject", "")).strip() or f"scoped_token:{actor_id}",
+            "scopes": scopes,
+        }
+    return scoped_tokens
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
 
     if args.port <= 0 or args.port > 65535:
         print("[runtime:error] --port must be between 1 and 65535.")
         return 1
-    if not args.bearer_token.strip():
-        print("[runtime:error] --bearer-token cannot be empty.")
+    bearer_token = args.bearer_token.strip()
+    try:
+        scoped_tokens = _load_scoped_auth_config(args.scoped_auth_config)
+    except Exception as exc:
+        print(f"[runtime:error] failed to load --scoped-auth-config: {exc}")
+        return 1
+
+    if not bearer_token and not scoped_tokens:
+        print("[runtime:error] provide --bearer-token and/or --scoped-auth-config.")
         return 1
 
     db_path = Path(args.db_path).resolve()
@@ -68,7 +116,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         state_manager=state_manager,
         host=args.host,
         port=args.port,
-        required_bearer_token=args.bearer_token.strip(),
+        required_bearer_token=bearer_token or None,
+        scoped_bearer_tokens=scoped_tokens or None,
     ).start()
 
     stop_event = threading.Event()
@@ -83,6 +132,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print("[runtime] EAP runtime server started.")
     print(f"[runtime] base_url={server.base_url}")
     print(f"[runtime] db_path={db_path}")
+    print(f"[runtime] scoped_auth_tokens={len(scoped_tokens)}")
     print("[runtime] tools=fetch_user_data,analyze_data")
 
     try:

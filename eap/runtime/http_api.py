@@ -4,13 +4,32 @@ import threading
 import uuid
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Set
 from urllib.parse import unquote, urlparse
 
 from pydantic import ValidationError
 
 from eap.environment import AsyncLocalExecutor
 from eap.protocol import BatchedMacroRequest, StateManager
+
+
+SCOPE_RUNS_EXECUTE = "runs:execute"
+SCOPE_RUNS_RESUME = "runs:resume"
+SCOPE_RUNS_READ = "runs:read"
+SCOPE_POINTERS_READ = "pointers:read"
+SCOPE_RUNS_RESUME_ANY = "runs:resume:any"
+SCOPE_RUNS_READ_ANY = "runs:read:any"
+SCOPE_POINTERS_READ_ANY = "pointers:read:any"
+
+FULL_RUNTIME_SCOPES = {
+    SCOPE_RUNS_EXECUTE,
+    SCOPE_RUNS_RESUME,
+    SCOPE_RUNS_READ,
+    SCOPE_POINTERS_READ,
+    SCOPE_RUNS_RESUME_ANY,
+    SCOPE_RUNS_READ_ANY,
+    SCOPE_POINTERS_READ_ANY,
+}
 
 
 def _timestamp_utc() -> str:
@@ -51,21 +70,91 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         # Keep test/runtime output quiet unless callers choose to add logging.
         return
 
-    def _require_auth(self) -> bool:
-        required = self.server.required_bearer_token
-        if not required:
-            return True
-
+    def _parse_bearer_token(self) -> Optional[str]:
         auth_header = (self.headers.get("Authorization") or "").strip()
         if not auth_header.startswith("Bearer "):
-            self._send_error(401, "unauthorized", "Missing or invalid bearer token.")
-            return False
-
+            return None
         token = auth_header[len("Bearer ") :].strip()
-        if token != required:
+        return token or None
+
+    def _resolve_auth_context(self) -> Optional[Dict[str, Any]]:
+        token = self._parse_bearer_token()
+        scoped_policies = self.server.scoped_bearer_tokens
+        required = self.server.required_bearer_token
+
+        if not required and not scoped_policies:
+            return {
+                "actor_id": "anonymous",
+                "scopes": set(FULL_RUNTIME_SCOPES),
+                "auth_subject": "anonymous",
+            }
+
+        if not token:
+            return None
+
+        if token in scoped_policies:
+            policy = scoped_policies[token]
+            return {
+                "actor_id": policy.get("actor_id"),
+                "scopes": set(policy.get("scopes", set())),
+                "auth_subject": policy.get("auth_subject"),
+            }
+
+        if required and token == required:
+            return {
+                "actor_id": "runtime-admin",
+                "scopes": set(FULL_RUNTIME_SCOPES),
+                "auth_subject": "required_bearer_token",
+            }
+        return None
+
+    def _require_auth(self, required_scope: str) -> Optional[Dict[str, Any]]:
+        context = self._resolve_auth_context()
+        if context is None:
             self._send_error(401, "unauthorized", "Missing or invalid bearer token.")
-            return False
-        return True
+            return None
+
+        scopes: Set[str] = set(context.get("scopes", set()))
+        if required_scope not in scopes and "*" not in scopes:
+            self._send_error(
+                403,
+                "forbidden",
+                f"Missing required scope '{required_scope}'.",
+            )
+            return None
+        return context
+
+    def _to_actor_metadata(self, auth_context: Dict[str, Any], operation: str) -> Dict[str, Any]:
+        return {
+            "actor_id": auth_context.get("actor_id"),
+            "owner_actor_id": auth_context.get("actor_id"),
+            "actor_scopes": sorted(set(auth_context.get("scopes", set()))),
+            "operation": operation,
+            "auth_subject": auth_context.get("auth_subject"),
+        }
+
+    def _check_run_access(
+        self,
+        run_id: str,
+        auth_context: Dict[str, Any],
+        *,
+        allow_any_scope: str,
+    ) -> bool:
+        actor_metadata = self.server.state_manager.get_run_actor_metadata(run_id=run_id)
+        owner_actor_id = actor_metadata.get("owner_actor_id") or actor_metadata.get("actor_id")
+        if not owner_actor_id:
+            return True
+
+        actor_id = auth_context.get("actor_id")
+        scopes: Set[str] = set(auth_context.get("scopes", set()))
+        if actor_id == owner_actor_id or allow_any_scope in scopes or "*" in scopes:
+            return True
+        self._send_error(
+            403,
+            "forbidden",
+            f"Actor '{actor_id}' is not allowed to access run '{run_id}'.",
+        )
+        return False
 
     def _read_json_body(self, required: bool = True) -> Optional[Dict[str, Any]]:
         content_length_header = self.headers.get("Content-Length")
@@ -98,7 +187,8 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         return payload
 
     def _handle_execute_macro(self) -> None:
-        if not self._require_auth():
+        auth_context = self._require_auth(SCOPE_RUNS_EXECUTE)
+        if auth_context is None:
             return
 
         payload = self._read_json_body()
@@ -122,7 +212,12 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             return
 
         try:
-            result = asyncio.run(self.server.executor.execute_macro(macro))
+            result = asyncio.run(
+                self.server.executor.execute_macro(
+                    macro,
+                    actor_metadata=self._to_actor_metadata(auth_context, operation="execute"),
+                )
+            )
         except Exception as exc:  # pragma: no cover - defensive safeguard
             self._send_error(
                 500,
@@ -149,10 +244,17 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         self._send_json(200, response_payload)
 
     def _handle_resume_run(self, run_id: str) -> None:
-        if not self._require_auth():
+        auth_context = self._require_auth(SCOPE_RUNS_RESUME)
+        if auth_context is None:
             return
         if not run_id:
             self._send_error(400, "validation_error", "run_id is required.")
+            return
+        if not self._check_run_access(
+            run_id=run_id,
+            auth_context=auth_context,
+            allow_any_scope=SCOPE_RUNS_RESUME_ANY,
+        ):
             return
 
         payload = self._read_json_body(required=False)
@@ -164,7 +266,13 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             return
 
         try:
-            result = asyncio.run(self.server.executor.resume_run(run_id=run_id, approvals=approvals))
+            result = asyncio.run(
+                self.server.executor.resume_run(
+                    run_id=run_id,
+                    approvals=approvals,
+                    actor_metadata=self._to_actor_metadata(auth_context, operation="resume"),
+                )
+            )
         except KeyError:
             self._send_error(404, "not_found", f"Execution checkpoint for run '{run_id}' not found.")
             return
@@ -206,10 +314,17 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         self._send_json(200, response_payload)
 
     def _handle_get_run(self, run_id: str) -> None:
-        if not self._require_auth():
+        auth_context = self._require_auth(SCOPE_RUNS_READ)
+        if auth_context is None:
             return
         if not run_id:
             self._send_error(400, "validation_error", "run_id is required.")
+            return
+        if not self._check_run_access(
+            run_id=run_id,
+            auth_context=auth_context,
+            allow_any_scope=SCOPE_RUNS_READ_ANY,
+        ):
             return
 
         try:
@@ -222,6 +337,7 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             event.model_dump(mode="json")
             for event in self.server.state_manager.list_trace_events(run_id)
         ]
+        actor_metadata = self.server.state_manager.get_run_actor_metadata(run_id=run_id)
         status = "failed" if summary.get("failed_steps", 0) > 0 else "succeeded"
 
         response_payload = {
@@ -230,13 +346,15 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             "run_id": run_id,
             "status": status,
             "summary": summary,
+            "actor_metadata": actor_metadata,
             "trace_event_count": len(trace_events),
             "trace_events": trace_events,
         }
         self._send_json(200, response_payload)
 
     def _handle_get_pointer_summary(self, pointer_id: str) -> None:
-        if not self._require_auth():
+        auth_context = self._require_auth(SCOPE_POINTERS_READ)
+        if auth_context is None:
             return
         if not pointer_id:
             self._send_error(400, "validation_error", "pointer_id is required.")
@@ -253,6 +371,18 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         if pointer is None:
             self._send_error(404, "not_found", f"Pointer '{pointer_id}' not found.")
             return
+
+        pointer_metadata = pointer.get("metadata") if isinstance(pointer.get("metadata"), dict) else {}
+        run_id = pointer_metadata.get("execution_run_id")
+        if isinstance(run_id, str) and run_id:
+            scopes: Set[str] = set(auth_context.get("scopes", set()))
+            if SCOPE_POINTERS_READ_ANY not in scopes and "*" not in scopes:
+                if not self._check_run_access(
+                    run_id=run_id,
+                    auth_context=auth_context,
+                    allow_any_scope=SCOPE_RUNS_READ_ANY,
+                ):
+                    return
 
         response_payload = {
             "request_id": _request_id(),
@@ -301,15 +431,52 @@ class _RuntimeHTTPServer(ThreadingHTTPServer):
         executor: AsyncLocalExecutor,
         state_manager: StateManager,
         required_bearer_token: Optional[str],
+        scoped_bearer_tokens: Optional[Dict[str, Dict[str, Any]]],
     ):
         super().__init__(server_address, RequestHandlerClass)
         self.executor = executor
         self.state_manager = state_manager
         self.required_bearer_token = required_bearer_token
+        self.scoped_bearer_tokens = scoped_bearer_tokens or {}
 
 
 class EAPRuntimeHTTPServer:
     """Minimal HTTP runtime endpoints for external orchestrator integration."""
+
+    @staticmethod
+    def _normalize_scoped_bearer_tokens(
+        scoped_bearer_tokens: Optional[Dict[str, Dict[str, Any]]],
+    ) -> Dict[str, Dict[str, Any]]:
+        normalized: Dict[str, Dict[str, Any]] = {}
+        if not scoped_bearer_tokens:
+            return normalized
+
+        for raw_token, raw_policy in scoped_bearer_tokens.items():
+            token = str(raw_token).strip()
+            if not token or not isinstance(raw_policy, dict):
+                continue
+            actor_id = str(raw_policy.get("actor_id", "")).strip()
+            auth_subject = str(raw_policy.get("auth_subject", "")).strip()
+
+            scopes_value = raw_policy.get("scopes", [])
+            if isinstance(scopes_value, str):
+                scopes = [scope.strip() for scope in scopes_value.split(",") if scope.strip()]
+            elif isinstance(scopes_value, list):
+                scopes = [str(scope).strip() for scope in scopes_value if str(scope).strip()]
+            else:
+                scopes = []
+            scopes = [scope for scope in scopes if scope in FULL_RUNTIME_SCOPES or scope == "*"]
+
+            if not actor_id:
+                continue
+            if not scopes:
+                continue
+            normalized[token] = {
+                "actor_id": actor_id,
+                "auth_subject": auth_subject or f"scoped_token:{actor_id}",
+                "scopes": sorted(set(scopes)),
+            }
+        return normalized
 
     def __init__(
         self,
@@ -318,14 +485,17 @@ class EAPRuntimeHTTPServer:
         host: str = "127.0.0.1",
         port: int = 0,
         required_bearer_token: Optional[str] = None,
+        scoped_bearer_tokens: Optional[Dict[str, Dict[str, Any]]] = None,
     ):
         self._host = host
+        normalized_scoped_tokens = self._normalize_scoped_bearer_tokens(scoped_bearer_tokens)
         self._httpd = _RuntimeHTTPServer(
             (host, port),
             _RuntimeRequestHandler,
             executor=executor,
             state_manager=state_manager,
             required_bearer_token=required_bearer_token,
+            scoped_bearer_tokens=normalized_scoped_tokens,
         )
         self._thread: Optional[threading.Thread] = None
 

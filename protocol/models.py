@@ -256,9 +256,30 @@ class ExecutionTraceEvent(BaseModel):
         default=None,
         description="Structured error payload for failed/retried events.",
     )
+    actor_id: Optional[str] = Field(
+        default=None,
+        description="Actor ID associated with the run-affecting operation for this event.",
+    )
+    actor_scopes: Optional[List[str]] = Field(
+        default=None,
+        description="Authorization scopes granted to the actor when the event was emitted.",
+    )
+    operation: Optional[str] = Field(
+        default=None,
+        description="Run-affecting operation context for this event: execute | resume.",
+    )
 
     @model_validator(mode="after")
     def validate_event_contract(self) -> "ExecutionTraceEvent":
+        if self.actor_scopes is not None:
+            normalized_scopes = sorted({scope.strip() for scope in self.actor_scopes if scope.strip()})
+            if not normalized_scopes:
+                raise ValueError("actor_scopes must include at least one non-empty scope when provided")
+            self.actor_scopes = normalized_scopes
+
+        if self.operation is not None and self.operation not in {"execute", "resume"}:
+            raise ValueError("operation must be one of: execute, resume")
+
         if self.event_type == ExecutionTraceEventType.REPLAYED:
             if not self.output_pointer_id:
                 raise ValueError("replayed events must include output_pointer_id")

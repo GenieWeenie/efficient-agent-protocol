@@ -86,6 +86,7 @@ class StateManagerTest(unittest.TestCase):
             step_status={"s1": {"status": "ok", "pointer_id": "ptr_1"}},
             branch_decisions={"s1": ["s2"]},
             final_pointer_id="ptr_final",
+            actor_metadata={"owner_actor_id": "actor_alice", "actor_id": "actor_alice"},
         )
         checkpoint = self.manager.get_run_checkpoint("run_ckpt")
         self.assertEqual(checkpoint["run_id"], "run_ckpt")
@@ -93,6 +94,35 @@ class StateManagerTest(unittest.TestCase):
         self.assertEqual(checkpoint["step_status"]["s1"]["pointer_id"], "ptr_1")
         self.assertEqual(checkpoint["branch_decisions"]["s1"], ["s2"])
         self.assertEqual(checkpoint["final_pointer_id"], "ptr_final")
+        self.assertEqual(checkpoint["actor_metadata"]["owner_actor_id"], "actor_alice")
+
+    def test_list_trace_events_includes_actor_metadata_when_available(self) -> None:
+        self.manager.upsert_run_checkpoint(
+            run_id="run_actor_trace",
+            started_at_utc="2026-02-23T00:00:00+00:00",
+            status="active",
+            macro_payload={"steps": []},
+            step_status={},
+            branch_decisions={},
+            actor_metadata={
+                "owner_actor_id": "actor_owner",
+                "actor_id": "actor_owner",
+                "actor_scopes": ["runs:execute", "runs:read"],
+                "operation": "execute",
+            },
+        )
+        self.manager.append_trace_event(
+            ExecutionTraceEvent(
+                run_id="run_actor_trace",
+                step_id="step_1",
+                tool_name="tool_a",
+                event_type=ExecutionTraceEventType.QUEUED,
+            )
+        )
+        event = self.manager.list_trace_events("run_actor_trace")[0]
+        self.assertEqual(event.actor_id, "actor_owner")
+        self.assertEqual(event.actor_scopes, ["runs:execute", "runs:read"])
+        self.assertEqual(event.operation, "execute")
 
     def test_list_run_checkpoints_filters_by_status(self) -> None:
         self.manager.upsert_run_checkpoint(
