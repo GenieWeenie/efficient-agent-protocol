@@ -91,6 +91,25 @@ This document describes the built-in tools shipped in `environment.tools`.
   - Returns JSON text payload from MCP result so downstream steps can parse it.
   - Schema uses `additionalProperties: false`.
 
+### `invoke_openclaw_tool`
+- Purpose: Call OpenClaw gateway `POST /tools/invoke` and return the JSON response payload.
+- Parameters:
+  - `base_url` (`string`, required, `minLength=1`)
+  - `api_key` (`string`, required, `minLength=1`)
+  - `tool_name` (`string`, required, `minLength=1`)
+  - `tool_arguments` (`object`, optional)
+  - `timeout_seconds` (`integer`, optional, `1..120`)
+  - `account_id` (`string`, optional, `minLength=1`)
+  - `channel_id` (`string`, optional, `minLength=1`)
+- Notes:
+  - Sends bearer auth via `Authorization: Bearer <api_key>`.
+  - Supports OpenClaw multi-tenant routing headers:
+    - `x-openclaw-account-id`
+    - `x-openclaw-channel-id`
+  - Maps gateway policy denials (`TOOL_INVOKE_POLICY_DENIED`) to normalized tool errors.
+  - Returns JSON text payload so downstream steps can parse tool output.
+  - Schema uses `additionalProperties: false`.
+
 ## Validation contract
 
 Tool inputs are validated by `ToolRegistry.validate_arguments` before execution.

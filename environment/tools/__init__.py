@@ -20,6 +20,10 @@ from .mcp_tools import (
     INVOKE_MCP_TOOL_SCHEMA,
     invoke_mcp_tool,
 )
+from .openclaw_tools import (
+    INVOKE_OPENCLAW_TOOL_SCHEMA,
+    invoke_openclaw_tool,
+)
 
 __all__ = [
     "fetch_user_data", "analyze_data", "FETCH_SCHEMA", "ANALYZE_SCHEMA",
@@ -28,4 +32,5 @@ __all__ = [
     "scrape_url", "fetch_json_url", "extract_links_from_url",
     "SCRAPE_SCHEMA", "FETCH_JSON_SCHEMA", "EXTRACT_LINKS_SCHEMA",
     "invoke_mcp_tool", "INVOKE_MCP_TOOL_SCHEMA",
+    "invoke_openclaw_tool", "INVOKE_OPENCLAW_TOOL_SCHEMA",
 ]

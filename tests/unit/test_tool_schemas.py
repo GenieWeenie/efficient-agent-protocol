@@ -7,6 +7,7 @@ from eap.environment.tools import (
     EXTRACT_LINKS_SCHEMA,
     FETCH_JSON_SCHEMA,
     INVOKE_MCP_TOOL_SCHEMA,
+    INVOKE_OPENCLAW_TOOL_SCHEMA,
     LIST_DIRECTORY_SCHEMA,
     READ_FILE_SCHEMA,
     SCRAPE_SCHEMA,
@@ -15,6 +16,7 @@ from eap.environment.tools import (
     extract_links_from_url,
     fetch_json_url,
     invoke_mcp_tool,
+    invoke_openclaw_tool,
     list_local_directory,
     read_local_file,
     scrape_url,
@@ -33,6 +35,7 @@ class ToolSchemaValidationTest(unittest.TestCase):
         self.registry.register("fetch_json_url", fetch_json_url, FETCH_JSON_SCHEMA)
         self.registry.register("extract_links_from_url", extract_links_from_url, EXTRACT_LINKS_SCHEMA)
         self.registry.register("invoke_mcp_tool", invoke_mcp_tool, INVOKE_MCP_TOOL_SCHEMA)
+        self.registry.register("invoke_openclaw_tool", invoke_openclaw_tool, INVOKE_OPENCLAW_TOOL_SCHEMA)
 
     def test_valid_payload_passes_validation(self) -> None:
         self.registry.validate_arguments("analyze_data", {"raw_data": "payload", "focus": "summary"})
@@ -97,6 +100,28 @@ class ToolSchemaValidationTest(unittest.TestCase):
                     "server_command": "python -u /tmp/server.py",
                     "tool_name": "echo",
                     "tool_arguments": "not-an-object",
+                },
+            )
+
+    def test_openclaw_schema_requires_base_url(self) -> None:
+        with self.assertRaises(InputValidationError):
+            self.registry.validate_arguments(
+                "invoke_openclaw_tool",
+                {
+                    "api_key": "secret-token",
+                    "tool_name": "echo_tool",
+                },
+            )
+
+    def test_openclaw_schema_rejects_unknown_fields(self) -> None:
+        with self.assertRaises(InputValidationError):
+            self.registry.validate_arguments(
+                "invoke_openclaw_tool",
+                {
+                    "base_url": "https://gateway.openclaw.local",
+                    "api_key": "secret-token",
+                    "tool_name": "echo_tool",
+                    "extra": "not-allowed",
                 },
             )
 

@@ -2,6 +2,7 @@ from environment.tools import (
     ANALYZE_SCHEMA,
     FETCH_SCHEMA,
     INVOKE_MCP_TOOL_SCHEMA,
+    INVOKE_OPENCLAW_TOOL_SCHEMA,
     LIST_DIRECTORY_SCHEMA,
     READ_FILE_SCHEMA,
     EXTRACT_LINKS_SCHEMA,
@@ -13,6 +14,7 @@ from environment.tools import (
     fetch_json_url,
     fetch_user_data,
     invoke_mcp_tool,
+    invoke_openclaw_tool,
     list_local_directory,
     read_local_file,
     scrape_url,
@@ -38,4 +40,6 @@ __all__ = [
     "EXTRACT_LINKS_SCHEMA",
     "invoke_mcp_tool",
     "INVOKE_MCP_TOOL_SCHEMA",
+    "invoke_openclaw_tool",
+    "INVOKE_OPENCLAW_TOOL_SCHEMA",
 ]
