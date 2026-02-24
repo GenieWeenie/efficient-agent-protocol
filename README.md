@@ -54,6 +54,7 @@ Not ideal yet:
 - Crash-safe resume/replay from persisted run checkpoints
 - Evaluation harness with CI threshold gates (`scripts/eval_scorecard.py`)
 - Operator telemetry pack export (`scripts/export_telemetry_pack.py`)
+- Self-hosted control-plane reference stack (`deploy/self_hosted/docker-compose.yml`)
 - Built-in chat UI (Streamlit) with trace + data inspection
 - Conversation memory (full/window/summary)
 - Pluggable pointer storage backends (SQLite, Redis, PostgreSQL)
@@ -152,6 +153,14 @@ python -m starter_packs.local_etl
 ./scripts/interop_openclaw_smoke.sh v2026.2.22
 ```
 
+9. Optional self-hosted reference stack
+
+```bash
+cp deploy/self_hosted/.env.example deploy/self_hosted/.env
+docker compose --env-file deploy/self_hosted/.env -f deploy/self_hosted/docker-compose.yml up --build -d
+python scripts/self_hosted_stack_smoke.py --base-url http://127.0.0.1:8080 --bearer-token "<runtime-token>"
+```
+
 ## Programmatic Example
 
 ```python
@@ -188,6 +197,8 @@ python3 scripts/migrate_state_db.py --db-path agent_state.db --dry-run
 python3 scripts/export_metrics.py --db-path agent_state.db --output metrics/latest.json
 python3 scripts/export_telemetry_pack.py --db-path agent_state.db --output-dir artifacts/telemetry
 ./scripts/interop_openclaw_smoke.sh v2026.2.22
+docker compose --env-file deploy/self_hosted/.env -f deploy/self_hosted/docker-compose.yml up --build -d
+python scripts/self_hosted_stack_smoke.py --base-url http://127.0.0.1:8080 --bearer-token "<runtime-token>"
 python3 -m build
 ```
 
@@ -209,6 +220,7 @@ python3 -m build
   - `docs/tools.md`
   - `docs/observability.md`
   - `docs/operator_telemetry_pack.md`
+  - `docs/self_hosted_control_plane.md`
   - `docs/migrations.md`
 - Interop and starter packs:
   - `docs/openclaw_interop.md`

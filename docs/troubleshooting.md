@@ -69,6 +69,37 @@ Doctor remediation map:
 - `storage`: ensure local filesystem write permissions for the configured DB path
 - `tools`: install missing tools/runtime dependencies and rerun doctor
 
+## Self-Hosted Stack Issues
+
+### `docker compose` fails with missing `EAP_RUNTIME_BEARER_TOKEN`
+Cause:
+- The compose stack requires a runtime bearer token.
+
+Fix:
+- Create and configure the stack env file:
+  - `cp deploy/self_hosted/.env.example deploy/self_hosted/.env`
+  - set `EAP_RUNTIME_BEARER_TOKEN` in `deploy/self_hosted/.env`
+- Restart:
+  - `docker compose --env-file deploy/self_hosted/.env -f deploy/self_hosted/docker-compose.yml up --build -d`
+
+### Runtime smoke fails with `401 unauthorized`
+Cause:
+- Smoke token does not match the runtime token in compose env.
+
+Fix:
+- Pass the exact configured token:
+  - `python scripts/self_hosted_stack_smoke.py --base-url http://127.0.0.1:8080 --bearer-token "<runtime-token>"`
+
+### Operator UI is reachable but no runs appear
+Cause:
+- No workflow has executed yet, or runtime and UI are not sharing the same state volume.
+
+Fix:
+- Confirm smoke run succeeds first.
+- Check both services mount `eap_state` and use `/var/lib/eap/agent_state.db`.
+- View compose status:
+  - `docker compose --env-file deploy/self_hosted/.env -f deploy/self_hosted/docker-compose.yml ps`
+
 ## Import Errors
 
 ### `ModuleNotFoundError: No module named 'eap'`
