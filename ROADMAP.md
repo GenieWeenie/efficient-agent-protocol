@@ -104,3 +104,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 8 `EAP-093` self-hosted control-plane reference completed (`GEN-53`, PR #50).
 - Phase 8 `EAP-094` remote operations governance baseline completed (`GEN-54`, PR #52).
 - Phase 9 `EAP-095` runtime policy profiles + deny-by-default templates completed (`GEN-55`, PR #58).
+- Phase 9 `EAP-096` runtime rate limits and concurrency guards completed (`GEN-56`, PR #60).
