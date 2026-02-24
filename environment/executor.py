@@ -63,14 +63,42 @@ class AsyncLocalExecutor:
         self.registry = registry
         self.default_execution_limits = default_execution_limits or ExecutionLimits()
 
+    @staticmethod
+    def _normalize_actor_metadata(
+        actor_metadata: Optional[Dict[str, Any]],
+        operation: str,
+    ) -> Dict[str, Any]:
+        source = actor_metadata if isinstance(actor_metadata, dict) else {}
+        actor_id = str(source.get("actor_id", "")).strip()
+        owner_actor_id = str(source.get("owner_actor_id", "")).strip()
+        scopes_raw = source.get("actor_scopes", source.get("scopes", []))
+        if isinstance(scopes_raw, str):
+            scopes = [scope.strip() for scope in scopes_raw.split(",") if scope.strip()]
+        elif isinstance(scopes_raw, list):
+            scopes = [str(scope).strip() for scope in scopes_raw if str(scope).strip()]
+        else:
+            scopes = []
+
+        metadata: Dict[str, Any] = {
+            "operation": operation,
+            "actor_id": actor_id or None,
+            "owner_actor_id": owner_actor_id or None,
+            "actor_scopes": sorted(set(scopes)),
+        }
+        if isinstance(source.get("auth_subject"), str) and source["auth_subject"].strip():
+            metadata["auth_subject"] = source["auth_subject"].strip()
+        return metadata
+
     async def execute_macro(
         self,
         macro: BatchedMacroRequest,
         run_id: Optional[str] = None,
         resume: bool = False,
+        actor_metadata: Optional[Dict[str, Any]] = None,
     ) -> dict:
         run_id = run_id or f"run_{uuid.uuid4().hex[:12]}"
         run_started_at = datetime.now(timezone.utc)
+        operation = "resume" if resume else "execute"
         replayed_step_ids: Set[str] = set()
         logger.info(
             "received macro batch",
@@ -86,6 +114,8 @@ class AsyncLocalExecutor:
         branch_decisions: Dict[str, Set[str]] = {}
         early_exit_event = asyncio.Event()
         checkpoint_lock = asyncio.Lock()
+        normalized_actor_metadata = self._normalize_actor_metadata(actor_metadata, operation=operation)
+        run_actor_metadata: Dict[str, Any] = dict(normalized_actor_metadata)
 
         if resume:
             checkpoint = self.state_manager.get_run_checkpoint(run_id)
@@ -101,6 +131,35 @@ class AsyncLocalExecutor:
                 step_id: set(targets)
                 for step_id, targets in (checkpoint.get("branch_decisions") or {}).items()
             }
+            checkpoint_actor_metadata = (
+                checkpoint.get("actor_metadata")
+                if isinstance(checkpoint.get("actor_metadata"), dict)
+                else {}
+            )
+            if checkpoint_actor_metadata:
+                merged_actor_metadata = dict(checkpoint_actor_metadata)
+                if normalized_actor_metadata.get("actor_id"):
+                    merged_actor_metadata["actor_id"] = normalized_actor_metadata["actor_id"]
+                if normalized_actor_metadata.get("actor_scopes"):
+                    merged_actor_metadata["actor_scopes"] = normalized_actor_metadata["actor_scopes"]
+                if normalized_actor_metadata.get("auth_subject"):
+                    merged_actor_metadata["auth_subject"] = normalized_actor_metadata["auth_subject"]
+                merged_actor_metadata["operation"] = operation
+                run_actor_metadata = merged_actor_metadata
+
+        if not run_actor_metadata.get("owner_actor_id"):
+            run_actor_metadata["owner_actor_id"] = run_actor_metadata.get("actor_id")
+        if not run_actor_metadata.get("actor_id"):
+            run_actor_metadata["actor_id"] = run_actor_metadata.get("owner_actor_id")
+        scopes_value = run_actor_metadata.get("actor_scopes", run_actor_metadata.get("scopes", []))
+        if isinstance(scopes_value, str):
+            normalized_scopes = [scope.strip() for scope in scopes_value.split(",") if scope.strip()]
+        elif isinstance(scopes_value, list):
+            normalized_scopes = [str(scope).strip() for scope in scopes_value if str(scope).strip()]
+        else:
+            normalized_scopes = []
+        run_actor_metadata["actor_scopes"] = sorted(set(normalized_scopes))
+        run_actor_metadata["operation"] = operation
 
         def _hydrate_pointer_response(pointer_id: Optional[str], step_id: str) -> Dict[str, Any]:
             if not pointer_id:
@@ -162,6 +221,7 @@ class AsyncLocalExecutor:
                         step_id: sorted(targets) for step_id, targets in branch_decisions.items()
                     },
                     final_pointer_id=final_pointer_id,
+                    actor_metadata=run_actor_metadata,
                 )
 
         await _persist_checkpoint(status="active")
@@ -301,6 +361,38 @@ class AsyncLocalExecutor:
                 return tool_name_or_hash
             return None
 
+        def _pointer_metadata(extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+            base: Dict[str, Any] = {
+                "execution_run_id": run_id,
+                "actor_id": run_actor_metadata.get("actor_id"),
+                "owner_actor_id": run_actor_metadata.get("owner_actor_id"),
+            }
+            if extra:
+                base.update(extra)
+            return base
+
+        def _append_trace_event(
+            step_id: str,
+            tool_name: str,
+            event_type: ExecutionTraceEventType,
+            **kwargs: Any,
+        ) -> None:
+            actor_scopes = run_actor_metadata.get("actor_scopes")
+            if isinstance(actor_scopes, list) and not actor_scopes:
+                actor_scopes = None
+            self.state_manager.append_trace_event(
+                ExecutionTraceEvent(
+                    run_id=run_id,
+                    step_id=step_id,
+                    tool_name=tool_name,
+                    event_type=event_type,
+                    actor_id=run_actor_metadata.get("actor_id"),
+                    actor_scopes=actor_scopes,
+                    operation=run_actor_metadata.get("operation"),
+                    **kwargs,
+                )
+            )
+
         async def _record_wait(metric_count_key: str, metric_time_key: str, waited_seconds: float) -> None:
             if waited_seconds <= 0:
                 return
@@ -342,14 +434,11 @@ class AsyncLocalExecutor:
                 if not step_futures[step.step_id].done():
                     step_futures[step.step_id].set_result(existing_pointer_id)
                 replayed_step_ids.add(step.step_id)
-                self.state_manager.append_trace_event(
-                    ExecutionTraceEvent(
-                        run_id=run_id,
-                        step_id=step.step_id,
-                        tool_name=step.tool_name,
-                        event_type=ExecutionTraceEventType.REPLAYED,
-                        output_pointer_id=existing_pointer_id,
-                    )
+                _append_trace_event(
+                    step_id=step.step_id,
+                    tool_name=step.tool_name,
+                    event_type=ExecutionTraceEventType.REPLAYED,
+                    output_pointer_id=existing_pointer_id,
                 )
                 logger.info(
                     "task replayed from checkpoint",
@@ -361,13 +450,10 @@ class AsyncLocalExecutor:
                 "task queued",
                 extra={"step_id": step.step_id, "tool_name": step.tool_name, "run_id": run_id},
             )
-            self.state_manager.append_trace_event(
-                ExecutionTraceEvent(
-                    run_id=run_id,
-                    step_id=step.step_id,
-                    tool_name=step.tool_name,
-                    event_type=ExecutionTraceEventType.QUEUED,
-                )
+            _append_trace_event(
+                step_id=step.step_id,
+                tool_name=step.tool_name,
+                event_type=ExecutionTraceEventType.QUEUED,
             )
             attempt_count = 0
             step_started_perf = time.perf_counter()
@@ -389,7 +475,9 @@ class AsyncLocalExecutor:
                         step_pointer = self.state_manager.store_and_point(
                             raw_data=skip_payload,
                             summary=f"Step {step.step_id} skipped (branch not selected).",
-                            metadata={"status": "skipped", "reason": "branch_not_selected"},
+                            metadata=_pointer_metadata(
+                                {"status": "skipped", "reason": "branch_not_selected"}
+                            ),
                         )
                         step_status[step.step_id] = {"status": "skipped", "pointer_id": step_pointer["pointer_id"]}
                         step_contexts[step.step_id] = {
@@ -418,7 +506,7 @@ class AsyncLocalExecutor:
                     step_pointer = self.state_manager.store_and_point(
                         raw_data=skip_payload,
                         summary=f"Step {step.step_id} skipped (early exit).",
-                        metadata={"status": "skipped", "reason": "early_exit"},
+                        metadata=_pointer_metadata({"status": "skipped", "reason": "early_exit"}),
                     )
                     step_status[step.step_id] = {"status": "skipped", "pointer_id": step_pointer["pointer_id"]}
                     step_contexts[step.step_id] = {
@@ -441,13 +529,10 @@ class AsyncLocalExecutor:
                 requires_approval = bool(step.approval and step.approval.required)
                 approval_decision = macro.approvals.get(step.step_id)
                 if requires_approval:
-                    self.state_manager.append_trace_event(
-                        ExecutionTraceEvent(
-                            run_id=run_id,
-                            step_id=step.step_id,
-                            tool_name=step.tool_name,
-                            event_type=ExecutionTraceEventType.APPROVAL_REQUIRED,
-                        )
+                    _append_trace_event(
+                        step_id=step.step_id,
+                        tool_name=step.tool_name,
+                        event_type=ExecutionTraceEventType.APPROVAL_REQUIRED,
                     )
                     if approval_decision is None:
                         pending_payload = {
@@ -459,11 +544,13 @@ class AsyncLocalExecutor:
                         step_pointer = self.state_manager.store_and_point(
                             raw_data=pending_payload,
                             summary=f"Step {step.step_id} paused awaiting approval.",
-                            metadata={
-                                "status": "paused",
-                                "reason": "awaiting_approval",
-                                "approval_prompt": step.approval.prompt if step.approval else None,
-                            },
+                            metadata=_pointer_metadata(
+                                {
+                                    "status": "paused",
+                                    "reason": "awaiting_approval",
+                                    "approval_prompt": step.approval.prompt if step.approval else None,
+                                }
+                            ),
                         )
                         step_status[step.step_id] = {
                             "status": "paused",
@@ -495,21 +582,20 @@ class AsyncLocalExecutor:
                             tool_name=step.tool_name,
                             details={"approval_prompt": step.approval.prompt if step.approval else None},
                         )
-                        self.state_manager.append_trace_event(
-                            ExecutionTraceEvent(
-                                run_id=run_id,
-                                step_id=step.step_id,
-                                tool_name=step.tool_name,
-                                event_type=ExecutionTraceEventType.REJECTED,
-                                attempt=1,
-                                error=error_payload,
-                            )
+                        _append_trace_event(
+                            step_id=step.step_id,
+                            tool_name=step.tool_name,
+                            event_type=ExecutionTraceEventType.REJECTED,
+                            attempt=1,
+                            error=error_payload,
                         )
                         rejection_payload = error_payload.model_dump(mode="json")
                         step_pointer = self.state_manager.store_and_point(
                             raw_data=rejection_payload,
                             summary=f"Step {step.step_id} rejected at approval checkpoint.",
-                            metadata={"status": "rejected", "error_type": "approval_rejected"},
+                            metadata=_pointer_metadata(
+                                {"status": "rejected", "error_type": "approval_rejected"}
+                            ),
                         )
                         step_status[step.step_id] = {
                             "status": "rejected",
@@ -531,13 +617,10 @@ class AsyncLocalExecutor:
                         )
                         return step_pointer
 
-                    self.state_manager.append_trace_event(
-                        ExecutionTraceEvent(
-                            run_id=run_id,
-                            step_id=step.step_id,
-                            tool_name=step.tool_name,
-                            event_type=ExecutionTraceEventType.APPROVED,
-                        )
+                    _append_trace_event(
+                        step_id=step.step_id,
+                        tool_name=step.tool_name,
+                        event_type=ExecutionTraceEventType.APPROVED,
                     )
 
                 resolved_args = {}
@@ -620,16 +703,13 @@ class AsyncLocalExecutor:
                             async with metric_lock:
                                 saturation_metrics["total_rate_limited_attempts"] += 1
 
-                        self.state_manager.append_trace_event(
-                            ExecutionTraceEvent(
-                                run_id=run_id,
-                                step_id=step.step_id,
-                                tool_name=step.tool_name,
-                                event_type=ExecutionTraceEventType.STARTED,
-                                attempt=attempt_count,
-                                resolved_arguments=resolved_args,
-                                input_pointer_ids=input_pointer_ids or None,
-                            )
+                        _append_trace_event(
+                            step_id=step.step_id,
+                            tool_name=step.tool_name,
+                            event_type=ExecutionTraceEventType.STARTED,
+                            attempt=attempt_count,
+                            resolved_arguments=resolved_args,
+                            input_pointer_ids=input_pointer_ids or None,
                         )
                         raw_output = await asyncio.to_thread(tool_func, **resolved_args)
                         break
@@ -645,18 +725,15 @@ class AsyncLocalExecutor:
                         retryable = error_name in retry_policy.retryable_error_types
                         if (not retryable) or (attempt_count >= retry_policy.max_attempts):
                             raise
-                        self.state_manager.append_trace_event(
-                            ExecutionTraceEvent(
-                                run_id=run_id,
-                                step_id=step.step_id,
-                                tool_name=step.tool_name,
-                                event_type=ExecutionTraceEventType.RETRIED,
-                                attempt=attempt_count,
-                                retry_delay_seconds=delay,
-                                error=error_payload,
-                                resolved_arguments=resolved_args,
-                                input_pointer_ids=input_pointer_ids or None,
-                            )
+                        _append_trace_event(
+                            step_id=step.step_id,
+                            tool_name=step.tool_name,
+                            event_type=ExecutionTraceEventType.RETRIED,
+                            attempt=attempt_count,
+                            retry_delay_seconds=delay,
+                            error=error_payload,
+                            resolved_arguments=resolved_args,
+                            input_pointer_ids=input_pointer_ids or None,
                         )
                         logger.warning(
                             "task retrying",
@@ -681,20 +758,18 @@ class AsyncLocalExecutor:
                 step_pointer = self.state_manager.store_and_point(
                     raw_data=raw_output,
                     summary=f"Completed step {step.step_id} successfully.",
+                    metadata=_pointer_metadata({"step_id": step.step_id}),
                 )
                 step_duration_ms = round((time.perf_counter() - step_started_perf) * 1000, 3)
-                self.state_manager.append_trace_event(
-                    ExecutionTraceEvent(
-                        run_id=run_id,
-                        step_id=step.step_id,
-                        tool_name=step.tool_name,
-                        event_type=ExecutionTraceEventType.COMPLETED,
-                        attempt=attempt_count,
-                        resolved_arguments=resolved_args,
-                        input_pointer_ids=input_pointer_ids or None,
-                        output_pointer_id=step_pointer["pointer_id"],
-                        duration_ms=step_duration_ms,
-                    )
+                _append_trace_event(
+                    step_id=step.step_id,
+                    tool_name=step.tool_name,
+                    event_type=ExecutionTraceEventType.COMPLETED,
+                    attempt=attempt_count,
+                    resolved_arguments=resolved_args,
+                    input_pointer_ids=input_pointer_ids or None,
+                    output_pointer_id=step_pointer["pointer_id"],
+                    duration_ms=step_duration_ms,
                 )
                 step_status[step.step_id] = {"status": "ok", "pointer_id": step_pointer["pointer_id"]}
                 step_contexts[step.step_id] = {
@@ -733,21 +808,18 @@ class AsyncLocalExecutor:
                     details={"attempts": attempt_count},
                 ).model_dump()
                 step_duration_ms = round((time.perf_counter() - step_started_perf) * 1000, 3)
-                self.state_manager.append_trace_event(
-                    ExecutionTraceEvent(
-                        run_id=run_id,
-                        step_id=step.step_id,
-                        tool_name=step.tool_name,
-                        event_type=ExecutionTraceEventType.FAILED,
-                        attempt=max(1, attempt_count),
-                        error=ToolErrorPayload(**error_payload),
-                        duration_ms=step_duration_ms,
-                    )
+                _append_trace_event(
+                    step_id=step.step_id,
+                    tool_name=step.tool_name,
+                    event_type=ExecutionTraceEventType.FAILED,
+                    attempt=max(1, attempt_count),
+                    error=ToolErrorPayload(**error_payload),
+                    duration_ms=step_duration_ms,
                 )
                 step_pointer = self.state_manager.store_and_point(
                     raw_data=error_payload,
                     summary=f"Step {step.step_id} failed with {error_type}.",
-                    metadata={"status": "error", "error_type": error_type},
+                    metadata=_pointer_metadata({"status": "error", "error_type": error_type}),
                 )
                 step_status[step.step_id] = {"status": "error", "pointer_id": step_pointer["pointer_id"]}
                 step_contexts[step.step_id] = {
@@ -831,6 +903,7 @@ class AsyncLocalExecutor:
                 "approval_metrics": approval_metrics,
                 "saturation_metrics": final_saturation_metrics,
                 "step_status": step_status,
+                "actor_metadata": run_actor_metadata,
             },
         )
 
@@ -842,12 +915,14 @@ class AsyncLocalExecutor:
             final_result["metadata"]["replayed_steps"] = sorted(replayed_step_ids)
             final_result["metadata"]["approval_metrics"] = approval_metrics
             final_result["metadata"]["saturation_metrics"] = final_saturation_metrics
+            final_result["metadata"]["actor_metadata"] = run_actor_metadata
         return final_result
 
     async def resume_run(
         self,
         run_id: str,
         approvals: Optional[Dict[str, Any]] = None,
+        actor_metadata: Optional[Dict[str, Any]] = None,
     ) -> dict:
         checkpoint = self.state_manager.get_run_checkpoint(run_id)
         if checkpoint["status"] not in {"active", "awaiting_approval"}:
@@ -860,4 +935,9 @@ class AsyncLocalExecutor:
             merged_approvals.update(approvals)
             macro_payload["approvals"] = merged_approvals
         macro = BatchedMacroRequest.model_validate(macro_payload)
-        return await self.execute_macro(macro=macro, run_id=run_id, resume=True)
+        return await self.execute_macro(
+            macro=macro,
+            run_id=run_id,
+            resume=True,
+            actor_metadata=actor_metadata,
+        )

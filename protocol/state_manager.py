@@ -268,6 +268,11 @@ class StateManager:
             )
 
     def list_trace_events(self, run_id: str) -> List[ExecutionTraceEvent]:
+        actor_metadata = self.get_run_actor_metadata(run_id=run_id)
+        actor_id = actor_metadata.get("actor_id") or actor_metadata.get("owner_actor_id")
+        actor_scopes = actor_metadata.get("actor_scopes") or actor_metadata.get("scopes")
+        operation = actor_metadata.get("operation")
+
         with sqlite3.connect(self.db_path) as conn:
             rows = conn.execute(
                 """
@@ -296,6 +301,9 @@ class StateManager:
                     duration_ms=row[8],
                     retry_delay_seconds=row[9],
                     error=json.loads(row[10]) if row[10] else None,
+                    actor_id=actor_id,
+                    actor_scopes=actor_scopes,
+                    operation=operation,
                 )
             )
         return events
@@ -340,6 +348,7 @@ class StateManager:
         step_status: Dict[str, Dict[str, Any]],
         branch_decisions: Dict[str, List[str]],
         final_pointer_id: Optional[str] = None,
+        actor_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         updated_at_utc = self._now_utc_iso()
         with sqlite3.connect(self.db_path) as conn:
@@ -347,8 +356,8 @@ class StateManager:
                 """
                 INSERT OR REPLACE INTO execution_run_checkpoints (
                     run_id, started_at_utc, updated_at_utc, status, macro_payload,
-                    step_status_payload, branch_decisions_payload, final_pointer_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    step_status_payload, branch_decisions_payload, final_pointer_id, actor_metadata_payload
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     run_id,
@@ -359,6 +368,7 @@ class StateManager:
                     json.dumps(step_status),
                     json.dumps(branch_decisions),
                     final_pointer_id,
+                    json.dumps(actor_metadata) if actor_metadata is not None else None,
                 ),
             )
 
@@ -367,7 +377,7 @@ class StateManager:
             row = conn.execute(
                 """
                 SELECT started_at_utc, updated_at_utc, status, macro_payload,
-                       step_status_payload, branch_decisions_payload, final_pointer_id
+                       step_status_payload, branch_decisions_payload, final_pointer_id, actor_metadata_payload
                 FROM execution_run_checkpoints
                 WHERE run_id = ?
                 """,
@@ -386,11 +396,12 @@ class StateManager:
             "step_status": json.loads(row[4]) if row[4] else {},
             "branch_decisions": json.loads(row[5]) if row[5] else {},
             "final_pointer_id": row[6],
+            "actor_metadata": json.loads(row[7]) if row[7] else {},
         }
 
     def list_run_checkpoints(self, status: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
         query = """
-            SELECT run_id, started_at_utc, updated_at_utc, status, final_pointer_id
+            SELECT run_id, started_at_utc, updated_at_utc, status, final_pointer_id, actor_metadata_payload
             FROM execution_run_checkpoints
         """
         params: tuple[Any, ...] = ()
@@ -410,9 +421,51 @@ class StateManager:
                 "updated_at_utc": row[2],
                 "status": row[3],
                 "final_pointer_id": row[4],
+                "actor_metadata": json.loads(row[5]) if row[5] else {},
             }
             for row in rows
         ]
+
+    def get_run_actor_metadata(self, run_id: str) -> Dict[str, Any]:
+        with sqlite3.connect(self.db_path) as conn:
+            checkpoint_row = conn.execute(
+                """
+                SELECT actor_metadata_payload
+                FROM execution_run_checkpoints
+                WHERE run_id = ?
+                """,
+                (run_id,),
+            ).fetchone()
+
+            if checkpoint_row and checkpoint_row[0]:
+                try:
+                    value = json.loads(checkpoint_row[0])
+                except json.JSONDecodeError:
+                    value = {}
+                if isinstance(value, dict):
+                    return value
+
+            diagnostics_row = conn.execute(
+                """
+                SELECT payload_json
+                FROM execution_run_diagnostics
+                WHERE run_id = ?
+                """,
+                (run_id,),
+            ).fetchone()
+
+        if not diagnostics_row or not diagnostics_row[0]:
+            return {}
+        try:
+            diagnostics_payload = json.loads(diagnostics_row[0])
+        except json.JSONDecodeError:
+            return {}
+        if not isinstance(diagnostics_payload, dict):
+            return {}
+        actor_payload = diagnostics_payload.get("actor_metadata")
+        if not isinstance(actor_payload, dict):
+            return {}
+        return actor_payload
 
     def get_execution_summary(self, run_id: str) -> Dict[str, Any]:
         with sqlite3.connect(self.db_path) as conn:

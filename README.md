@@ -55,6 +55,7 @@ Not ideal yet:
 - Evaluation harness with CI threshold gates (`scripts/eval_scorecard.py`)
 - Operator telemetry pack export (`scripts/export_telemetry_pack.py`)
 - Self-hosted control-plane reference stack (`deploy/self_hosted/docker-compose.yml`)
+- Scoped runtime auth + run ownership governance for remote operations
 - Built-in chat UI (Streamlit) with trace + data inspection
 - Conversation memory (full/window/summary)
 - Pluggable pointer storage backends (SQLite, Redis, PostgreSQL)
@@ -221,6 +222,7 @@ python3 -m build
   - `docs/observability.md`
   - `docs/operator_telemetry_pack.md`
   - `docs/self_hosted_control_plane.md`
+  - `docs/remote_ops_governance.md`
   - `docs/migrations.md`
 - Interop and starter packs:
   - `docs/openclaw_interop.md`

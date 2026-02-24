@@ -90,6 +90,20 @@ Fix:
 - Pass the exact configured token:
   - `python scripts/self_hosted_stack_smoke.py --base-url http://127.0.0.1:8080 --bearer-token "<runtime-token>"`
 
+### Runtime API returns `403 forbidden` with missing scope message
+Cause:
+- Scoped auth is enabled and the caller token lacks the endpoint scope.
+
+Fix:
+- Ensure the token includes the required scope:
+  - execute: `runs:execute`
+  - resume: `runs:resume`
+  - run inspect: `runs:read`
+  - pointer summary: `pointers:read`
+- For cross-run operations, include corresponding `*:any` scopes.
+- See:
+  - `docs/remote_ops_governance.md`
+
 ### Operator UI is reachable but no runs appear
 Cause:
 - No workflow has executed yet, or runtime and UI are not sharing the same state volume.

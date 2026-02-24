@@ -58,6 +58,25 @@ MIGRATIONS: List[MigrationStep] = [
             """,
         ],
     ),
+    MigrationStep(
+        version=5,
+        description="Add actor metadata payload column to run checkpoints for governance",
+        statements=[
+            """
+            CREATE TABLE IF NOT EXISTS execution_run_checkpoints (
+                run_id TEXT PRIMARY KEY,
+                started_at_utc TEXT NOT NULL,
+                updated_at_utc TEXT NOT NULL,
+                status TEXT NOT NULL,
+                macro_payload TEXT NOT NULL,
+                step_status_payload TEXT NOT NULL,
+                branch_decisions_payload TEXT NOT NULL,
+                final_pointer_id TEXT
+            )
+            """,
+            "ALTER TABLE execution_run_checkpoints ADD COLUMN actor_metadata_payload TEXT",
+        ],
+    ),
 ]
 
 

@@ -36,3 +36,5 @@ python3 scripts/migrate_state_db.py --db-path agent_state.db --backup
 ## Versioning
 
 - Current schema version is managed by `LATEST_SCHEMA_VERSION` in `protocol/migrations.py`.
+- Latest additive governance migration (`v5`) adds `actor_metadata_payload` to `execution_run_checkpoints`.
+- This column supports run ownership and scoped multi-user access enforcement in remote runtime mode.

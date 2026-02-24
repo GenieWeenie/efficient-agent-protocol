@@ -139,6 +139,7 @@ class TelemetryPackIntegrationTest(unittest.TestCase):
                 "fail_reasons.json",
                 "latency_percentiles.json",
                 "saturation.json",
+                "actors.json",
                 "failed_run_diagnostics.json",
                 "operator_report.md",
                 "manifest.json",
@@ -150,6 +151,7 @@ class TelemetryPackIntegrationTest(unittest.TestCase):
             retries = json.loads((Path(temp_dir) / "retries.json").read_text(encoding="utf-8"))
             fail_reasons = json.loads((Path(temp_dir) / "fail_reasons.json").read_text(encoding="utf-8"))
             saturation = json.loads((Path(temp_dir) / "saturation.json").read_text(encoding="utf-8"))
+            actors = json.loads((Path(temp_dir) / "actors.json").read_text(encoding="utf-8"))
             failed_diag = json.loads(
                 (Path(temp_dir) / "failed_run_diagnostics.json").read_text(encoding="utf-8")
             )
@@ -160,8 +162,10 @@ class TelemetryPackIntegrationTest(unittest.TestCase):
             self.assertGreaterEqual(fail_reasons["failed_event_total"], 1)
             self.assertIn("tool_execution_error", fail_reasons["error_type_counts"])
             self.assertIn("global_rate_wait_seconds", saturation["aggregate"])
+            self.assertIn("owner_actor_counts", actors)
             self.assertEqual(failed_diag["failed_run_id"], failed_run_id)
             self.assertEqual(failed_diag["root_failure"]["error_type"], "tool_execution_error")
+            self.assertIn("actor_metadata", failed_diag)
             self.assertIn(failed_run_id, report)
 
 

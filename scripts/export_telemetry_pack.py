@@ -290,6 +290,51 @@ def _build_saturation_view(
     return {"aggregate": aggregate, "per_run": per_run_rows[:100]}
 
 
+def _build_actor_view(
+    runs: Sequence[Dict[str, Any]],
+    diagnostics_by_run: Dict[str, Dict[str, Any]],
+) -> Dict[str, Any]:
+    owner_counts: Dict[str, int] = {}
+    last_actor_counts: Dict[str, int] = {}
+    operation_counts: Dict[str, int] = {}
+    run_actor_rows: List[Dict[str, Any]] = []
+
+    for run in runs:
+        run_id = run["run_id"]
+        diagnostics = diagnostics_by_run.get(run_id, {})
+        payload = diagnostics.get("payload", {})
+        actor_metadata = payload.get("actor_metadata") if isinstance(payload, dict) else {}
+        actor_metadata = actor_metadata if isinstance(actor_metadata, dict) else {}
+
+        owner_actor_id = actor_metadata.get("owner_actor_id")
+        last_actor_id = actor_metadata.get("actor_id")
+        operation = actor_metadata.get("operation")
+
+        if isinstance(owner_actor_id, str) and owner_actor_id:
+            owner_counts[owner_actor_id] = owner_counts.get(owner_actor_id, 0) + 1
+        if isinstance(last_actor_id, str) and last_actor_id:
+            last_actor_counts[last_actor_id] = last_actor_counts.get(last_actor_id, 0) + 1
+        if isinstance(operation, str) and operation:
+            operation_counts[operation] = operation_counts.get(operation, 0) + 1
+
+        run_actor_rows.append(
+            {
+                "run_id": run_id,
+                "owner_actor_id": owner_actor_id,
+                "actor_id": last_actor_id,
+                "operation": operation,
+                "actor_scopes": actor_metadata.get("actor_scopes") or [],
+            }
+        )
+
+    return {
+        "owner_actor_counts": owner_counts,
+        "last_actor_counts": last_actor_counts,
+        "operation_counts": operation_counts,
+        "per_run": run_actor_rows[:100],
+    }
+
+
 def _select_failed_run(
     runs: Sequence[Dict[str, Any]],
     requested_run_id: Optional[str] = None,
@@ -368,9 +413,16 @@ def _build_failed_run_diagnostics(
         }
 
     diagnostics_payload = diagnostics_by_run.get(failed_run_id, {}).get("payload", {})
+    actor_metadata = (
+        diagnostics_payload.get("actor_metadata")
+        if isinstance(diagnostics_payload, dict)
+        else {}
+    )
+    actor_metadata = actor_metadata if isinstance(actor_metadata, dict) else {}
     return {
         "failed_run_id": failed_run_id,
         "run_summary": run_row,
+        "actor_metadata": actor_metadata,
         "root_failure": root_failure_payload,
         "dependency_cascade_count": dependency_cascade_count,
         "timeline": timeline,
@@ -384,6 +436,7 @@ def _build_overview(
     fail_reasons_view: Dict[str, Any],
     latency_view: Dict[str, Any],
     saturation_view: Dict[str, Any],
+    actor_view: Dict[str, Any],
 ) -> Dict[str, Any]:
     run_count = len(runs)
     failed_run_count = sum(1 for run in runs if run["failed_steps"] > 0)
@@ -396,6 +449,11 @@ def _build_overview(
         "failed_event_total": fail_reasons_view["failed_event_total"],
         "latency": latency_view["overall"],
         "saturation": saturation_view["aggregate"],
+        "actors": {
+            "owner_actor_counts": actor_view.get("owner_actor_counts", {}),
+            "last_actor_counts": actor_view.get("last_actor_counts", {}),
+            "operation_counts": actor_view.get("operation_counts", {}),
+        },
     }
 
 
@@ -449,7 +507,14 @@ def _render_markdown_report(
         return "\n".join(lines) + "\n"
 
     root = failed_run_diagnostics.get("root_failure") or {}
+    actor_metadata = failed_run_diagnostics.get("actor_metadata") or {}
     lines.append(f"- Failed run: `{failed_run_id}`")
+    if actor_metadata:
+        lines.append(
+            f"- Owner actor: `{actor_metadata.get('owner_actor_id', 'unknown')}` | "
+            f"Last actor: `{actor_metadata.get('actor_id', 'unknown')}` | "
+            f"Operation: `{actor_metadata.get('operation', 'unknown')}`"
+        )
     lines.append(
         f"- Root failure: `{root.get('error_type', 'unknown')}` in `{root.get('tool_name', 'unknown')}`/"
         f"`{root.get('step_id', 'unknown')}`"
@@ -517,6 +582,7 @@ def main() -> int:
     fail_reasons_view = _build_fail_reasons_view(trace_rows)
     latency_view = _build_latency_view(trace_rows)
     saturation_view = _build_saturation_view(runs, diagnostics_by_run=diagnostics_by_run)
+    actor_view = _build_actor_view(runs, diagnostics_by_run=diagnostics_by_run)
     failed_run_id = _select_failed_run(runs, requested_run_id=args.failed_run_id)
     failed_run_diagnostics = _build_failed_run_diagnostics(
         runs=runs,
@@ -530,6 +596,7 @@ def main() -> int:
         fail_reasons_view=fail_reasons_view,
         latency_view=latency_view,
         saturation_view=saturation_view,
+        actor_view=actor_view,
     )
 
     outputs = {
@@ -538,6 +605,7 @@ def main() -> int:
         "fail_reasons.json": fail_reasons_view,
         "latency_percentiles.json": latency_view,
         "saturation.json": saturation_view,
+        "actors.json": actor_view,
         "failed_run_diagnostics.json": failed_run_diagnostics,
     }
     for filename, payload in outputs.items():

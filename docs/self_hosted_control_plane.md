@@ -68,16 +68,34 @@ The smoke validates:
 - Runtime API expects `Authorization: Bearer <token>`.
 - Token source: `EAP_RUNTIME_BEARER_TOKEN` in `deploy/self_hosted/.env`.
 - Requests without valid bearer token return `401 unauthorized`.
+- Runtime also supports scoped tokens via `--scoped-auth-config` for multi-user governance.
+
+Scope baseline:
+- `runs:execute`, `runs:resume`, `runs:read`, `pointers:read`
+- elevated cross-run scopes: `runs:resume:any`, `runs:read:any`, `pointers:read:any`
+
+Ownership baseline:
+- run owners can read/resume their own runs.
+- cross-run access requires `*:any` scope.
+- pointer summary checks ownership when pointer metadata includes `execution_run_id`.
+
+See `docs/remote_ops_governance.md` for governance rules and scoped token examples.
 
 ## Credential Management
 
 - Use a strong, randomly generated runtime token.
+- Prefer role-scoped tokens for operators instead of sharing one global token.
 - Do not commit `deploy/self_hosted/.env` to source control.
 - Rotate token by updating `EAP_RUNTIME_BEARER_TOKEN` and restarting the stack:
 
 ```bash
 docker compose --env-file deploy/self_hosted/.env -f deploy/self_hosted/docker-compose.yml up -d --force-recreate
 ```
+
+Scoped-token rollout pattern:
+1. Keep the admin token for break-glass only.
+2. Issue dedicated scoped tokens per operator role.
+3. Audit and rotate `*:any` scopes first.
 
 ## TLS / Proxy Guidance
 
