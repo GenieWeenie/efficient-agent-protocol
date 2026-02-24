@@ -21,6 +21,16 @@ from eap.runtime.auth_scopes import (
     SCOPE_RUNS_RESUME,
     SCOPE_RUNS_RESUME_ANY,
 )
+from eap.runtime.guardrails import (
+    RUNTIME_OPERATION_MACRO_EXECUTE,
+    RUNTIME_OPERATION_POINTER_SUMMARY,
+    RUNTIME_OPERATION_RUN_READ,
+    RUNTIME_OPERATION_RUN_RESUME,
+    ConcurrencyToken,
+    RuntimeGuardrails,
+    normalize_concurrency_limits,
+    normalize_rate_limit_rules,
+)
 
 
 def _timestamp_utc() -> str:
@@ -119,6 +129,55 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             return None
         return context
 
+    def _enforce_rate_limit(self, *, operation: str, auth_context: Dict[str, Any]) -> bool:
+        actor_id = str(
+            auth_context.get("actor_id")
+            or auth_context.get("auth_subject")
+            or "anonymous"
+        ).strip() or "anonymous"
+        decision = self.server.guardrails.check_rate_limit(operation=operation, actor_id=actor_id)
+        if decision.allowed:
+            return True
+
+        details = {
+            "operation": operation,
+            "actor_id": actor_id,
+            "limit": decision.limit,
+            "window_seconds": decision.window_seconds,
+            "retry_after_seconds": round(decision.retry_after_seconds, 3),
+        }
+        self.server.record_guardrail_event("rate_limited", details)
+        self._send_error(
+            429,
+            "rate_limited",
+            f"Rate limit exceeded for '{operation}'.",
+            details=details,
+            headers={"Retry-After": RuntimeGuardrails.retry_after_header_value(decision.retry_after_seconds)},
+        )
+        return False
+
+    def _acquire_concurrency(self, *, operation: str, run_id: Optional[str] = None) -> Optional[ConcurrencyToken]:
+        decision, token = self.server.guardrails.acquire_concurrency(operation=operation, run_id=run_id)
+        if decision.allowed and token is not None:
+            return token
+
+        details = {
+            "operation": operation,
+            "limit_type": decision.limit_type,
+            "limit": decision.limit,
+            "current_inflight": decision.current_inflight,
+        }
+        if run_id:
+            details["run_id"] = run_id
+        self.server.record_guardrail_event("throttled", details)
+        self._send_error(
+            429,
+            "throttled",
+            f"Concurrency limit exceeded for '{operation}'.",
+            details=details,
+        )
+        return None
+
     def _to_actor_metadata(self, auth_context: Dict[str, Any], operation: str) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {
             "actor_id": auth_context.get("actor_id"),
@@ -192,6 +251,11 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         auth_context = self._require_auth(SCOPE_RUNS_EXECUTE)
         if auth_context is None:
             return
+        if not self._enforce_rate_limit(
+            operation=RUNTIME_OPERATION_MACRO_EXECUTE,
+            auth_context=auth_context,
+        ):
+            return
 
         payload = self._read_json_body()
         if payload is None:
@@ -213,20 +277,26 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             )
             return
 
-        try:
-            result = asyncio.run(
-                self.server.executor.execute_macro(
-                    macro,
-                    actor_metadata=self._to_actor_metadata(auth_context, operation="execute"),
-                )
-            )
-        except Exception as exc:  # pragma: no cover - defensive safeguard
-            self._send_error(
-                500,
-                "execution_error",
-                f"Macro execution failed: {str(exc)}",
-            )
+        concurrency_token = self._acquire_concurrency(operation=RUNTIME_OPERATION_MACRO_EXECUTE)
+        if concurrency_token is None:
             return
+        try:
+            try:
+                result = asyncio.run(
+                    self.server.executor.execute_macro(
+                        macro,
+                        actor_metadata=self._to_actor_metadata(auth_context, operation="execute"),
+                    )
+                )
+            except Exception as exc:  # pragma: no cover - defensive safeguard
+                self._send_error(
+                    500,
+                    "execution_error",
+                    f"Macro execution failed: {str(exc)}",
+                )
+                return
+        finally:
+            self.server.guardrails.release_concurrency(concurrency_token)
 
         if not result or "pointer_id" not in result:
             self._send_error(
@@ -249,6 +319,11 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         auth_context = self._require_auth(SCOPE_RUNS_RESUME)
         if auth_context is None:
             return
+        if not self._enforce_rate_limit(
+            operation=RUNTIME_OPERATION_RUN_RESUME,
+            auth_context=auth_context,
+        ):
+            return
         if not run_id:
             self._send_error(400, "validation_error", "run_id is required.")
             return
@@ -267,35 +342,44 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             self._send_error(400, "validation_error", "Field 'approvals' must be a JSON object.")
             return
 
+        concurrency_token = self._acquire_concurrency(
+            operation=RUNTIME_OPERATION_RUN_RESUME,
+            run_id=run_id,
+        )
+        if concurrency_token is None:
+            return
         try:
-            result = asyncio.run(
-                self.server.executor.resume_run(
-                    run_id=run_id,
-                    approvals=approvals,
-                    actor_metadata=self._to_actor_metadata(auth_context, operation="resume"),
+            try:
+                result = asyncio.run(
+                    self.server.executor.resume_run(
+                        run_id=run_id,
+                        approvals=approvals,
+                        actor_metadata=self._to_actor_metadata(auth_context, operation="resume"),
+                    )
                 )
-            )
-        except KeyError:
-            self._send_error(404, "not_found", f"Execution checkpoint for run '{run_id}' not found.")
-            return
-        except ValueError as exc:
-            self._send_error(400, "validation_error", str(exc))
-            return
-        except ValidationError as exc:
-            self._send_error(
-                400,
-                "validation_error",
-                "Invalid resume approval payload.",
-                details={"errors": exc.errors()},
-            )
-            return
-        except Exception as exc:  # pragma: no cover - defensive safeguard
-            self._send_error(
-                500,
-                "execution_error",
-                f"Run resume failed: {str(exc)}",
-            )
-            return
+            except KeyError:
+                self._send_error(404, "not_found", f"Execution checkpoint for run '{run_id}' not found.")
+                return
+            except ValueError as exc:
+                self._send_error(400, "validation_error", str(exc))
+                return
+            except ValidationError as exc:
+                self._send_error(
+                    400,
+                    "validation_error",
+                    "Invalid resume approval payload.",
+                    details={"errors": exc.errors()},
+                )
+                return
+            except Exception as exc:  # pragma: no cover - defensive safeguard
+                self._send_error(
+                    500,
+                    "execution_error",
+                    f"Run resume failed: {str(exc)}",
+                )
+                return
+        finally:
+            self.server.guardrails.release_concurrency(concurrency_token)
 
         if not result or "pointer_id" not in result:
             self._send_error(
@@ -318,6 +402,11 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
     def _handle_get_run(self, run_id: str) -> None:
         auth_context = self._require_auth(SCOPE_RUNS_READ)
         if auth_context is None:
+            return
+        if not self._enforce_rate_limit(
+            operation=RUNTIME_OPERATION_RUN_READ,
+            auth_context=auth_context,
+        ):
             return
         if not run_id:
             self._send_error(400, "validation_error", "run_id is required.")
@@ -357,6 +446,11 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
     def _handle_get_pointer_summary(self, pointer_id: str) -> None:
         auth_context = self._require_auth(SCOPE_POINTERS_READ)
         if auth_context is None:
+            return
+        if not self._enforce_rate_limit(
+            operation=RUNTIME_OPERATION_POINTER_SUMMARY,
+            auth_context=auth_context,
+        ):
             return
         if not pointer_id:
             self._send_error(400, "validation_error", "pointer_id is required.")
@@ -401,11 +495,19 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         }
         self._send_json(200, response_payload)
 
-    def _send_json(self, status_code: int, payload: Dict[str, Any]) -> None:
+    def _send_json(
+        self,
+        status_code: int,
+        payload: Dict[str, Any],
+        headers: Optional[Dict[str, str]] = None,
+    ) -> None:
         encoded = json.dumps(payload, sort_keys=True).encode("utf-8")
         self.send_response(status_code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(encoded)))
+        if headers:
+            for key, value in headers.items():
+                self.send_header(key, value)
         self.end_headers()
         self.wfile.write(encoded)
 
@@ -415,6 +517,7 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         error_type: str,
         message: str,
         details: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
     ) -> None:
         payload: Dict[str, Any] = {
             "error_type": error_type,
@@ -422,7 +525,7 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         }
         if details is not None:
             payload["details"] = details
-        self._send_json(status_code, payload)
+        self._send_json(status_code, payload, headers=headers)
 
 
 class _RuntimeHTTPServer(ThreadingHTTPServer):
@@ -434,12 +537,27 @@ class _RuntimeHTTPServer(ThreadingHTTPServer):
         state_manager: StateManager,
         required_bearer_token: Optional[str],
         scoped_bearer_tokens: Optional[Dict[str, Dict[str, Any]]],
+        guardrails: RuntimeGuardrails,
     ):
         super().__init__(server_address, RequestHandlerClass)
         self.executor = executor
         self.state_manager = state_manager
         self.required_bearer_token = required_bearer_token
         self.scoped_bearer_tokens = scoped_bearer_tokens or {}
+        self.guardrails = guardrails
+        self._guardrail_lock = threading.Lock()
+        self.guardrail_counters = {"rate_limited": 0, "throttled": 0}
+
+    def record_guardrail_event(self, event_type: str, details: Dict[str, Any]) -> None:
+        with self._guardrail_lock:
+            self.guardrail_counters[event_type] = self.guardrail_counters.get(event_type, 0) + 1
+        payload = {
+            "event_type": event_type,
+            "details": details,
+            "counters": dict(self.guardrail_counters),
+            "timestamp_utc": _timestamp_utc(),
+        }
+        print(f"[runtime:guardrail] {json.dumps(payload, sort_keys=True)}")
 
 
 class EAPRuntimeHTTPServer:
@@ -459,6 +577,8 @@ class EAPRuntimeHTTPServer:
                 continue
             actor_id = str(raw_policy.get("actor_id", "")).strip()
             auth_subject = str(raw_policy.get("auth_subject", "")).strip()
+            policy_profile = str(raw_policy.get("policy_profile", "")).strip()
+            template = str(raw_policy.get("template", "")).strip()
 
             scopes_value = raw_policy.get("scopes", [])
             if isinstance(scopes_value, str):
@@ -478,6 +598,10 @@ class EAPRuntimeHTTPServer:
                 "auth_subject": auth_subject or f"scoped_token:{actor_id}",
                 "scopes": sorted(set(scopes)),
             }
+            if policy_profile:
+                normalized[token]["policy_profile"] = policy_profile
+            if template:
+                normalized[token]["template"] = template
         return normalized
 
     def __init__(
@@ -488,9 +612,13 @@ class EAPRuntimeHTTPServer:
         port: int = 0,
         required_bearer_token: Optional[str] = None,
         scoped_bearer_tokens: Optional[Dict[str, Dict[str, Any]]] = None,
+        rate_limit_rules: Optional[Dict[str, Dict[str, Any]]] = None,
+        concurrency_limits: Optional[Dict[str, Any]] = None,
     ):
         self._host = host
         normalized_scoped_tokens = self._normalize_scoped_bearer_tokens(scoped_bearer_tokens)
+        normalized_rate_limits = normalize_rate_limit_rules(rate_limit_rules)
+        normalized_concurrency_limits = normalize_concurrency_limits(concurrency_limits)
         self._httpd = _RuntimeHTTPServer(
             (host, port),
             _RuntimeRequestHandler,
@@ -498,6 +626,10 @@ class EAPRuntimeHTTPServer:
             state_manager=state_manager,
             required_bearer_token=required_bearer_token,
             scoped_bearer_tokens=normalized_scoped_tokens,
+            guardrails=RuntimeGuardrails(
+                rate_limit_rules=normalized_rate_limits,
+                concurrency_limits=normalized_concurrency_limits,
+            ),
         )
         self._thread: Optional[threading.Thread] = None
 

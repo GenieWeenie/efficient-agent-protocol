@@ -70,6 +70,7 @@ The smoke validates:
 - Requests without valid bearer token return `401 unauthorized`.
 - Runtime also supports scoped tokens via `--scoped-auth-config` for multi-user governance.
 - Scoped auth defaults to `--policy-profile strict` unless overridden.
+- Runtime supports `--guardrails-config` for endpoint rate limits and concurrency ceilings.
 
 Scope baseline:
 - `runs:execute`, `runs:resume`, `runs:read`, `pointers:read`
@@ -110,7 +111,7 @@ The reference stack exposes plain HTTP by default. For production:
 
 Suggested minimums:
 - TLS 1.2+ only.
-- Rate limits on runtime API endpoints.
+- Rate limits on runtime API endpoints (or explicit `--guardrails-config` override).
 - Access logs enabled on the proxy.
 
 ## Backup / Restore Basics

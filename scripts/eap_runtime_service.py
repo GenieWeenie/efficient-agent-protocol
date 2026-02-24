@@ -12,6 +12,7 @@ from eap.environment import AsyncLocalExecutor, ToolRegistry
 from eap.environment.tools import ANALYZE_SCHEMA, FETCH_SCHEMA, analyze_data, fetch_user_data
 from eap.protocol import StateManager
 from eap.runtime import EAPRuntimeHTTPServer
+from eap.runtime.guardrails import normalize_concurrency_limits, normalize_rate_limit_rules
 from eap.runtime.policy_profiles import DEFAULT_POLICY_PROFILE, build_scoped_token_policies
 
 
@@ -56,6 +57,16 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "(default: strict)."
         ),
     )
+    parser.add_argument(
+        "--guardrails-config",
+        default="",
+        help=(
+            "Optional JSON file defining runtime rate limits and concurrency limits. "
+            "Format: {\"rate_limits\":{\"macro_execute\":{\"max_requests\":60,\"window_seconds\":60}},"
+            "\"concurrency\":{\"global_inflight\":12,\"execute_inflight\":6,\"resume_inflight\":6,"
+            "\"per_run_resume_inflight\":1}}"
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -80,6 +91,51 @@ def _load_scoped_auth_config(
     )
 
 
+def _load_guardrails_config(
+    path: str,
+) -> tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
+    if not path.strip():
+        normalized_rate_limits = normalize_rate_limit_rules(None)
+        normalized_concurrency_limits = normalize_concurrency_limits(None)
+        return (
+            {},
+            {},
+            normalized_rate_limits,
+            {
+                "global_inflight": normalized_concurrency_limits.global_inflight,
+                "execute_inflight": normalized_concurrency_limits.execute_inflight,
+                "resume_inflight": normalized_concurrency_limits.resume_inflight,
+                "per_run_resume_inflight": normalized_concurrency_limits.per_run_resume_inflight,
+            },
+        )
+
+    config_path = Path(path).resolve()
+    payload = json.loads(config_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("guardrails config must be a JSON object.")
+
+    rate_limits = payload.get("rate_limits") or {}
+    concurrency_limits = payload.get("concurrency") or {}
+    if not isinstance(rate_limits, dict):
+        raise ValueError("guardrails config 'rate_limits' must be an object.")
+    if not isinstance(concurrency_limits, dict):
+        raise ValueError("guardrails config 'concurrency' must be an object.")
+
+    normalized_rate_limits = normalize_rate_limit_rules(rate_limits)
+    normalized_concurrency_limits = normalize_concurrency_limits(concurrency_limits)
+    return (
+        rate_limits,
+        concurrency_limits,
+        normalized_rate_limits,
+        {
+            "global_inflight": normalized_concurrency_limits.global_inflight,
+            "execute_inflight": normalized_concurrency_limits.execute_inflight,
+            "resume_inflight": normalized_concurrency_limits.resume_inflight,
+            "per_run_resume_inflight": normalized_concurrency_limits.per_run_resume_inflight,
+        },
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
 
@@ -94,6 +150,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     except Exception as exc:
         print(f"[runtime:error] failed to load --scoped-auth-config: {exc}")
+        return 1
+    try:
+        rate_limit_rules, concurrency_limits, normalized_rate_limits, normalized_concurrency_limits = (
+            _load_guardrails_config(args.guardrails_config)
+        )
+    except Exception as exc:
+        print(f"[runtime:error] failed to load --guardrails-config: {exc}")
         return 1
 
     if not bearer_token and not scoped_tokens:
@@ -115,6 +178,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         port=args.port,
         required_bearer_token=bearer_token or None,
         scoped_bearer_tokens=scoped_tokens or None,
+        rate_limit_rules=rate_limit_rules or None,
+        concurrency_limits=concurrency_limits or None,
     ).start()
 
     stop_event = threading.Event()
@@ -131,6 +196,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"[runtime] db_path={db_path}")
     print(f"[runtime] policy_profile={active_policy_profile}")
     print(f"[runtime] scoped_auth_tokens={len(scoped_tokens)}")
+    print(f"[runtime] rate_limits={json.dumps(normalized_rate_limits, sort_keys=True, default=lambda o: o.__dict__)}")
+    print(f"[runtime] concurrency_limits={json.dumps(normalized_concurrency_limits, sort_keys=True)}")
     print("[runtime] tools=fetch_user_data,analyze_data")
 
     try:
