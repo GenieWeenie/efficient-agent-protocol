@@ -1,6 +1,6 @@
 # Phase 7 Competitive Roadmap (OpenClaw + Market Positioning)
 
-Status: In progress (through EAP-084, 2026-02-24)
+Status: In progress (through EAP-085, 2026-02-24)
 
 Current status:
 - [x] `EAP-071` interop spike + compatibility matrix published (`docs/openclaw_interop.md`)
@@ -17,7 +17,8 @@ Current status:
 - [x] `EAP-082` "Why EAP now" competitive proof sheet refresh
 - [x] `EAP-083` proof sheet contract checks in CI
 - [x] `EAP-084` execution governance protocol + Linear-first queue
-- [ ] `EAP-085` onward
+- [x] `EAP-085` tranche 4 scope + acceptance criteria
+- [ ] `EAP-086` onward
 
 ## Objective
 
@@ -136,6 +137,20 @@ Optional validation track:
     - Deliverable: publish a Linear-first execution protocol and explicit ordered queue to stop ad-hoc starts
     - Done when: queue is visible in-repo and mapped to active Linear issues (`Now`/`Next`/`Blocked`)
     - Status: complete (`docs/execution_protocol.md`, Linear `GEN-45/GEN-44/GEN-46`)
+
+15. `EAP-085` Tranche 4 scope and acceptance criteria
+    - Deliverable: define ordered post-interop items with explicit deliverables and measurable done criteria
+    - Done when: at least 3 concrete items are scoped with dependency order and Linear mapping
+    - Status: complete (`docs/phase7_tranche4_scope.md`, Linear `GEN-46/GEN-48/GEN-47`)
+
+## Tranche 4: Gap-Closure Execution (Scoped by EAP-085)
+
+16. `EAP-086` OpenClaw agent-routing header support (`x-openclaw-agent-id`)
+    - Linear: `GEN-46`
+17. `EAP-087` OpenClaw `/tools/invoke` client bridge
+    - Linear: `GEN-48` (blocked by `EAP-086`)
+18. `EAP-088` OpenAI Responses API adapter path
+    - Linear: `GEN-47` (blocked by `EAP-087`)
 
 ## Guardrails
 
