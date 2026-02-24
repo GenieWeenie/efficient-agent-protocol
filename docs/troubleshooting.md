@@ -45,6 +45,30 @@ Fix:
 - Or install explicitly:
   - `python3 -m pip install -e .`
 
+## Doctor Command
+
+Run doctor:
+- `python scripts/eap_doctor.py doctor --env-file .env --output-json artifacts/doctor/diagnostics.json`
+
+Exit code categories (bitmask):
+- `1` = environment file errors (`env`)
+- `2` = configuration parsing/loading errors (`config`)
+- `4` = provider connectivity errors (`connectivity`)
+- `8` = storage roundtrip errors (`storage`)
+- `16` = local tool/runtime prerequisite errors (`tools`)
+
+Examples:
+- Exit code `5` means `env` + `connectivity` failures (`1 + 4`)
+- Exit code `24` means `storage` + `tools` failures (`8 + 16`)
+
+Doctor remediation map:
+- `env`: regenerate `.env` with
+  - `python scripts/eap_doctor.py init-env --output .env --force`
+- `config`: review `docs/configuration.md` and resolve invalid field values
+- `connectivity`: verify gateway host/port is reachable and base URLs are correct
+- `storage`: ensure local filesystem write permissions for the configured DB path
+- `tools`: install missing tools/runtime dependencies and rerun doctor
+
 ## Import Errors
 
 ### `ModuleNotFoundError: No module named 'eap'`

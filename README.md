@@ -101,7 +101,7 @@ pip install -e .
 2. Configure
 
 ```bash
-cp .env.example .env
+python scripts/eap_doctor.py init-env --output .env --force
 ```
 
 Minimum variables:
@@ -118,21 +118,27 @@ EAP_API_KEY=not-needed
 python -m examples.01_minimal
 ```
 
-4. Run dashboard
+4. Run doctor diagnostics
+
+```bash
+python scripts/eap_doctor.py doctor --env-file .env --output-json artifacts/doctor/diagnostics.json
+```
+
+5. Run dashboard
 
 ```bash
 pip install streamlit pandas
 streamlit run app.py
 ```
 
-5. Use it
+6. Use it
 
 - Open `http://localhost:8501`
 - In **Agent Chat**, ask for a task
 - Check **Data Inspector** for pointer payloads
 - Check **Execution Trace** for step timing/retries/errors
 
-6. Try starter packs
+7. Try starter packs
 
 ```bash
 python -m starter_packs.research_assistant --question "What are launch risks?"
@@ -140,7 +146,7 @@ python -m starter_packs.doc_ops --focus "summarize priorities and actions"
 python -m starter_packs.local_etl
 ```
 
-7. Optional OpenClaw smoke check
+8. Optional OpenClaw smoke check
 
 ```bash
 ./scripts/interop_openclaw_smoke.sh v2026.2.22
@@ -174,6 +180,8 @@ macro = architect.generate_macro("Read README.md and summarize setup steps", man
 
 ```bash
 ./scripts/bootstrap_local.sh
+python scripts/eap_doctor.py init-env --output .env --force
+python scripts/eap_doctor.py doctor --env-file .env --output-json artifacts/doctor/diagnostics.json
 python3 -m pytest -q
 pre-commit run --all-files
 python3 scripts/migrate_state_db.py --db-path agent_state.db --dry-run
