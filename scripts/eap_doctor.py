@@ -22,7 +22,7 @@ CATEGORY_EXIT_BITS = {
     "tools": 16,
 }
 
-REQUIRED_ENV_KEYS = ("EAP_BASE_URL", "EAP_MODEL", "EAP_API_KEY")
+REQUIRED_ENV_KEYS = ("EAP_BASE_URL", "EAP_MODEL")
 ALLOWED_OPENAI_API_MODES = {"chat_completions", "responses"}
 
 
@@ -175,7 +175,6 @@ def _render_env_file(overrides: Dict[str, str]) -> str:
         "# Local mode defaults (update values as needed).",
         f"EAP_BASE_URL={overrides['EAP_BASE_URL']}",
         f"EAP_MODEL={overrides['EAP_MODEL']}",
-        f"EAP_API_KEY={overrides['EAP_API_KEY']}",
         "EAP_TIMEOUT_SECONDS=60",
         "EAP_TEMPERATURE=0.0",
         f"EAP_OPENAI_API_MODE={overrides['EAP_OPENAI_API_MODE']}",
@@ -183,7 +182,6 @@ def _render_env_file(overrides: Dict[str, str]) -> str:
         "",
         f"EAP_ARCHITECT_BASE_URL={overrides['EAP_BASE_URL']}",
         f"EAP_ARCHITECT_MODEL={overrides['EAP_MODEL']}",
-        f"EAP_ARCHITECT_API_KEY={overrides['EAP_API_KEY']}",
         "EAP_ARCHITECT_TIMEOUT_SECONDS=60",
         "EAP_ARCHITECT_TEMPERATURE=0.0",
         f"EAP_ARCHITECT_OPENAI_API_MODE={overrides['EAP_OPENAI_API_MODE']}",
@@ -191,7 +189,6 @@ def _render_env_file(overrides: Dict[str, str]) -> str:
         "",
         f"EAP_AUDITOR_BASE_URL={overrides['EAP_BASE_URL']}",
         f"EAP_AUDITOR_MODEL={overrides['EAP_MODEL']}",
-        f"EAP_AUDITOR_API_KEY={overrides['EAP_API_KEY']}",
         "EAP_AUDITOR_TIMEOUT_SECONDS=60",
         "EAP_AUDITOR_TEMPERATURE=0.0",
         f"EAP_AUDITOR_OPENAI_API_MODE={overrides['EAP_OPENAI_API_MODE']}",
@@ -225,7 +222,6 @@ def run_init_env(args: argparse.Namespace) -> int:
     values = {
         "EAP_BASE_URL": base_url,
         "EAP_MODEL": model,
-        "EAP_API_KEY": "not-needed",
         "EAP_OPENAI_API_MODE": mode,
     }
     errors = validate_env_values(values)
