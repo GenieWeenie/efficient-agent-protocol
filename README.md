@@ -11,26 +11,63 @@ Efficient Agent Protocol is a local-first framework for multi-step tool workflow
 It stores large outputs as pointer-backed state (`ptr_*`) and runs dependency-aware DAG steps in parallel.
 It also ships OpenClaw interop paths for gateway/tool integration.
 
-## Who This Is For
+## 30-Second Pitch
 
-- Python developers building local-first agent/tool orchestration
-- Teams that need pointer-backed state and execution trace visibility
+- EAP is the reliability layer for agent workflows: deterministic execution, resumable runs, and pointer-backed state.
+- It is built for local-first teams that need control over failure behavior, replayability, and traceability.
+- It integrates with existing ecosystems instead of forcing a rewrite (`chat_completions`, `responses`, OpenClaw tooling, MCP tools).
 
-Not ideal yet for:
+See `docs/eap_proof_sheet.md` for reproducible evidence and command-level validation.
+
+## Why Choose EAP
+
+| If you need | EAP gives you |
+| --- | --- |
+| Large outputs without prompt bloat | Pointer-backed state (`ptr_*`) passed between steps |
+| Predictable behavior under failure | DAG scheduling, retries, typed errors, and checkpointed resume/replay |
+| Human control at critical steps | Step-level HITL checkpoints (`approval_required`, `approved`, `rejected`) |
+| Operator-grade confidence | Trace visibility, telemetry export pack, and CI eval threshold gates |
+| Portability across runtimes | OpenAI-compatible providers + OpenClaw bridge + MCP bridge |
+
+## Where EAP Fits
+
+Best for:
+- Python developers building local-first orchestration with explicit execution semantics.
+- Teams that care about observability, replayability, and controlled failure behavior.
+
+Not ideal yet:
 - strict long-term API compatibility requirements before `v1.0`
 - non-technical users expecting zero-configuration onboarding
+- teams that want a fully managed hosted control plane instead of running local/runtime components
+
+## Current Limits (Honest)
+
+- Pre-1.0 contract: APIs and schema can still change (`STABILITY.md`).
+- `responses` mode does not support streaming yet (`chat_completions` does).
+- This is an engineering-first runtime, not a no-code platform.
 
 ## What You Get
 
 - Pointer-based state to keep prompts small
 - Parallel DAG execution with retries and validation
+- Human-in-the-loop checkpoints (`approval_required`, `approved`, `rejected`)
+- Crash-safe resume/replay from persisted run checkpoints
+- Evaluation harness with CI threshold gates (`scripts/eval_scorecard.py`)
+- Operator telemetry pack export (`scripts/export_telemetry_pack.py`)
 - Built-in chat UI (Streamlit) with trace + data inspection
 - Conversation memory (full/window/summary)
 - Pluggable pointer storage backends (SQLite, Redis, PostgreSQL)
-- OpenClaw interop support:
+- OpenClaw and MCP interop:
   - OpenAI-compatible modes: `chat_completions` and `responses`
   - Gateway tool bridge for `POST /tools/invoke`
   - OpenClaw plugin + skills starter package in `integrations/openclaw/eap-runtime-plugin`
+  - MCP tool bridge (`invoke_mcp_tool`)
+
+## Why Not Just Use A Generic Agent Framework?
+
+- If you mainly need prompting convenience and managed UX, a platform suite may be simpler.
+- If you need explicit run-state contracts, replayability, and pointer-backed payload discipline, EAP is a stronger fit.
+- If you need to integrate with OpenClaw without rewriting your runtime, EAP now has first-party bridge paths.
 
 ## Quickstart (GitHub-first)
 
@@ -131,35 +168,25 @@ python3 -m build
 
 ## Docs
 
-- `STABILITY.md`
-- `ROADMAP.md`
-- `docs/v1_contract.md`
-- `docs/release_notes_template.md`
-- `docs/benchmarks.md`
-- `docs/release.md`
-- `docs/v1_stabilization_checklist.md`
-- `docs/migrations.md`
-- `docs/observability.md`
-- `docs/operator_telemetry_pack.md`
-- `docs/maintainer_runbook.md`
-- `SECURITY.md`
-- `CONTRIBUTING.md`
+- Start here:
+  - `docs/eap_proof_sheet.md`
+  - `docs/configuration.md`
+  - `docs/architecture.md`
+  - `docs/troubleshooting.md`
+- Contract and policy:
+  - `STABILITY.md`
+  - `ROADMAP.md`
+  - `docs/v1_contract.md`
+  - `SECURITY.md`
+  - `CONTRIBUTING.md`
+- Runtime and operations:
+  - `docs/workflow_schema.md`
+  - `docs/tools.md`
+  - `docs/observability.md`
+  - `docs/operator_telemetry_pack.md`
+  - `docs/migrations.md`
+- Interop and starter packs:
+  - `docs/openclaw_interop.md`
+  - `integrations/openclaw/eap-runtime-plugin/README.md`
+  - `docs/starter_packs/README.md`
 - GitHub roadmap board: https://github.com/users/GenieWeenie/projects/1
-- `docs/configuration.md`
-- `docs/architecture.md`
-- `docs/tools.md`
-- `docs/workflow_schema.md`
-- `docs/storage_lifecycle.md`
-- `docs/storage_backends.md`
-- `docs/sdk_contract.md`
-- `docs/distributed_execution.md`
-- `docs/troubleshooting.md`
-- `docs/eap_proof_sheet.md`
-- `docs/phase7_competitive_openclaw_roadmap.md`
-- `docs/openclaw_interop.md`
-- `docs/starter_packs/README.md`
-- `docs/starter_packs/research_assistant.md`
-- `docs/starter_packs/doc_ops.md`
-- `docs/starter_packs/local_etl.md`
-- `integrations/openclaw/eap-runtime-plugin/README.md`
-- `integrations/openclaw/eap-runtime-plugin/skills/README.md`
