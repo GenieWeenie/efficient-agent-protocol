@@ -155,6 +155,101 @@ class ProviderAdaptersTest(unittest.TestCase):
                 provider.complete(request)
         self.assertIn("Responses API path is unavailable", str(context.exception))
 
+    def test_openai_responses_mode_stream_parses_sse_delta_chunks(self) -> None:
+        provider = OpenAIProvider(
+            endpoint="http://localhost:1234/v1/responses",
+            api_key="secret",
+            timeout_seconds=10,
+            api_mode="responses",
+        )
+        request = CompletionRequest(
+            model="gpt-4.1-mini",
+            messages=[ProviderMessage(role="user", content="hello")],
+            temperature=0.0,
+        )
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.iter_lines.return_value = [
+            b"event: response.output_text.delta",
+            b'data: {"type":"response.output_text.delta","delta":"Hel"}',
+            b'data: {"type":"response.output_text.delta","delta":"lo"}',
+            b'data: {"type":"response.output_text.done","text":"Hello"}',
+            b"data: [DONE]",
+        ]
+        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+            chunks = list(provider.stream(request))
+
+        self.assertEqual(chunks, ["Hel", "lo"])
+        kwargs = post.call_args.kwargs
+        self.assertTrue(kwargs["stream"])
+        self.assertTrue(kwargs["json"]["stream"])
+        self.assertIn("input", kwargs["json"])
+
+    def test_openai_responses_mode_stream_can_emit_completed_payload_text(self) -> None:
+        provider = OpenAIProvider(
+            endpoint="http://localhost:1234/v1/responses",
+            api_key="secret",
+            timeout_seconds=10,
+            api_mode="responses",
+        )
+        request = CompletionRequest(
+            model="gpt-4.1-mini",
+            messages=[ProviderMessage(role="user", content="hello")],
+            temperature=0.0,
+        )
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.iter_lines.return_value = [
+            b'data: {"type":"response.completed","response":{"output_text":"Hello done"}}',
+            b"data: [DONE]",
+        ]
+        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response):
+            chunks = list(provider.stream(request))
+        self.assertEqual(chunks, ["Hello done"])
+
+    def test_openai_responses_mode_stream_unavailable_endpoint_has_explicit_error(self) -> None:
+        provider = OpenAIProvider(
+            endpoint="http://localhost:1234/v1/responses",
+            api_key="secret",
+            timeout_seconds=10,
+            api_mode="responses",
+        )
+        request = CompletionRequest(
+            model="gpt-4.1-mini",
+            messages=[ProviderMessage(role="user", content="hello")],
+            temperature=0.0,
+        )
+        mock_response = MagicMock()
+        mock_response.status_code = 405
+        mock_response.raise_for_status.side_effect = requests.HTTPError("405 Method Not Allowed")
+        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response):
+            with self.assertRaises(RuntimeError) as context:
+                list(provider.stream(request))
+        self.assertIn("Responses API path is unavailable", str(context.exception))
+
+    def test_openai_responses_mode_stream_surfaces_error_event(self) -> None:
+        provider = OpenAIProvider(
+            endpoint="http://localhost:1234/v1/responses",
+            api_key="secret",
+            timeout_seconds=10,
+            api_mode="responses",
+        )
+        request = CompletionRequest(
+            model="gpt-4.1-mini",
+            messages=[ProviderMessage(role="user", content="hello")],
+            temperature=0.0,
+        )
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.iter_lines.return_value = [
+            b'data: {"type":"response.error","error":{"code":"policy_denied","message":"Denied by policy"}}'
+        ]
+        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response):
+            with self.assertRaises(RuntimeError) as context:
+                list(provider.stream(request))
+        self.assertIn("Denied by policy", str(context.exception))
+        self.assertIn("policy_denied", str(context.exception))
+
     def test_google_provider_normalizes_response_and_tools(self) -> None:
         provider = GoogleProvider(
             base_url="https://generativelanguage.googleapis.com/v1beta",

@@ -53,6 +53,16 @@ Cause:
 Fix:
 - Supply a valid key when using `anthropic` or `google`.
 
+### `OpenAI Responses API path is unavailable on this endpoint.`
+Cause:
+- `EAP_OPENAI_API_MODE=responses` is configured but the gateway does not expose `POST /v1/responses`.
+
+Fix:
+- Enable responses support on the gateway if available.
+- Or switch back to chat completions mode:
+  - `EAP_OPENAI_API_MODE=chat_completions`
+  - role-specific: `EAP_ARCHITECT_OPENAI_API_MODE=chat_completions`
+
 ## Tool Execution Failures
 
 ### Validation errors before tool runs
@@ -78,6 +88,17 @@ Cause:
 
 Fix:
 - Include expected exception class name (e.g., `RuntimeError`) in retry policy.
+
+## Streaming Output Issues
+
+### Responses mode stream returns no incremental tokens
+Cause:
+- Gateway may only emit final completion events, or may not emit SSE deltas for `responses` mode.
+
+Fix:
+- Verify gateway supports SSE streaming for `POST /v1/responses`.
+- If only final events are emitted, EAP still returns final text chunks.
+- For strict token-by-token streaming, prefer `chat_completions` mode on gateways with mature SSE behavior.
 
 ## Database / State Issues
 

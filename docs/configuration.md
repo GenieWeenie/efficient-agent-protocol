@@ -65,8 +65,8 @@ OpenAI Responses API mode example:
   - `EAP_AUDITOR_OPENAI_API_MODE=chat_completions`
 
 Mode guidance:
-- Use `chat_completions` when you need streaming token output (`stream=true` path).
-- Use `responses` when your gateway exposes `POST /v1/responses` and you want explicit Responses API compatibility.
+- Use `chat_completions` for broad OpenAI-compatible gateway compatibility and legacy behavior.
+- Use `responses` when your gateway exposes `POST /v1/responses`; EAP supports SSE streaming in this mode when the gateway emits stream events.
 - If `responses` endpoint is disabled/unsupported, EAP surfaces an explicit runtime error and you should switch mode back to `chat_completions`.
 
 ## Validation Rules
