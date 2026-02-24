@@ -1,4 +1,5 @@
 import os
+import threading
 import tempfile
 import time
 import unittest
@@ -15,12 +16,30 @@ def echo_text(text: str) -> str:
     return f"echo:{text}"
 
 
+def slow_echo(text: str, delay_seconds: float = 0.6) -> str:
+    time.sleep(delay_seconds)
+    return f"slow:{text}"
+
+
 ECHO_SCHEMA = {
     "name": "echo_text",
     "parameters": {
         "type": "object",
         "properties": {
             "text": {"type": "string"},
+        },
+        "required": ["text"],
+        "additionalProperties": False,
+    },
+}
+
+SLOW_ECHO_SCHEMA = {
+    "name": "slow_echo",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "text": {"type": "string"},
+            "delay_seconds": {"type": "number"},
         },
         "required": ["text"],
         "additionalProperties": False,
@@ -411,6 +430,145 @@ class RuntimeHttpApiPolicyProfilesIntegrationTest(unittest.TestCase):
         )
         self.assertEqual(run_response.status_code, 200)
         self.assertEqual(run_response.json()["actor_metadata"]["owner_actor_id"], "operator")
+
+
+class RuntimeHttpApiRateLimitIntegrationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        fd, self.db_path = tempfile.mkstemp(prefix="eap-runtime-rate-limit-", suffix=".db")
+        os.close(fd)
+
+        self.state_manager = StateManager(db_path=self.db_path)
+        registry = ToolRegistry()
+        registry.register("echo_text", echo_text, ECHO_SCHEMA)
+        executor = AsyncLocalExecutor(self.state_manager, registry)
+
+        self.server = EAPRuntimeHTTPServer(
+            executor=executor,
+            state_manager=self.state_manager,
+            required_bearer_token="secret-token",
+            rate_limit_rules={
+                "macro_execute": {"max_requests": 1, "window_seconds": 60},
+                "run_resume": {"max_requests": 5, "window_seconds": 60},
+                "run_read": {"max_requests": 5, "window_seconds": 60},
+                "pointer_summary": {"max_requests": 5, "window_seconds": 60},
+            },
+        ).start()
+        time.sleep(0.05)
+
+    def tearDown(self) -> None:
+        self.server.stop()
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
+
+    def test_macro_execute_is_rate_limited_with_retry_after(self) -> None:
+        payload = {
+            "macro": {
+                "steps": [
+                    {
+                        "step_id": "step_1",
+                        "tool_name": "echo_text",
+                        "arguments": {"text": "hello"},
+                    }
+                ]
+            }
+        }
+
+        first = requests.post(
+            f"{self.server.base_url}/v1/eap/macro/execute",
+            headers={"Authorization": "Bearer secret-token"},
+            json=payload,
+            timeout=5,
+        )
+        self.assertEqual(first.status_code, 200)
+
+        second = requests.post(
+            f"{self.server.base_url}/v1/eap/macro/execute",
+            headers={"Authorization": "Bearer secret-token"},
+            json=payload,
+            timeout=5,
+        )
+        self.assertEqual(second.status_code, 429)
+        self.assertEqual(second.json()["error_type"], "rate_limited")
+        self.assertEqual(second.json()["details"]["operation"], "macro_execute")
+        self.assertIn("Retry-After", second.headers)
+
+
+class RuntimeHttpApiConcurrencyIntegrationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        fd, self.db_path = tempfile.mkstemp(prefix="eap-runtime-concurrency-", suffix=".db")
+        os.close(fd)
+
+        self.state_manager = StateManager(db_path=self.db_path)
+        registry = ToolRegistry()
+        registry.register("slow_echo", slow_echo, SLOW_ECHO_SCHEMA)
+        executor = AsyncLocalExecutor(self.state_manager, registry)
+
+        self.server = EAPRuntimeHTTPServer(
+            executor=executor,
+            state_manager=self.state_manager,
+            required_bearer_token="secret-token",
+            rate_limit_rules={
+                "macro_execute": {"max_requests": 20, "window_seconds": 60},
+                "run_resume": {"max_requests": 20, "window_seconds": 60},
+                "run_read": {"max_requests": 20, "window_seconds": 60},
+                "pointer_summary": {"max_requests": 20, "window_seconds": 60},
+            },
+            concurrency_limits={
+                "global_inflight": 1,
+                "execute_inflight": 1,
+                "resume_inflight": 1,
+                "per_run_resume_inflight": 1,
+            },
+        ).start()
+        time.sleep(0.05)
+
+    def tearDown(self) -> None:
+        self.server.stop()
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
+
+    def test_execute_is_throttled_when_concurrency_limit_reached(self) -> None:
+        payload = {
+            "macro": {
+                "steps": [
+                    {
+                        "step_id": "step_1",
+                        "tool_name": "slow_echo",
+                        "arguments": {"text": "hello", "delay_seconds": 0.7},
+                    }
+                ]
+            }
+        }
+
+        first_response: dict = {}
+
+        def _run_first() -> None:
+            resp = requests.post(
+                f"{self.server.base_url}/v1/eap/macro/execute",
+                headers={"Authorization": "Bearer secret-token"},
+                json=payload,
+                timeout=5,
+            )
+            first_response["status"] = resp.status_code
+
+        thread = threading.Thread(target=_run_first, daemon=True)
+        thread.start()
+        time.sleep(0.15)
+
+        second = requests.post(
+            f"{self.server.base_url}/v1/eap/macro/execute",
+            headers={"Authorization": "Bearer secret-token"},
+            json=payload,
+            timeout=5,
+        )
+        self.assertEqual(second.status_code, 429)
+        self.assertEqual(second.json()["error_type"], "throttled")
+        self.assertEqual(second.json()["details"]["operation"], "macro_execute")
+        self.assertEqual(second.json()["details"]["limit_type"], "global_inflight")
+
+        thread.join(timeout=5)
+        self.assertEqual(first_response.get("status"), 200)
+
 
 if __name__ == "__main__":
     unittest.main()

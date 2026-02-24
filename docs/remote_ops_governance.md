@@ -56,6 +56,53 @@ Operational controls:
 - periodic pointer TTL cleanup
 - access review for scoped tokens and elevated (`*:any`) scopes
 
+## Rate Limits And Concurrency Guards (EAP-096)
+
+Runtime now enforces request throttling guardrails with deterministic `429` responses.
+
+Defaults:
+
+- Rate limits (per actor, per operation, 60-second window):
+  - `macro_execute`: 60 requests
+  - `run_resume`: 60 requests
+  - `run_read`: 240 requests
+  - `pointer_summary`: 240 requests
+- Concurrency:
+  - `global_inflight`: 12
+  - `execute_inflight`: 6
+  - `resume_inflight`: 6
+  - `per_run_resume_inflight`: 1
+
+Response semantics:
+
+- `error_type=rate_limited` with `Retry-After` header when rate windows are exceeded.
+- `error_type=throttled` when concurrency ceilings are exceeded.
+
+Guardrail telemetry:
+
+- runtime emits structured guardrail events to service logs with prefix:
+  - `[runtime:guardrail]`
+- event payload includes `event_type`, limit details, cumulative counters, and timestamp.
+
+Optional guardrails config (`--guardrails-config`):
+
+```json
+{
+  "rate_limits": {
+    "macro_execute": {"max_requests": 60, "window_seconds": 60},
+    "run_resume": {"max_requests": 60, "window_seconds": 60},
+    "run_read": {"max_requests": 240, "window_seconds": 60},
+    "pointer_summary": {"max_requests": 240, "window_seconds": 60}
+  },
+  "concurrency": {
+    "global_inflight": 12,
+    "execute_inflight": 6,
+    "resume_inflight": 6,
+    "per_run_resume_inflight": 1
+  }
+}
+```
+
 ## Scoped Token Config Example
 
 `scripts/eap_runtime_service.py` accepts `--scoped-auth-config` with this schema:
@@ -130,6 +177,7 @@ python scripts/eap_runtime_service.py \
   --port 8080 \
   --db-path /var/lib/eap/agent_state.db \
   --policy-profile strict \
+  --guardrails-config /etc/eap/guardrails.json \
   --scoped-auth-config /etc/eap/scoped_auth.json
 ```
 

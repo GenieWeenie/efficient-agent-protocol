@@ -116,6 +116,25 @@ Fix:
 - See:
   - `docs/remote_ops_governance.md`
 
+### Runtime API returns `429 rate_limited`
+Cause:
+- Endpoint request count exceeded configured rate window for the actor.
+
+Fix:
+- Respect `Retry-After` response header before retrying.
+- Raise operation limit in `--guardrails-config` if sustained load is expected.
+- Verify traffic distribution is not funneled through one shared actor token.
+
+### Runtime API returns `429 throttled`
+Cause:
+- Concurrency ceiling reached (`global_inflight`, operation inflight, or per-run resume limit).
+
+Fix:
+- Retry with backoff and jitter.
+- Lower parallel caller fan-out.
+- Increase concurrency limits in `--guardrails-config` after capacity validation.
+- Review runtime logs for `[runtime:guardrail]` events to identify dominant limit type.
+
 ### Operator UI is reachable but no runs appear
 Cause:
 - No workflow has executed yet, or runtime and UI are not sharing the same state volume.
