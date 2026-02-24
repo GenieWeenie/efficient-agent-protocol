@@ -69,6 +69,7 @@ The smoke validates:
 - Token source: `EAP_RUNTIME_BEARER_TOKEN` in `deploy/self_hosted/.env`.
 - Requests without valid bearer token return `401 unauthorized`.
 - Runtime also supports scoped tokens via `--scoped-auth-config` for multi-user governance.
+- Scoped auth defaults to `--policy-profile strict` unless overridden.
 
 Scope baseline:
 - `runs:execute`, `runs:resume`, `runs:read`, `pointers:read`
@@ -80,6 +81,7 @@ Ownership baseline:
 - pointer summary checks ownership when pointer metadata includes `execution_run_id`.
 
 See `docs/remote_ops_governance.md` for governance rules and scoped token examples.
+See profile/template matrix and deny-by-default behavior in `docs/remote_ops_governance.md`.
 
 ## Credential Management
 

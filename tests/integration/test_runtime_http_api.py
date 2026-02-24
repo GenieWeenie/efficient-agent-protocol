@@ -8,6 +8,7 @@ import requests
 from eap.environment import AsyncLocalExecutor, ToolRegistry
 from eap.protocol import StateManager
 from eap.runtime import EAPRuntimeHTTPServer
+from eap.runtime.policy_profiles import build_scoped_token_policies
 
 
 def echo_text(text: str) -> str:
@@ -298,6 +299,118 @@ class RuntimeHttpApiScopedAuthIntegrationTest(unittest.TestCase):
         self.assertEqual(run_body["actor_metadata"]["actor_id"], "ops-admin")
         self.assertEqual(run_body["status"], "succeeded")
 
+
+class RuntimeHttpApiPolicyProfilesIntegrationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        fd, self.db_path = tempfile.mkstemp(prefix="eap-runtime-policy-profiles-", suffix=".db")
+        os.close(fd)
+
+        self.state_manager = StateManager(db_path=self.db_path)
+        registry = ToolRegistry()
+        registry.register("echo_text", echo_text, ECHO_SCHEMA)
+        executor = AsyncLocalExecutor(self.state_manager, registry)
+
+        scoped_tokens, active_profile = build_scoped_token_policies(
+            {
+                "policy_profile": "strict",
+                "tokens": [
+                    {"token": "viewer-token", "actor_id": "viewer", "template": "viewer"},
+                    {"token": "operator-token", "actor_id": "operator", "template": "operator"},
+                    {"token": "auditor-token", "actor_id": "auditor", "template": "auditor"},
+                    {"token": "admin-token", "actor_id": "admin", "template": "admin"},
+                ],
+            }
+        )
+        self.assertEqual(active_profile, "strict")
+        self.server = EAPRuntimeHTTPServer(
+            executor=executor,
+            state_manager=self.state_manager,
+            scoped_bearer_tokens=scoped_tokens,
+        ).start()
+        time.sleep(0.05)
+
+    def tearDown(self) -> None:
+        self.server.stop()
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
+
+    def test_strict_profile_denies_execute_for_viewer_template(self) -> None:
+        response = requests.post(
+            f"{self.server.base_url}/v1/eap/macro/execute",
+            headers={"Authorization": "Bearer viewer-token"},
+            json={
+                "macro": {
+                    "steps": [
+                        {
+                            "step_id": "step_1",
+                            "tool_name": "echo_text",
+                            "arguments": {"text": "hello"},
+                        }
+                    ]
+                }
+            },
+            timeout=5,
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["error_type"], "forbidden")
+
+    def test_strict_profile_denies_cross_run_resume_for_admin_template(self) -> None:
+        execute_response = requests.post(
+            f"{self.server.base_url}/v1/eap/macro/execute",
+            headers={"Authorization": "Bearer operator-token"},
+            json={
+                "macro": {
+                    "steps": [
+                        {
+                            "step_id": "step_1",
+                            "tool_name": "echo_text",
+                            "arguments": {"text": "hello"},
+                            "approval": {"required": True},
+                        }
+                    ]
+                }
+            },
+            timeout=5,
+        )
+        self.assertEqual(execute_response.status_code, 200)
+        run_id = execute_response.json()["metadata"]["execution_run_id"]
+
+        resume_response = requests.post(
+            f"{self.server.base_url}/v1/eap/runs/{run_id}/resume",
+            headers={"Authorization": "Bearer admin-token"},
+            json={"approvals": {"step_1": {"decision": "approve"}}},
+            timeout=5,
+        )
+        self.assertEqual(resume_response.status_code, 403)
+        self.assertEqual(resume_response.json()["error_type"], "forbidden")
+
+    def test_strict_profile_auditor_can_read_cross_run_summary(self) -> None:
+        execute_response = requests.post(
+            f"{self.server.base_url}/v1/eap/macro/execute",
+            headers={"Authorization": "Bearer operator-token"},
+            json={
+                "macro": {
+                    "steps": [
+                        {
+                            "step_id": "step_1",
+                            "tool_name": "echo_text",
+                            "arguments": {"text": "hello"},
+                        }
+                    ]
+                }
+            },
+            timeout=5,
+        )
+        self.assertEqual(execute_response.status_code, 200)
+        run_id = execute_response.json()["metadata"]["execution_run_id"]
+
+        run_response = requests.get(
+            f"{self.server.base_url}/v1/eap/runs/{run_id}",
+            headers={"Authorization": "Bearer auditor-token"},
+            timeout=5,
+        )
+        self.assertEqual(run_response.status_code, 200)
+        self.assertEqual(run_response.json()["actor_metadata"]["owner_actor_id"], "operator")
 
 if __name__ == "__main__":
     unittest.main()
