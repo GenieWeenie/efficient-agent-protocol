@@ -1,6 +1,6 @@
 # Phase 8 Adoption + Limits Closure Roadmap
 
-Status: In progress (started 2026-02-24)  
+Status: Completed (started 2026-02-24, completed 2026-02-24)  
 Source of truth: Linear project `Efficient Agent Protocol Roadmap`
 
 Current status:
@@ -9,7 +9,7 @@ Current status:
 - [x] `EAP-091` one-command bootstrap (`GEN-51`)
 - [x] `EAP-092` guided onboarding + doctor (`GEN-52`)
 - [x] `EAP-093` self-hosted control-plane reference (`GEN-53`)
-- [ ] `EAP-094` remote operations governance baseline (`GEN-54`)
+- [x] `EAP-094` remote operations governance baseline (`GEN-54`)
 
 ## Objective
 
@@ -45,4 +45,4 @@ Turn README caveats (`Not ideal yet` and `Current limits`) into concrete deliver
 
 ## Execution Constraint
 
-Only the first non-blocked `Todo` item may be started (currently `EAP-094`).
+No remaining `Todo` items in this phase. Start a new phase only after creating the next ordered queue entry in Linear and `docs/execution_protocol.md`.

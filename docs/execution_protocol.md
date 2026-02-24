@@ -38,8 +38,9 @@ Updated: 2026-02-24
 | 8 | `EAP-091` | `GEN-51` | `Done` | One-command bootstrap |
 | 9 | `EAP-092` | `GEN-52` | `Done` | Guided onboarding + doctor |
 | 10 | `EAP-093` | `GEN-53` | `Done` | Self-hosted control-plane reference |
-| 11 | `EAP-094` | `GEN-54` | `Todo` | Remote operations governance baseline |
+| 11 | `EAP-094` | `GEN-54` | `Done` | Remote operations governance baseline |
 
 ## Execution Rule
 
-Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.
+Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
+Current state: no `Todo` items remain in the tracked queue.
