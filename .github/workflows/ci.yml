@@ -133,6 +133,14 @@ jobs:
             --db-path artifacts/bootstrap/bootstrap_state.db \
             --env-file .env
 
+      - name: Run doctor diagnostics
+        run: |
+          python scripts/eap_doctor.py doctor \
+            --env-file .env \
+            --skip-connectivity \
+            --state-db-path artifacts/bootstrap/doctor_state.db \
+            --output-json artifacts/bootstrap/doctor_diagnostics.json
+
       - name: Upload bootstrap artifacts
         if: always()
         uses: actions/upload-artifact@v4
