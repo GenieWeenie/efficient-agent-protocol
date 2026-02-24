@@ -155,6 +155,51 @@ class ProviderAdaptersTest(unittest.TestCase):
                 provider.complete(request)
         self.assertIn("Responses API path is unavailable", str(context.exception))
 
+    def test_openai_responses_mode_extracts_text_from_output_blocks(self) -> None:
+        provider = OpenAIProvider(
+            endpoint="http://localhost:1234/v1/responses",
+            api_key="secret",
+            timeout_seconds=10,
+            api_mode="responses",
+        )
+        request = CompletionRequest(
+            model="gpt-4.1-mini",
+            messages=[ProviderMessage(role="user", content="hello")],
+            temperature=0.0,
+        )
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "output": [
+                {"content": [{"type": "output_text", "text": "hello"}]},
+                {"content": [{"type": "output_text", "text": " world"}]},
+            ]
+        }
+        mock_response.raise_for_status.return_value = None
+
+        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response):
+            response = provider.complete(request)
+        self.assertEqual(response.text, "hello world")
+
+    def test_openai_responses_mode_missing_text_raises_key_error(self) -> None:
+        provider = OpenAIProvider(
+            endpoint="http://localhost:1234/v1/responses",
+            api_key="secret",
+            timeout_seconds=10,
+            api_mode="responses",
+        )
+        request = CompletionRequest(
+            model="gpt-4.1-mini",
+            messages=[ProviderMessage(role="user", content="hello")],
+            temperature=0.0,
+        )
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"id": "resp_1", "output": [{"content": [{"type": "ref"}]}]}
+        mock_response.raise_for_status.return_value = None
+
+        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response):
+            with self.assertRaises(KeyError):
+                provider.complete(request)
+
     def test_openai_responses_mode_stream_parses_sse_delta_chunks(self) -> None:
         provider = OpenAIProvider(
             endpoint="http://localhost:1234/v1/responses",
@@ -184,6 +229,35 @@ class ProviderAdaptersTest(unittest.TestCase):
         self.assertTrue(kwargs["stream"])
         self.assertTrue(kwargs["json"]["stream"])
         self.assertIn("input", kwargs["json"])
+
+    def test_openai_responses_mode_stream_handles_non_delta_event_shapes(self) -> None:
+        provider = OpenAIProvider(
+            endpoint="http://localhost:1234/v1/responses",
+            api_key="secret",
+            timeout_seconds=10,
+            api_mode="responses",
+        )
+        request = CompletionRequest(
+            model="gpt-4.1-mini",
+            messages=[ProviderMessage(role="user", content="hello")],
+            temperature=0.0,
+            tools=[{"type": "function", "function": {"name": "dummy", "parameters": {"type": "object"}}}],
+        )
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.iter_lines.return_value = [
+            b"event: ignored",
+            b"data: not-json",
+            b'data: {"output":[{"content":[{"type":"output_text.delta","text":"A"}]}]}',
+            b'data: {"output":[{"content":[{"type":"output_text","text":"B"}]}]}',
+            b"data: [DONE]",
+        ]
+        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+            chunks = list(provider.stream(request))
+
+        self.assertEqual(chunks, ["A"])
+        kwargs = post.call_args.kwargs
+        self.assertIn("tools", kwargs["json"])
 
     def test_openai_responses_mode_stream_can_emit_completed_payload_text(self) -> None:
         provider = OpenAIProvider(
@@ -249,6 +323,33 @@ class ProviderAdaptersTest(unittest.TestCase):
                 list(provider.stream(request))
         self.assertIn("Denied by policy", str(context.exception))
         self.assertIn("policy_denied", str(context.exception))
+
+    def test_openai_provider_chat_stream_with_tools(self) -> None:
+        provider = OpenAIProvider(
+            endpoint="http://localhost:1234/v1/chat/completions",
+            api_key="secret",
+            timeout_seconds=10,
+        )
+        request = CompletionRequest(
+            model="gpt-4o-mini",
+            messages=[ProviderMessage(role="user", content="hello")],
+            temperature=0.1,
+            tools=[{"type": "function", "function": {"name": "dummy", "parameters": {"type": "object"}}}],
+        )
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.iter_lines.return_value = [
+            b"data: garbage",
+            b'data: {"choices":[{"delta":{"content":"tool"}}]}',
+            b"data: [DONE]",
+        ]
+        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+            chunks = list(provider.stream(request))
+
+        self.assertEqual(chunks, ["tool"])
+        kwargs = post.call_args.kwargs
+        self.assertIn("tools", kwargs["json"])
+        self.assertTrue(kwargs["json"]["stream"])
 
     def test_google_provider_normalizes_response_and_tools(self) -> None:
         provider = GoogleProvider(
