@@ -1,8 +1,8 @@
 # OpenClaw Interop Spike (EAP-071)
 
-Status: Updated for EAP-086 in-progress implementation (2026-02-24)  
+Status: Updated for EAP-087 in-progress implementation (2026-02-24)  
 Owner: EAP maintainers  
-Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080, EAP-081, EAP-082, EAP-083, EAP-084, EAP-085, EAP-086)
+Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080, EAP-081, EAP-082, EAP-083, EAP-084, EAP-085, EAP-086, EAP-087)
 
 ## 1) Version Snapshot
 
@@ -41,7 +41,7 @@ EAP-side surfaces:
 | OpenClaw agent selection | Preferred: `model: "openclaw:<agentId>"`; optional header `x-openclaw-agent-id` | EAP controls `model` and now supports configurable custom headers in OpenAI-compatible provider path | **Compatible now** | Use `EAP_MODEL=openclaw:<agentId>` and/or `EAP_EXTRA_HEADERS_JSON='{"x-openclaw-agent-id":"<agentId>"}'` (role-specific overrides supported). |
 | Streaming chat | SSE for OpenAI endpoint when `stream=true` | EAP provider has SSE stream parsing for `data:` + `[DONE]` | **Compatible now** | Verify with real gateway in EAP-075 CI smoke. |
 | OpenResponses API | `POST /v1/responses` (disabled by default) | No EAP provider for Responses API | **Gap** | Optional future adapter (not required for MVP interop). |
-| Tool invocation API | `POST /tools/invoke`, policy + denylist enforced | No EAP client for this endpoint | **Gap** | Add dedicated client only if we need direct OpenClaw tool calls outside agent-turn flow. |
+| Tool invocation API | `POST /tools/invoke`, policy + denylist enforced | EAP now has typed OpenClaw tools-invoke client + runtime bridge tool (`invoke_openclaw_tool`) | **Compatible now** | Use bridge tool for direct gateway tool calls with bearer auth and policy-denial mapping. |
 | Plugin runtime model | TypeScript/JavaScript in-process plugin modules, required `openclaw.plugin.json` | Adapter package added at `integrations/openclaw/eap-runtime-plugin` | **Compatible now (MVP)** | Plugin exports required tools and maps directly to EAP runtime endpoints. |
 | Skills model | AgentSkills-style `SKILL.md`; plugin can ship skills via manifest `skills` field | Skill pack added at `integrations/openclaw/eap-runtime-plugin/skills` | **Compatible now (MVP)** | Includes `run`, `inspect`, `retry failed step`, and `export trace` skill workflows with quickstart docs. |
 | External EAP control plane | OpenClaw plugins/tools can call external HTTP services | EAP runtime service now serves execute/run/pointer summary endpoints | **Compatible now (MVP)** | Bearer auth and JSON error envelopes are implemented and covered by integration tests. |
@@ -239,7 +239,8 @@ Recommended sequence:
 - explicit `Now/Next/Blocked` queue mapped to Linear IDs:
   - `GEN-45` (`EAP-084`)
   - `GEN-44` (`EAP-085`)
-  - `GEN-46` (`EAP-086`, in progress)
+  - `GEN-46` (`EAP-086`, done)
+  - `GEN-48` (`EAP-087`, in progress)
 - roadmap sync:
   - `docs/phase7_competitive_openclaw_roadmap.md`
 
@@ -255,16 +256,16 @@ Recommended sequence:
   - `docs/phase7_tranche4_scope.md`
 - ordered implementation backlog and dependencies:
   - `EAP-086` / `GEN-46` (OpenClaw agent-routing header support)
-  - `EAP-087` / `GEN-48` (OpenClaw `/tools/invoke` bridge), blocked by `EAP-086`
+  - `EAP-087` / `GEN-48` (OpenClaw `/tools/invoke` bridge)
   - `EAP-088` / `GEN-47` (Responses API adapter path), blocked by `EAP-087`
 - queue sync:
   - `docs/execution_protocol.md`
 
-`EAP-086` implementation is in progress (see section 16 below).
+`EAP-086` follow-up is now complete (see section 16 below).
 
-## 16) In-Progress OpenClaw Agent-Routing Header Support (EAP-086)
+## 16) Implemented OpenClaw Agent-Routing Header Support (EAP-086)
 
-`EAP-086` implementation branch currently includes:
+`EAP-086` is now implemented in-repo with:
 - configurable extra headers in runtime settings:
   - `EAP_EXTRA_HEADERS_JSON`
   - `EAP_ARCHITECT_EXTRA_HEADERS_JSON`
@@ -279,7 +280,42 @@ Recommended sequence:
   - `docs/configuration.md`
   - `.env.example`
 
-After merge, proceed to **EAP-087**.
+`EAP-087` implementation is now in progress (see section 17 below).
+
+## 17) In-Progress OpenClaw `/tools/invoke` Bridge (EAP-087)
+
+`EAP-087` implementation branch currently includes:
+- typed OpenClaw tools-invoke client:
+  - `environment/openclaw_client.py`
+- runtime bridge tool:
+  - `environment/tools/openclaw_tools.py`
+  - schema export in `environment.tools` and `eap.environment.tools`
+- coverage for success, auth failure, and policy-denial mapping:
+  - `tests/unit/test_openclaw_client.py`
+  - `tests/unit/test_openclaw_tools.py`
+  - `tests/integration/test_openclaw_tools_invoke_bridge.py`
+
+Minimal invocation example (macro step arguments):
+```json
+{
+  "step_id": "step_openclaw_tool",
+  "tool_name": "invoke_openclaw_tool",
+  "arguments": {
+    "base_url": "https://openclaw-gateway.example.com",
+    "api_key": "gateway-token",
+    "tool_name": "fetch_issue",
+    "tool_arguments": {"id": "GEN-48"},
+    "timeout_seconds": 30
+  }
+}
+```
+
+Guardrails:
+- keep `tool_arguments` scoped to tool-specific inputs only (do not pass unrelated secrets);
+- treat `api_key` as credential material and source it from runtime secret management;
+- handle policy denials as expected control-path outcomes (`TOOL_INVOKE_POLICY_DENIED`).
+
+After merge, proceed to **EAP-088**.
 
 ## References (Primary Sources)
 
