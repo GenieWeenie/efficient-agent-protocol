@@ -12,6 +12,15 @@ class ProviderSelectionIntegrationTest(unittest.TestCase):
         )
         self.assertIsInstance(client.provider, OpenAIProvider)
 
+    def test_local_provider_applies_extra_headers(self) -> None:
+        client = AgentClient(
+            base_url="http://localhost:1234",
+            model_name="model-a",
+            extra_headers={"x-openclaw-agent-id": "router-abc"},
+        )
+        self.assertIsInstance(client.provider, OpenAIProvider)
+        self.assertEqual(client._headers()["x-openclaw-agent-id"], "router-abc")
+
     def test_anthropic_provider_selected_when_configured(self) -> None:
         client = AgentClient(
             base_url="https://api.anthropic.com",

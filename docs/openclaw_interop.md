@@ -1,8 +1,8 @@
 # OpenClaw Interop Spike (EAP-071)
 
-Status: Updated through EAP-085 (2026-02-24)  
+Status: Updated for EAP-086 in-progress implementation (2026-02-24)  
 Owner: EAP maintainers  
-Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080, EAP-081, EAP-082, EAP-083, EAP-084, EAP-085)
+Scope: interoperability analysis plus implemented interop foundation (EAP-072, EAP-073, EAP-074, EAP-075, EAP-076, EAP-077, EAP-078, EAP-079, EAP-080, EAP-081, EAP-082, EAP-083, EAP-084, EAP-085, EAP-086)
 
 ## 1) Version Snapshot
 
@@ -38,7 +38,7 @@ EAP-side surfaces:
 | --- | --- | --- | --- | --- |
 | LLM chat transport | `POST /v1/chat/completions` (OpenAI shape) | `OpenAIProvider` posts to `/v1/chat/completions` | **Compatible now** | Configure `EAP_BASE_URL` to OpenClaw gateway URL; endpoint must be enabled in OpenClaw config. |
 | Gateway auth model | Bearer token, gateway auth mode token/password | EAP OpenAI provider sends `Authorization: Bearer <api_key>` | **Compatible now** | Set `EAP_API_KEY` to gateway token/password value used by OpenClaw auth mode. |
-| OpenClaw agent selection | Preferred: `model: "openclaw:<agentId>"`; optional header `x-openclaw-agent-id` | EAP controls `model`, but does not set custom gateway headers | **Partial** | Use `EAP_MODEL=openclaw:<agentId>`; header-based routing would require EAP provider header extension. |
+| OpenClaw agent selection | Preferred: `model: "openclaw:<agentId>"`; optional header `x-openclaw-agent-id` | EAP controls `model` and now supports configurable custom headers in OpenAI-compatible provider path | **Compatible now** | Use `EAP_MODEL=openclaw:<agentId>` and/or `EAP_EXTRA_HEADERS_JSON='{"x-openclaw-agent-id":"<agentId>"}'` (role-specific overrides supported). |
 | Streaming chat | SSE for OpenAI endpoint when `stream=true` | EAP provider has SSE stream parsing for `data:` + `[DONE]` | **Compatible now** | Verify with real gateway in EAP-075 CI smoke. |
 | OpenResponses API | `POST /v1/responses` (disabled by default) | No EAP provider for Responses API | **Gap** | Optional future adapter (not required for MVP interop). |
 | Tool invocation API | `POST /tools/invoke`, policy + denylist enforced | No EAP client for this endpoint | **Gap** | Add dedicated client only if we need direct OpenClaw tool calls outside agent-turn flow. |
@@ -90,8 +90,8 @@ Recommended sequence:
 
 ## 6) Known Limits / Risks Identified
 
-1. **Agent routing header not configurable in EAP provider**
-   - OpenClaw supports `x-openclaw-agent-id`; EAP currently cannot set custom headers in `OpenAIProvider`.
+1. **Agent routing header configuration added in EAP-086**
+   - `OpenAIProvider` now supports configurable headers via `EAP_EXTRA_HEADERS_JSON` and role-specific overrides.
 2. **OpenClaw endpoint toggles**
    - `/v1/chat/completions` is disabled by default; operators must enable it.
 3. **Plugin model mismatch**
@@ -239,7 +239,7 @@ Recommended sequence:
 - explicit `Now/Next/Blocked` queue mapped to Linear IDs:
   - `GEN-45` (`EAP-084`)
   - `GEN-44` (`EAP-085`)
-  - `GEN-46` (`EAP-086`, blocked)
+  - `GEN-46` (`EAP-086`, in progress)
 - roadmap sync:
   - `docs/phase7_competitive_openclaw_roadmap.md`
 
@@ -260,7 +260,26 @@ Recommended sequence:
 - queue sync:
   - `docs/execution_protocol.md`
 
-Proceed to **EAP-086**.
+`EAP-086` implementation is in progress (see section 16 below).
+
+## 16) In-Progress OpenClaw Agent-Routing Header Support (EAP-086)
+
+`EAP-086` implementation branch currently includes:
+- configurable extra headers in runtime settings:
+  - `EAP_EXTRA_HEADERS_JSON`
+  - `EAP_ARCHITECT_EXTRA_HEADERS_JSON`
+  - `EAP_AUDITOR_EXTRA_HEADERS_JSON`
+- provider plumbing and request emission:
+  - `OpenAIProvider` accepts and sends configured headers
+  - `AgentClient` and provider factory pass configured headers
+- test and docs coverage:
+  - `tests/unit/test_provider_adapters.py`
+  - `tests/unit/test_settings.py`
+  - `tests/integration/test_provider_selection.py`
+  - `docs/configuration.md`
+  - `.env.example`
+
+After merge, proceed to **EAP-087**.
 
 ## References (Primary Sources)
 

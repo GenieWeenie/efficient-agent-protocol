@@ -18,6 +18,7 @@ class LLMClientSettings:
     api_key: str
     timeout_seconds: int
     temperature: float
+    extra_headers: Dict[str, str]
 
 
 @dataclass(frozen=True)
@@ -79,6 +80,26 @@ def _parse_optional_int(value: str, field_name: str) -> Optional[int]:
     return parsed
 
 
+def _parse_extra_headers(value: str, field_name: str) -> Dict[str, str]:
+    normalized = value.strip() or "{}"
+    try:
+        parsed = json.loads(normalized)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{field_name} must be valid JSON.") from exc
+
+    if not isinstance(parsed, dict):
+        raise ValueError(f"{field_name} must be a JSON object.")
+
+    headers: Dict[str, str] = {}
+    for raw_key, raw_value in parsed.items():
+        if not isinstance(raw_key, str) or not raw_key.strip():
+            raise ValueError(f"{field_name} keys must be non-empty strings.")
+        if not isinstance(raw_value, str) or not raw_value.strip():
+            raise ValueError(f"{field_name} values must be non-empty strings.")
+        headers[raw_key.strip()] = raw_value.strip()
+    return headers
+
+
 def _build_client_settings(role_prefix: str) -> LLMClientSettings:
     base_url = _validate_base_url(
         os.getenv(f"{role_prefix}_BASE_URL", os.getenv("EAP_BASE_URL", DEFAULT_BASE_URL)),
@@ -103,12 +124,24 @@ def _build_client_settings(role_prefix: str) -> LLMClientSettings:
     if temperature < 0:
         raise ValueError(f"{role_prefix}_TEMPERATURE must be >= 0")
 
+    global_extra_headers = _parse_extra_headers(
+        os.getenv("EAP_EXTRA_HEADERS_JSON", "{}"),
+        "EAP_EXTRA_HEADERS_JSON",
+    )
+    role_extra_headers = _parse_extra_headers(
+        os.getenv(f"{role_prefix}_EXTRA_HEADERS_JSON", "{}"),
+        f"{role_prefix}_EXTRA_HEADERS_JSON",
+    )
+    extra_headers = dict(global_extra_headers)
+    extra_headers.update(role_extra_headers)
+
     return LLMClientSettings(
         base_url=base_url,
         model_name=model_name,
         api_key=api_key,
         timeout_seconds=timeout_seconds,
         temperature=temperature,
+        extra_headers=extra_headers,
     )
 
 

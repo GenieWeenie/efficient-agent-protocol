@@ -61,6 +61,29 @@ class ProviderAdaptersTest(unittest.TestCase):
         self.assertTrue(kwargs["stream"])
         self.assertTrue(kwargs["json"]["stream"])
 
+    def test_openai_provider_includes_configured_extra_headers(self) -> None:
+        provider = OpenAIProvider(
+            endpoint="http://localhost:1234/v1/chat/completions",
+            api_key="secret",
+            timeout_seconds=10,
+            extra_headers={"x-openclaw-agent-id": "router-123"},
+        )
+        request = CompletionRequest(
+            model="gpt-4o-mini",
+            messages=[ProviderMessage(role="user", content="hello")],
+            temperature=0.1,
+        )
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"choices": [{"message": {"content": "ok"}}]}
+        mock_response.raise_for_status.return_value = None
+
+        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+            provider.complete(request)
+
+        kwargs = post.call_args.kwargs
+        self.assertEqual(kwargs["headers"]["x-openclaw-agent-id"], "router-123")
+        self.assertEqual(kwargs["headers"]["Authorization"], "Bearer secret")
+
     def test_anthropic_provider_normalizes_response(self) -> None:
         provider = AnthropicProvider(
             endpoint="https://api.anthropic.com/v1/messages",

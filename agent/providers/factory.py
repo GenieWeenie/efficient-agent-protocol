@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Dict, Optional
 
 from .anthropic_provider import AnthropicProvider
 from .base import LLMProvider
@@ -19,11 +19,17 @@ def _build_provider(
     base_url: str,
     api_key: str,
     timeout_seconds: int,
+    extra_headers: Optional[Dict[str, str]] = None,
 ) -> LLMProvider:
     normalized = _normalize_provider_name(provider_name)
     if normalized in {"local", "openai"}:
         endpoint = f"{base_url.rstrip('/')}/v1/chat/completions"
-        return OpenAIProvider(endpoint=endpoint, api_key=api_key, timeout_seconds=timeout_seconds)
+        return OpenAIProvider(
+            endpoint=endpoint,
+            api_key=api_key,
+            timeout_seconds=timeout_seconds,
+            extra_headers=extra_headers,
+        )
 
     if normalized == "anthropic":
         if not api_key or api_key == "not-needed":
@@ -47,6 +53,7 @@ def create_provider(
     api_key: str,
     timeout_seconds: int,
     fallback_provider_name: Optional[str] = None,
+    extra_headers: Optional[Dict[str, str]] = None,
 ) -> LLMProvider:
     try:
         return _build_provider(
@@ -54,6 +61,7 @@ def create_provider(
             base_url=base_url,
             api_key=api_key,
             timeout_seconds=timeout_seconds,
+            extra_headers=extra_headers,
         )
     except ValueError:
         if not fallback_provider_name:
@@ -63,4 +71,5 @@ def create_provider(
             base_url=base_url,
             api_key=api_key,
             timeout_seconds=timeout_seconds,
+            extra_headers=extra_headers,
         )

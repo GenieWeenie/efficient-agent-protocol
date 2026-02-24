@@ -18,6 +18,7 @@ class AgentClient:
         provider_name: str = "local",
         fallback_provider_name: Optional[str] = None,
         provider: Optional[LLMProvider] = None,
+        extra_headers: Optional[Dict[str, str]] = None,
     ):
         self.endpoint = f"{base_url.rstrip('/')}/v1/chat/completions"
         self.base_url = base_url.rstrip("/")
@@ -27,12 +28,14 @@ class AgentClient:
         self.temperature = temperature
         self.timeout_seconds = timeout_seconds
         self.provider_name = provider_name
+        self.extra_headers = dict(extra_headers or {})
         self.fallback_provider_name = fallback_provider_name
         self.provider = provider or create_provider(
             provider_name=provider_name,
             base_url=self.base_url,
             api_key=api_key,
             timeout_seconds=timeout_seconds,
+            extra_headers=self.extra_headers,
             fallback_provider_name=fallback_provider_name,
         )
         self.compiler = MacroCompiler()
@@ -40,9 +43,10 @@ class AgentClient:
     def _headers(self) -> Dict[str, str]:
         if hasattr(self.provider, "_headers"):
             return self.provider._headers()  # type: ignore[attr-defined]
+        headers = dict(self.extra_headers)
         if self.api_key and self.api_key != "not-needed":
-            return {"Authorization": f"Bearer {self.api_key}"}
-        return {}
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        return headers
 
     def chat(self, user_input: str) -> str:
         """Simple text-to-text chat for non-macro tasks like auditing."""
