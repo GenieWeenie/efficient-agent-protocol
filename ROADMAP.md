@@ -92,3 +92,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 8 `EAP-090` v1 compatibility enforcement completed (`GEN-50`, PR #44).
 - Phase 8 `EAP-091` one-command bootstrap completed (`GEN-51`, PR #46).
 - Phase 8 `EAP-092` guided onboarding + doctor completed (`GEN-52`, PR #48).
+- Phase 8 `EAP-093` self-hosted control-plane reference completed (`GEN-53`, PR #50).
