@@ -1,6 +1,7 @@
 import json
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -21,6 +22,7 @@ class BootstrapLocalIntegrationTest(unittest.TestCase):
     @staticmethod
     def _find_supported_python() -> Optional[str]:
         candidates = (
+            sys.executable,
             "python3.13",
             "python3.12",
             "python3.11",
