@@ -215,19 +215,17 @@ def run_init_env(args: argparse.Namespace) -> int:
 
     base_url = args.base_url.strip()
     model = args.model.strip()
-    api_key = args.api_key.strip()
     mode = args.openai_api_mode.strip().lower()
 
     if args.interactive:
         base_url = input(f"EAP_BASE_URL [{base_url}]: ").strip() or base_url
         model = input(f"EAP_MODEL [{model}]: ").strip() or model
-        api_key = input(f"EAP_API_KEY [{api_key}]: ").strip() or api_key
         mode = input(f"EAP_OPENAI_API_MODE [{mode}]: ").strip().lower() or mode
 
     values = {
         "EAP_BASE_URL": base_url,
         "EAP_MODEL": model,
-        "EAP_API_KEY": api_key,
+        "EAP_API_KEY": "not-needed",
         "EAP_OPENAI_API_MODE": mode,
     }
     errors = validate_env_values(values)
@@ -513,7 +511,6 @@ def build_parser() -> argparse.ArgumentParser:
     init_env.add_argument("--interactive", action="store_true", help="Prompt for values interactively.")
     init_env.add_argument("--base-url", default="http://localhost:1234", help="EAP base URL.")
     init_env.add_argument("--model", default="nemotron-orchestrator-8b", help="EAP model name.")
-    init_env.add_argument("--api-key", default="not-needed", help="EAP API key value.")
     init_env.add_argument(
         "--openai-api-mode",
         default="chat_completions",

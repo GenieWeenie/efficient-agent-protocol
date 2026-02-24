@@ -35,8 +35,6 @@ class EAPDoctorIntegrationTest(unittest.TestCase):
                     "http://localhost:1234",
                     "--model",
                     "nemotron-orchestrator-8b",
-                    "--api-key",
-                    "not-needed",
                     "--openai-api-mode",
                     "chat_completions",
                 ],
