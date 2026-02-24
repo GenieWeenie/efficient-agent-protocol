@@ -1,6 +1,6 @@
 # Phase 7 Competitive Roadmap (OpenClaw + Market Positioning)
 
-Status: In progress (through EAP-083, 2026-02-24)
+Status: In progress (through EAP-084, 2026-02-24)
 
 Current status:
 - [x] `EAP-071` interop spike + compatibility matrix published (`docs/openclaw_interop.md`)
@@ -16,7 +16,8 @@ Current status:
 - [x] `EAP-081` operator telemetry pack (dashboard-ready triage artifacts)
 - [x] `EAP-082` "Why EAP now" competitive proof sheet refresh
 - [x] `EAP-083` proof sheet contract checks in CI
-- [ ] `EAP-084` onward
+- [x] `EAP-084` execution governance protocol + Linear-first queue
+- [ ] `EAP-085` onward
 
 ## Objective
 
@@ -130,6 +131,11 @@ Optional validation track:
     - Deliverable: add automated checks that fail when proof sheet evidence/commands drift from repo reality
     - Done when: CI validates referenced evidence paths and command paths in `docs/eap_proof_sheet.md`
     - Status: complete (`scripts/verify_proof_sheet.py`, `tests/contract/test_eap_proof_sheet_contract.py`, `.github/workflows/ci.yml`)
+
+14. `EAP-084` Execution governance protocol and queue discipline
+    - Deliverable: publish a Linear-first execution protocol and explicit ordered queue to stop ad-hoc starts
+    - Done when: queue is visible in-repo and mapped to active Linear issues (`Now`/`Next`/`Blocked`)
+    - Status: complete (`docs/execution_protocol.md`, Linear `GEN-45/GEN-44/GEN-46`)
 
 ## Guardrails
 

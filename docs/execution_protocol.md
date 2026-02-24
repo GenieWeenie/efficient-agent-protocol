@@ -1,0 +1,37 @@
+# Execution Protocol (Linear-First)
+
+This protocol prevents ad-hoc execution and keeps all work in a visible ordered queue.
+
+## Source Of Truth
+
+1. Linear issue state is the execution authority.
+2. This file mirrors the active order (`Now`, `Next`, `Blocked`).
+3. `docs/phase7_competitive_openclaw_roadmap.md` is the narrative roadmap, not the live queue.
+
+## Start Gate (Must Be True Before Coding)
+
+1. Issue exists in Linear with an EAP ID.
+2. Issue has explicit deliverable + measurable done criteria.
+3. Issue state is `Todo` and it is the top `Next` item.
+4. Dependencies are either `Done` or explicitly marked as blockers.
+
+## Finish Gate (Must Be True Before Marking Done)
+
+1. Code/docs/tests merged to `main`.
+2. Required CI checks pass.
+3. Roadmap/docs updated for status and next item.
+4. Linear issue moved to `Done` with merged PR link.
+
+## Current Ordered Queue
+
+Updated: 2026-02-24
+
+| Order | EAP ID | Linear | Status | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | `EAP-084` | `GEN-45` | `Done` | Establish execution protocol + queue mirror |
+| 2 | `EAP-085` | `GEN-44` | `Todo` | Define tranche 4 scope + acceptance criteria |
+| 3 | `EAP-086` | `GEN-46` | `Backlog` | Blocked by `EAP-085` |
+
+## Execution Rule
+
+Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.
