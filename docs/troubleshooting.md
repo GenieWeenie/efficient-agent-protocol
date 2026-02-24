@@ -2,6 +2,49 @@
 
 This guide covers common setup and runtime problems.
 
+## Bootstrap Quickstart Issues
+
+### `bootstrap_local.sh` reports unsupported platform
+Cause:
+- The bootstrap script targets macOS/Linux shells.
+
+Fix:
+- On Windows, use WSL2 and run:
+  - `./scripts/bootstrap_local.sh`
+- Or run manual setup from `README.md` Quickstart.
+
+### Environment validation failed during bootstrap
+Cause:
+- Required keys in `.env` are missing/invalid.
+
+Fix:
+- Ensure `.env` includes:
+  - `EAP_BASE_URL` with `http://` or `https://`
+  - `EAP_MODEL`
+  - `EAP_API_KEY`
+- Re-run:
+  - `./scripts/bootstrap_local.sh`
+
+### Bootstrap fails with Python version error
+Cause:
+- Bootstrap supports Python `3.9` through `3.13`.
+
+Fix:
+- Check version:
+  - `python3 --version`
+- Use Python `3.11` or another `3.9-3.13` interpreter:
+  - `./scripts/bootstrap_local.sh --python python3.11`
+
+### Smoke workflow failed during bootstrap
+Cause:
+- Local Python environment is not installed correctly.
+
+Fix:
+- Re-run install manually to inspect errors:
+  - `./scripts/bootstrap_local.sh --skip-env-validation`
+- Or install explicitly:
+  - `python3 -m pip install -e .`
+
 ## Import Errors
 
 ### `ModuleNotFoundError: No module named 'eap'`
