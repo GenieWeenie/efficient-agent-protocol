@@ -45,12 +45,20 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Add post-release install smoke validation against published package artifacts.
 - Finalize `v1.0` stabilization checklist and upgrade notes for external adopters.
 
-## Phase 7: Competitive Positioning + OpenClaw Interop (Next)
+## Phase 7: Competitive Positioning + OpenClaw Interop (Completed)
 
 - Execute OpenClaw integration track (plugin + skills + CI interop lane).
 - Close remaining high-impact competitive gaps after HITL checkpoints, crash-safe resume, and MCP interop.
 - Publish updated competitive proof artifacts with reproducible evidence.
 - Checklist: `docs/phase7_competitive_openclaw_roadmap.md`
+
+## Phase 8: Adoption + Limits Closure (Now)
+
+- Close remaining `responses`-mode parity gaps.
+- Convert pre-`1.0` uncertainty into explicit `v1` compatibility gates.
+- Reduce onboarding friction with one-command bootstrap and doctor tooling.
+- Publish a self-hosted control-plane reference path plus remote-ops governance baseline.
+- Checklist: `docs/phase8_adoption_limits_closure_roadmap.md`
 
 ## Done
 
@@ -79,3 +87,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 7 `EAP-085` tranche-4 scope defined with ordered dependency chain (`EAP-086` -> `EAP-087` -> `EAP-088`).
 - Phase 7 `EAP-086` OpenClaw routing header support merged (`PR #36`).
 - Phase 7 `EAP-087` OpenClaw `/tools/invoke` bridge merged (`PR #37`).
+- Phase 7 `EAP-088` OpenAI Responses API adapter path completed (`GEN-47`).

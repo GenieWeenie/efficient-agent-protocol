@@ -6,7 +6,7 @@ This protocol prevents ad-hoc execution and keeps all work in a visible ordered 
 
 1. Linear issue state is the execution authority.
 2. This file mirrors the active order (`Now`, `Next`, `Blocked`).
-3. `docs/phase7_competitive_openclaw_roadmap.md` is the narrative roadmap, not the live queue.
+3. `docs/phase7_competitive_openclaw_roadmap.md` and `docs/phase8_adoption_limits_closure_roadmap.md` are narrative roadmaps, not the live queue.
 
 ## Start Gate (Must Be True Before Coding)
 
@@ -32,7 +32,13 @@ Updated: 2026-02-24
 | 2 | `EAP-085` | `GEN-44` | `Done` | Tranche 4 scope and acceptance criteria defined |
 | 3 | `EAP-086` | `GEN-46` | `Done` | OpenClaw agent-routing header support |
 | 4 | `EAP-087` | `GEN-48` | `Done` | OpenClaw `/tools/invoke` bridge |
-| 5 | `EAP-088` | `GEN-47` | `In Progress` | OpenAI Responses API adapter path |
+| 5 | `EAP-088` | `GEN-47` | `Done` | OpenAI Responses API adapter path |
+| 6 | `EAP-089` | `GEN-49` | `Todo` | Responses streaming parity |
+| 7 | `EAP-090` | `GEN-50` | `Todo (Blocked)` | Blocked by `GEN-49` |
+| 8 | `EAP-091` | `GEN-51` | `Todo (Blocked)` | Blocked by `GEN-50` |
+| 9 | `EAP-092` | `GEN-52` | `Todo (Blocked)` | Blocked by `GEN-51` |
+| 10 | `EAP-093` | `GEN-53` | `Todo (Blocked)` | Blocked by `GEN-52` |
+| 11 | `EAP-094` | `GEN-54` | `Todo (Blocked)` | Blocked by `GEN-53` |
 
 ## Execution Rule
 
