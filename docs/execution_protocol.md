@@ -6,7 +6,7 @@ This protocol prevents ad-hoc execution and keeps all work in a visible ordered 
 
 1. Linear issue state is the execution authority.
 2. This file mirrors the active order (`Now`, `Next`, `Blocked`).
-3. `docs/phase7_competitive_openclaw_roadmap.md`, `docs/phase8_adoption_limits_closure_roadmap.md`, and `docs/phase9_production_readiness_roadmap.md` are narrative roadmaps, not the live queue.
+3. `docs/phase7_competitive_openclaw_roadmap.md`, `docs/phase8_adoption_limits_closure_roadmap.md`, `docs/phase9_production_readiness_roadmap.md`, and `docs/phase10_competitiveness_hardening_roadmap.md` are narrative roadmaps, not the live queue.
 
 ## Start Gate (Must Be True Before Coding)
 
@@ -24,7 +24,7 @@ This protocol prevents ad-hoc execution and keeps all work in a visible ordered 
 
 ## Current Ordered Queue
 
-Updated: 2026-02-24
+Updated: 2026-02-25
 
 | Order | EAP ID | Linear | Status | Notes |
 | --- | --- | --- | --- | --- |
@@ -41,11 +41,16 @@ Updated: 2026-02-24
 | 11 | `EAP-094` | `GEN-54` | `Done` | Remote operations governance baseline |
 | 12 | `EAP-095` | `GEN-55` | `Done` | Runtime policy profile packs + deny-by-default templates |
 | 13 | `EAP-096` | `GEN-56` | `Done` | Runtime rate limits and concurrency guards |
-| 14 | `EAP-097` | `GEN-57` | `Todo` | Audit log export + signed integrity manifest |
-| 15 | `EAP-098` | `GEN-58` | `Blocked` | Backup/restore workflow for state + diagnostics |
-| 16 | `EAP-099` | `GEN-59` | `Blocked` | Long-run soak + chaos reliability gate |
+| 14 | `EAP-097` | `GEN-57` | `Done` | Audit log export + signed integrity manifest |
+| 15 | `EAP-100` | `GEN-60` | `Todo` | Reproducible benchmark + competitor comparison suite |
+| 16 | `EAP-101` | `GEN-61` | `Blocked` | Docs deepening: custom tools, pointer internals, architecture completeness |
+| 17 | `EAP-102` | `GEN-62` | `Blocked` | Security hardening for expression evaluation paths |
+| 18 | `EAP-103` | `GEN-63` | `Blocked` | README conversion pack (demo GIF, architecture prominence, badges hygiene) |
+| 19 | `EAP-104` | `GEN-64` | `Blocked` | Type rigor tranche (mypy scope + stricter typing checks) |
+| 20 | `EAP-098` | `GEN-58` | `Blocked` | Backup/restore workflow for state + diagnostics |
+| 21 | `EAP-099` | `GEN-59` | `Blocked` | Long-run soak + chaos reliability gate |
 
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: `EAP-097` is the active top `Todo` item.
+Current state: `EAP-100` is the active top `Todo` item.

@@ -135,6 +135,37 @@ Fix:
 - Increase concurrency limits in `--guardrails-config` after capacity validation.
 - Review runtime logs for `[runtime:guardrail]` events to identify dominant limit type.
 
+## Audit Bundle Verification Issues
+
+### `verify_audit_bundle.py` fails with `file hash mismatch`
+Cause:
+- One or more exported artifacts changed after `manifest.json` was generated.
+
+Fix:
+- Re-export the bundle and avoid post-export modifications.
+- Verify from a read-only copy:
+  - `python scripts/verify_audit_bundle.py --bundle-dir artifacts/audit_bundle`
+
+### `verify_audit_bundle.py` fails with `manifest is signed but no signing key was provided`
+Cause:
+- Bundle includes an HMAC signature but verifier key was not supplied.
+
+Fix:
+- Provide the same signing key used during export:
+  - `python scripts/verify_audit_bundle.py --bundle-dir artifacts/audit_bundle --signing-key "$EAP_AUDIT_SIGNING_KEY"`
+- Or inject the key via env:
+  - `EAP_AUDIT_SIGNING_KEY=... python scripts/verify_audit_bundle.py --bundle-dir artifacts/audit_bundle`
+
+### Need stronger trust for unsigned manifests
+Cause:
+- Unsigned manifests can prove file consistency but not origin authenticity by themselves.
+
+Fix:
+- Record `manifest_sha256` in an immutable system when exporting.
+- Verify against that external digest:
+  - `python scripts/verify_audit_bundle.py --bundle-dir artifacts/audit_bundle --expected-manifest-sha256 "<digest>"`
+- Prefer signed export mode for high-assurance workflows.
+
 ### Operator UI is reachable but no runs appear
 Cause:
 - No workflow has executed yet, or runtime and UI are not sharing the same state volume.
