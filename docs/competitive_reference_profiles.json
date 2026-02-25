@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "selected_workflows": [
+    "correctness_reference_flow",
+    "reliability_retry_flow",
+    "reliability_dependency_flow"
+  ],
+  "reference_profiles": [
+    {
+      "id": "generic_dag_framework_reference",
+      "display_name": "Generic DAG Framework (reference profile)",
+      "provenance": "Fixture baseline for reproducible comparison. Not a live vendor benchmark.",
+      "metrics": {
+        "correctness_pass_rate": 0.94,
+        "reliability_pass_rate": 0.7,
+        "latency_p95_ms": 220.0
+      },
+      "workflow_pass_rates": {
+        "correctness_reference_flow": 0.95,
+        "reliability_retry_flow": 0.75,
+        "reliability_dependency_flow": 0.6
+      }
+    },
+    {
+      "id": "prompt_chain_reference",
+      "display_name": "Prompt Chaining Runtime (reference profile)",
+      "provenance": "Fixture baseline for reproducible comparison. Not a live vendor benchmark.",
+      "metrics": {
+        "correctness_pass_rate": 0.9,
+        "reliability_pass_rate": 0.45,
+        "latency_p95_ms": 160.0
+      },
+      "workflow_pass_rates": {
+        "correctness_reference_flow": 0.92,
+        "reliability_retry_flow": 0.5,
+        "reliability_dependency_flow": 0.3
+      }
+    }
+  ]
+}

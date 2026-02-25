@@ -42,8 +42,8 @@ Updated: 2026-02-25
 | 12 | `EAP-095` | `GEN-55` | `Done` | Runtime policy profile packs + deny-by-default templates |
 | 13 | `EAP-096` | `GEN-56` | `Done` | Runtime rate limits and concurrency guards |
 | 14 | `EAP-097` | `GEN-57` | `Done` | Audit log export + signed integrity manifest |
-| 15 | `EAP-100` | `GEN-60` | `Todo` | Reproducible benchmark + competitor comparison suite |
-| 16 | `EAP-101` | `GEN-61` | `Blocked` | Docs deepening: custom tools, pointer internals, architecture completeness |
+| 15 | `EAP-100` | `GEN-60` | `Done` | Reproducible benchmark + competitor comparison suite |
+| 16 | `EAP-101` | `GEN-61` | `Todo` | Docs deepening: custom tools, pointer internals, architecture completeness |
 | 17 | `EAP-102` | `GEN-62` | `Blocked` | Security hardening for expression evaluation paths |
 | 18 | `EAP-103` | `GEN-63` | `Blocked` | README conversion pack (demo GIF, architecture prominence, badges hygiene) |
 | 19 | `EAP-104` | `GEN-64` | `Blocked` | Type rigor tranche (mypy scope + stricter typing checks) |
@@ -53,4 +53,4 @@ Updated: 2026-02-25
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: `EAP-100` is the active top `Todo` item.
+Current state: `EAP-101` is the active top `Todo` item.

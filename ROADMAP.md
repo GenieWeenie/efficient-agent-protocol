@@ -69,7 +69,7 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Add long-run soak + chaos reliability gate in CI.
 - Checklist: `docs/phase9_production_readiness_roadmap.md`
 
-## Phase 10: Competitiveness Hardening (Queued)
+## Phase 10: Competitiveness Hardening (In Progress)
 
 - Add reproducible benchmark + comparison suite with publishable scorecard output.
 - Expand docs depth for custom tool authoring, pointer internals, and architecture flow.
@@ -115,3 +115,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 9 `EAP-095` runtime policy profiles + deny-by-default templates completed (`GEN-55`, PR #58).
 - Phase 9 `EAP-096` runtime rate limits and concurrency guards completed (`GEN-56`, PR #60).
 - Phase 9 `EAP-097` audit bundle export + integrity verification workflow completed (`GEN-57`).
+- Phase 10 `EAP-100` reproducible benchmark + competitor comparison suite completed (`GEN-60`).

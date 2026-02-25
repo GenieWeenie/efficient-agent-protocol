@@ -187,6 +187,51 @@ jobs:
           path: artifacts/eval/
           if-no-files-found: error
 
+  competitive-benchmark:
+    name: Competitive benchmark (py3.11)
+    runs-on: ubuntu-latest
+    needs: eval-scorecard
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            pyproject.toml
+            requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Download evaluation artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: eval-scorecard
+          path: artifacts/eval
+
+      - name: Run competitive benchmark suite and gate
+        run: |
+          python scripts/competitive_benchmark_suite.py \
+            --output-dir artifacts/competitive_benchmarks \
+            --eval-scorecard artifacts/eval/scorecard.json \
+            --profiles docs/competitive_reference_profiles.json \
+            --threshold-config docs/competitive_thresholds.json
+
+      - name: Upload competitive benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: competitive-benchmark
+          path: artifacts/competitive_benchmarks/
+          if-no-files-found: error
+
   self-hosted-smoke:
     name: Self-hosted stack smoke
     runs-on: ubuntu-latest
@@ -272,6 +317,7 @@ jobs:
       - lint-test
       - quickstart-smoke
       - eval-scorecard
+      - competitive-benchmark
       - self-hosted-smoke
 
     steps:

@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "required_reference_profiles": 2,
+  "metrics": {
+    "min_correctness_pass_rate": 1.0,
+    "min_reliability_pass_rate": 1.0,
+    "max_latency_p95_ms": 300.0
+  },
+  "advantage": {
+    "min_correctness_delta": 0.03,
+    "min_reliability_delta": 0.2
+  }
+}
