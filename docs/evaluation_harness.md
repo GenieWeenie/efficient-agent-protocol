@@ -49,3 +49,17 @@ The harness writes to `artifacts/eval/`:
 - `history.ndjson`: append-only run records for local trend aggregation
 
 CI uploads `artifacts/eval/` as the `eval-scorecard` artifact on every run.
+
+## Competitive Comparison Layer (EAP-100)
+
+After `scorecard.json` is produced, run:
+
+```bash
+python scripts/competitive_benchmark_suite.py \
+  --output-dir artifacts/competitive_benchmarks \
+  --eval-scorecard artifacts/eval/scorecard.json \
+  --profiles docs/competitive_reference_profiles.json \
+  --threshold-config docs/competitive_thresholds.json
+```
+
+This layer generates a reproducible comparison matrix against versioned reference profiles and applies an additional threshold gate.

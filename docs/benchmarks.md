@@ -29,6 +29,23 @@ python scripts/eval_scorecard.py \
   --baseline docs/eval_baseline.json
 ```
 
+Run the competitive comparison suite (EAP vs reference profile fixtures):
+
+```bash
+python scripts/competitive_benchmark_suite.py \
+  --output-dir artifacts/competitive_benchmarks \
+  --profiles docs/competitive_reference_profiles.json \
+  --threshold-config docs/competitive_thresholds.json \
+  --eval-threshold-config docs/eval_thresholds.json \
+  --eval-baseline docs/eval_baseline.json
+```
+
+This command emits:
+
+- `artifacts/competitive_benchmarks/comparison_scorecard.json`
+- `artifacts/competitive_benchmarks/comparison_scorecard.md`
+- `artifacts/competitive_benchmarks/manifest.json`
+
 ## Baseline (2026-02-23)
 
 Measured on local macOS development machine, Python 3.9:
@@ -46,3 +63,14 @@ Critical perf tests include upper-bound assertions to catch major slowdowns:
 - rate-limit perf test: must stay below `4.0s`
 
 These assertions run in standard CI test jobs.
+
+Competitive benchmark gate uses:
+
+- Reference fixture profiles: `docs/competitive_reference_profiles.json`
+- Competitive thresholds: `docs/competitive_thresholds.json`
+- Source eval thresholds/baseline: `docs/eval_thresholds.json`, `docs/eval_baseline.json`
+
+Methodology caveat:
+
+- Reference profiles are explicit fixtures for reproducibility and change control.
+- They are not live external vendor benchmarks.
