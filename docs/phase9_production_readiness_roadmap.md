@@ -6,7 +6,7 @@ Source of truth: Linear project `Efficient Agent Protocol Roadmap`
 Current status:
 - [x] `EAP-095` runtime policy profile packs + deny-by-default templates (`GEN-55`)
 - [x] `EAP-096` runtime rate limits and concurrency guards (`GEN-56`)
-- [ ] `EAP-097` audit log export + signed integrity manifest (`GEN-57`)
+- [x] `EAP-097` audit log export + signed integrity manifest (`GEN-57`)
 - [ ] `EAP-098` backup/restore workflow for state + diagnostics (`GEN-58`)
 - [ ] `EAP-099` long-run soak + chaos reliability gate (`GEN-59`)
 
@@ -43,4 +43,4 @@ Move from feature-complete Phase 8 to production-readiness controls that improve
 
 ## Execution Constraint
 
-Only the first non-blocked `Todo` item may be started (currently `EAP-097`).
+`EAP-097` is complete. Global queue now advances to `EAP-100`; Phase 9 deferred items (`EAP-098`, `EAP-099`) remain blocked behind the ordered global chain.

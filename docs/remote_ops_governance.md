@@ -103,6 +103,43 @@ Optional guardrails config (`--guardrails-config`):
 }
 ```
 
+## Audit Bundle Integrity Workflow (EAP-097)
+
+Use audit bundle export for portable evidence (run summaries, trace events, checkpoints, diagnostics, and governance context).
+
+Export:
+
+```bash
+python scripts/export_audit_bundle.py \
+  --db-path /var/lib/eap/agent_state.db \
+  --output-dir artifacts/audit_bundle \
+  --limit-runs 100
+```
+
+Optional signed manifest (HMAC):
+
+```bash
+python scripts/export_audit_bundle.py \
+  --db-path /var/lib/eap/agent_state.db \
+  --output-dir artifacts/audit_bundle \
+  --signing-key "$EAP_AUDIT_SIGNING_KEY" \
+  --signer-key-id "ops-kms-v1"
+```
+
+Verify bundle integrity:
+
+```bash
+python scripts/verify_audit_bundle.py \
+  --bundle-dir artifacts/audit_bundle \
+  --signing-key "$EAP_AUDIT_SIGNING_KEY"
+```
+
+Chain-of-custody guidance:
+
+- Store `manifest.json` and the emitted `manifest_sha256` in an immutable log or ticket at export time.
+- For unsigned bundles, verification proves internal consistency only. Use `--expected-manifest-sha256` for an external trust anchor.
+- For signed bundles, protect key material outside repo/runtime hosts and rotate keys per environment policy.
+
 ## Scoped Token Config Example
 
 `scripts/eap_runtime_service.py` accepts `--scoped-auth-config` with this schema:
