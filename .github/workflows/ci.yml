@@ -92,7 +92,9 @@ jobs:
         if: matrix.python-version == '3.11'
         run: |
           python scripts/verify_proof_sheet.py
-          python -m pytest -q tests/contract/test_eap_proof_sheet_contract.py
+          python -m pytest -q \
+            tests/contract/test_eap_proof_sheet_contract.py \
+            tests/contract/test_readme_conversion_pack_contract.py
 
       - name: V1 compatibility contract gate
         if: matrix.python-version == '3.11'
