@@ -92,6 +92,36 @@ DEFAULT_CONCURRENCY_LIMITS = ConcurrencyLimits(
 )
 
 
+def _coerce_int(*, value: object, field: str, operation: str) -> int:
+    if isinstance(value, bool):
+        raise ValueError(f"Invalid integer for '{field}' in '{operation}'.")
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if not value.is_integer():
+            raise ValueError(f"Invalid integer for '{field}' in '{operation}'.")
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value.strip())
+        except ValueError as exc:
+            raise ValueError(f"Invalid integer for '{field}' in '{operation}'.") from exc
+    raise ValueError(f"Invalid integer for '{field}' in '{operation}'.")
+
+
+def _coerce_float(*, value: object, field: str, operation: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"Invalid float for '{field}' in '{operation}'.")
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value.strip())
+        except ValueError as exc:
+            raise ValueError(f"Invalid float for '{field}' in '{operation}'.") from exc
+    raise ValueError(f"Invalid float for '{field}' in '{operation}'.")
+
+
 def normalize_rate_limit_rules(raw_rules: Optional[Dict[str, Dict[str, object]]]) -> Dict[str, RateLimitRule]:
     if not raw_rules:
         return dict(DEFAULT_RATE_LIMIT_RULES)
@@ -103,8 +133,16 @@ def normalize_rate_limit_rules(raw_rules: Optional[Dict[str, Dict[str, object]]]
             raise ValueError(f"Unsupported rate limit operation '{operation}'.")
         if not isinstance(raw_rule, dict):
             raise ValueError(f"Rate limit for '{operation}' must be an object.")
-        max_requests = int(raw_rule.get("max_requests", 0))
-        window_seconds = float(raw_rule.get("window_seconds", 0))
+        max_requests = _coerce_int(
+            value=raw_rule.get("max_requests", 0),
+            field="max_requests",
+            operation=op,
+        )
+        window_seconds = _coerce_float(
+            value=raw_rule.get("window_seconds", 0),
+            field="window_seconds",
+            operation=op,
+        )
         rule = RateLimitRule(max_requests=max_requests, window_seconds=window_seconds)
         rule.validate(operation=op)
         normalized[op] = rule
@@ -118,11 +156,28 @@ def normalize_concurrency_limits(raw_limits: Optional[Dict[str, object]]) -> Con
         raise ValueError("concurrency config must be an object.")
 
     limits = ConcurrencyLimits(
-        global_inflight=int(raw_limits.get("global_inflight", DEFAULT_CONCURRENCY_LIMITS.global_inflight)),
-        execute_inflight=int(raw_limits.get("execute_inflight", DEFAULT_CONCURRENCY_LIMITS.execute_inflight)),
-        resume_inflight=int(raw_limits.get("resume_inflight", DEFAULT_CONCURRENCY_LIMITS.resume_inflight)),
-        per_run_resume_inflight=int(
-            raw_limits.get("per_run_resume_inflight", DEFAULT_CONCURRENCY_LIMITS.per_run_resume_inflight)
+        global_inflight=_coerce_int(
+            value=raw_limits.get("global_inflight", DEFAULT_CONCURRENCY_LIMITS.global_inflight),
+            field="global_inflight",
+            operation="concurrency",
+        ),
+        execute_inflight=_coerce_int(
+            value=raw_limits.get("execute_inflight", DEFAULT_CONCURRENCY_LIMITS.execute_inflight),
+            field="execute_inflight",
+            operation="concurrency",
+        ),
+        resume_inflight=_coerce_int(
+            value=raw_limits.get("resume_inflight", DEFAULT_CONCURRENCY_LIMITS.resume_inflight),
+            field="resume_inflight",
+            operation="concurrency",
+        ),
+        per_run_resume_inflight=_coerce_int(
+            value=raw_limits.get(
+                "per_run_resume_inflight",
+                DEFAULT_CONCURRENCY_LIMITS.per_run_resume_inflight,
+            ),
+            field="per_run_resume_inflight",
+            operation="concurrency",
         ),
     )
     limits.validate()
@@ -257,4 +312,3 @@ class RuntimeGuardrails:
     @staticmethod
     def retry_after_header_value(retry_after_seconds: float) -> str:
         return str(max(1, int(math.ceil(retry_after_seconds))))
-

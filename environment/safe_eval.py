@@ -1,5 +1,6 @@
 import ast
-from typing import Any
+import operator as py_operator
+from typing import Dict, List, Set, Tuple, Union, cast
 
 
 MAX_EXPRESSION_LENGTH = 2048
@@ -9,6 +10,17 @@ MAX_CONTAINER_ITEMS = 128
 
 class UnsafeExpressionError(ValueError):
     """Raised when a branch expression contains unsupported/unsafe constructs."""
+
+
+ExpressionPrimitive = Union[str, int, float, bool, None]
+ExpressionScalar = Union[str, int, float, bool]
+ExpressionValue = Union[
+    ExpressionPrimitive,
+    List["ExpressionValue"],
+    Tuple["ExpressionValue", ...],
+    Set[ExpressionPrimitive],
+    Dict[ExpressionPrimitive, "ExpressionValue"],
+]
 
 
 class _SafeExpressionValidator(ast.NodeVisitor):
@@ -33,13 +45,13 @@ class _SafeExpressionValidator(ast.NodeVisitor):
         self.max_nodes = max_nodes
         self.node_count = 0
 
-    def visit(self, node: ast.AST) -> Any:
+    def visit(self, node: ast.AST) -> object:
         self.node_count += 1
         if self.node_count > self.max_nodes:
             raise UnsafeExpressionError("Branch expression is too complex.")
         return super().visit(node)
 
-    def generic_visit(self, node: ast.AST) -> Any:
+    def generic_visit(self, node: ast.AST) -> object:
         allowed_nodes = (
             ast.Expression,
             ast.Constant,
@@ -80,10 +92,57 @@ class _SafeExpressionValidator(ast.NodeVisitor):
                 raise UnsafeExpressionError("Unsupported comparison operator in branch expression.")
         self.generic_visit(node)
 
+    def visit_Dict(self, node: ast.Dict) -> None:  # noqa: N802
+        if any(key is None for key in node.keys):
+            raise UnsafeExpressionError("Dict unpacking is not supported in branch expressions.")
+        self.generic_visit(node)
 
-def _evaluate_node(node: ast.AST) -> Any:
+
+def _to_scalar(value: ExpressionValue) -> ExpressionScalar:
+    if not isinstance(value, (int, float, str, bool)):
+        raise UnsafeExpressionError("Ordered comparisons require scalar operands.")
+    return value
+
+
+def _evaluate_ordered_comparison(operator: ast.AST, left: ExpressionValue, right: ExpressionValue) -> bool:
+    left_scalar = _to_scalar(left)
+    right_scalar = _to_scalar(right)
+    if type(left_scalar) is not type(right_scalar):
+        raise UnsafeExpressionError("Ordered comparisons require matching operand types.")
+
+    comparator = None
+    if isinstance(operator, ast.Lt):
+        comparator = py_operator.lt
+    elif isinstance(operator, ast.LtE):
+        comparator = py_operator.le
+    elif isinstance(operator, ast.Gt):
+        comparator = py_operator.gt
+    elif isinstance(operator, ast.GtE):
+        comparator = py_operator.ge
+
+    if comparator is None:
+        raise UnsafeExpressionError("Unsupported ordered comparison operator.")
+    return bool(comparator(left_scalar, right_scalar))
+
+
+def _evaluate_membership(operator: ast.AST, left: ExpressionValue, right: ExpressionValue) -> bool:
+    if not isinstance(right, (list, tuple, set, dict, str)):
+        raise UnsafeExpressionError("Membership comparisons require container/string right operand.")
+    if isinstance(operator, ast.In):
+        return bool(left in right)
+    if isinstance(operator, ast.NotIn):
+        return bool(left not in right)
+    raise UnsafeExpressionError("Unsupported membership comparison operator.")
+
+
+def _evaluate_node(node: ast.AST) -> ExpressionValue:
     if isinstance(node, ast.Constant):
-        return node.value
+        const_value = node.value
+        if not isinstance(const_value, (str, int, float, bool, type(None))):
+            raise UnsafeExpressionError(
+                f"Unsupported literal type in branch expression: {type(const_value).__name__}."
+            )
+        return const_value
 
     if isinstance(node, ast.List):
         if len(node.elts) > MAX_CONTAINER_ITEMS:
@@ -98,22 +157,31 @@ def _evaluate_node(node: ast.AST) -> Any:
     if isinstance(node, ast.Set):
         if len(node.elts) > MAX_CONTAINER_ITEMS:
             raise UnsafeExpressionError("Branch set literal exceeds max item limit.")
-        return {_evaluate_node(elt) for elt in node.elts}
+        resolved_values = [_evaluate_node(elt) for elt in node.elts]
+        if not all(isinstance(value, (str, int, float, bool, type(None))) for value in resolved_values):
+            raise UnsafeExpressionError("Set literals only support scalar/None values.")
+        values = set(resolved_values)
+        return cast(Set[ExpressionPrimitive], values)
 
     if isinstance(node, ast.Dict):
         if len(node.keys) > MAX_CONTAINER_ITEMS:
             raise UnsafeExpressionError("Branch dict literal exceeds max item limit.")
-        return {
-            _evaluate_node(key): _evaluate_node(value)
-            for key, value in zip(node.keys, node.values)
-        }
+        result: dict[ExpressionPrimitive, ExpressionValue] = {}
+        for key_node, value_node in zip(node.keys, node.values):
+            if key_node is None:
+                raise UnsafeExpressionError("Dict unpacking is not supported in branch expressions.")
+            resolved_key = _evaluate_node(key_node)
+            if not isinstance(resolved_key, (str, int, float, bool, type(None))):
+                raise UnsafeExpressionError("Dict keys must be scalar/None values.")
+            result[resolved_key] = _evaluate_node(value_node)
+        return result
 
     if isinstance(node, ast.BoolOp):
-        values = [_evaluate_node(value) for value in node.values]
+        bool_values = [_evaluate_node(value_node) for value_node in node.values]
         if isinstance(node.op, ast.And):
-            return all(bool(value) for value in values)
+            return all(bool(value) for value in bool_values)
         if isinstance(node.op, ast.Or):
-            return any(bool(value) for value in values)
+            return any(bool(value) for value in bool_values)
         raise UnsafeExpressionError("Unsupported boolean operator in branch expression.")
 
     if isinstance(node, ast.UnaryOp):
@@ -122,25 +190,17 @@ def _evaluate_node(node: ast.AST) -> Any:
         raise UnsafeExpressionError("Unsupported unary operator in branch expression.")
 
     if isinstance(node, ast.Compare):
-        left = _evaluate_node(node.left)
+        left: ExpressionValue = _evaluate_node(node.left)
         for operator, comparator in zip(node.ops, node.comparators):
-            right = _evaluate_node(comparator)
+            right: ExpressionValue = _evaluate_node(comparator)
             if isinstance(operator, ast.Eq):
                 outcome = left == right
             elif isinstance(operator, ast.NotEq):
                 outcome = left != right
-            elif isinstance(operator, ast.Lt):
-                outcome = left < right
-            elif isinstance(operator, ast.LtE):
-                outcome = left <= right
-            elif isinstance(operator, ast.Gt):
-                outcome = left > right
-            elif isinstance(operator, ast.GtE):
-                outcome = left >= right
-            elif isinstance(operator, ast.In):
-                outcome = left in right
-            elif isinstance(operator, ast.NotIn):
-                outcome = left not in right
+            elif isinstance(operator, (ast.Lt, ast.LtE, ast.Gt, ast.GtE)):
+                outcome = _evaluate_ordered_comparison(operator, left, right)
+            elif isinstance(operator, (ast.In, ast.NotIn)):
+                outcome = _evaluate_membership(operator, left, right)
             elif isinstance(operator, ast.Is):
                 outcome = left is right
             elif isinstance(operator, ast.IsNot):

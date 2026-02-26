@@ -236,6 +236,7 @@ python3 -m build
   - `STABILITY.md`
   - `ROADMAP.md`
   - `docs/v1_contract.md`
+  - `docs/typing_policy.md`
   - `SECURITY.md`
   - `CONTRIBUTING.md`
 - Runtime and operations:

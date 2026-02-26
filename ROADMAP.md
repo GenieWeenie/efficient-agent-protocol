@@ -119,3 +119,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 10 `EAP-101` docs deepening completed (custom tool authoring guide, pointer internals deep dive, architecture flow pass) (`GEN-61`).
 - Phase 10 `EAP-102` security hardening completed (constrained branch-expression evaluator, unsafe-expression rejection tests, security posture docs) (`GEN-62`).
 - Phase 10 `EAP-103` README conversion pack completed (demo GIF, architecture image prominence, badge normalization, CI README asset contract checks) (`GEN-63`).
+- Phase 10 `EAP-104` type rigor tranche completed (scoped strict mypy gate for `safe_eval`, runtime auth scopes, and runtime guardrails, plus typing policy doc) (`GEN-64`).
