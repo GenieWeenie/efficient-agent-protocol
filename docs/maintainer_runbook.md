@@ -22,6 +22,12 @@ This runbook captures core maintainer operations to reduce bus factor.
 3. Land fix behind CI validation.
 4. Publish release and post remediation note.
 
+## Recovery Drills
+
+- Run periodic state backup/restore drills using `docs/state_backup_restore.md`.
+- Verify integrity checks and rollback path behavior at least once per release cycle.
+- Capture drill timestamps and observed RPO/RTO in release notes or operations logs.
+
 ## Release Owner Checklist
 
 - Follow `docs/release.md`.
