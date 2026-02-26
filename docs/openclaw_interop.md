@@ -8,7 +8,7 @@ Scope: interoperability analysis plus implemented interop foundation (EAP-072, E
 
 This spike captures compatibility against these versions at analysis time:
 
-- **EAP**: `0.1.7` (`/Users/ct/Desktop/efficient-agent-protocol/pyproject.toml`)
+- **EAP**: `0.1.8` (`/Users/ct/Desktop/efficient-agent-protocol/pyproject.toml`)
 - **OpenClaw release**: `v2026.2.22` (published 2026-02-23)
 - **OpenClaw docs/repo baseline**: `main` branch on 2026-02-23 (`package.json` currently `2026.2.23`)
 
