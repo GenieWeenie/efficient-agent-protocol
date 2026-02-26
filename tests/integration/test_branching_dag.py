@@ -161,6 +161,56 @@ class BranchingDagIntegrationTest(unittest.TestCase):
         self.assertEqual(counters["fallback"], 1)
         self.assertIn("pointer_id", result)
 
+    def test_unsafe_branch_expression_is_rejected(self) -> None:
+        counters = {"heavy": 0, "light": 0}
+
+        def analyze() -> dict:
+            return {"metadata": {"row_count": 1501}}
+
+        def heavy_path() -> str:
+            counters["heavy"] += 1
+            return "heavy-ok"
+
+        def light_path() -> str:
+            counters["light"] += 1
+            return "light-ok"
+
+        registry = ToolRegistry()
+        registry.register("analyze", analyze, ANALYZE_SCHEMA)
+        registry.register("heavy_path", heavy_path, HEAVY_SCHEMA)
+        registry.register("light_path", light_path, LIGHT_SCHEMA)
+        executor = AsyncLocalExecutor(self.state_manager, registry)
+
+        macro = BatchedMacroRequest(
+            steps=[
+                ToolCall(
+                    step_id="analyze",
+                    tool_name="analyze",
+                    arguments={},
+                    branching={
+                        "condition": "__import__('os').system('echo pwned') == 0",
+                        "true_target_step_ids": ["heavy"],
+                        "false_target_step_ids": ["light"],
+                    },
+                ),
+                ToolCall(step_id="heavy", tool_name="heavy_path", arguments={}),
+                ToolCall(step_id="light", tool_name="light_path", arguments={}),
+            ],
+            retry_policy=RetryPolicy(max_attempts=1, initial_delay_seconds=0.0, backoff_multiplier=1.0),
+        )
+
+        result = asyncio.run(executor.execute_macro(macro))
+        run_id = result["metadata"]["execution_run_id"]
+        checkpoint = self.state_manager.get_run_checkpoint(run_id=run_id)
+        analyze_pointer = checkpoint["step_status"]["analyze"]["pointer_id"]
+        analyze_payload = self.state_manager.retrieve(analyze_pointer)
+
+        self.assertEqual(checkpoint["step_status"]["analyze"]["status"], "error")
+        self.assertIn("'error_type': 'validation_error'", analyze_payload)
+        self.assertIn("Unsafe branch condition expression", analyze_payload)
+        self.assertEqual(counters["heavy"], 0)
+        self.assertEqual(counters["light"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

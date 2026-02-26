@@ -247,6 +247,16 @@ Fix:
 - Inspect schema in tool registry/manifest.
 - Ensure required fields and types are correct.
 
+### `validation_error` with `Unsafe branch condition expression`
+Cause:
+- Workflow branch condition includes disallowed expression constructs (for example function calls or attribute access).
+
+Fix:
+- Rewrite condition to supported boolean/comparison syntax only.
+- Use `$step:<id>.<path>` references and literal comparisons.
+- See branch condition security rules in:
+  - `docs/workflow_schema.md`
+
 ### Dependency step failure (`dependency_error`)
 Cause:
 - A step references a failed upstream pointer.

@@ -30,3 +30,14 @@ Preferred disclosure channel:
 2. Develop and validate a fix.
 3. Publish patched release.
 4. Publish advisory notes with impacted/fixed versions and mitigation guidance.
+
+## Runtime Expression Evaluation Hardening
+
+Branch-condition evaluation paths are constrained to a safe expression subset and reject unsafe constructs
+(for example function calls, attribute access, and non-boolean outputs).
+
+Operator guidance:
+
+1. Treat branch-condition validation failures as a security signal, not a runtime convenience error.
+2. Keep branch expressions declarative and data-driven.
+3. Restrict workflow authoring rights in multi-tenant deployments.
