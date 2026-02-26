@@ -1,7 +1,7 @@
 # EAP Proof Sheet: Why EAP Now
 
-Updated: 2026-02-24  
-Scope: EAP `0.1.7` with OpenClaw interop, eval gating, and operator telemetry (EAP-071 to EAP-082 complete).
+Updated: 2026-02-26  
+Scope: EAP `0.1.8` with OpenClaw interop, remote-ops governance, reliability gates, and operator telemetry (EAP-071 to EAP-104 complete).
 
 ## Side-by-Side Capability Table
 

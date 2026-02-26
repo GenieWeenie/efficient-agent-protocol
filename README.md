@@ -7,7 +7,7 @@
 
 > Status: Experimental (pre-1.0). APIs and schema may change.
 > See `STABILITY.md` and `ROADMAP.md` for guarantees and planned milestones.
-> Latest stable release: `v0.1.7`
+> Latest stable release: `v0.1.8`
 
 Efficient Agent Protocol is a local-first framework for multi-step tool workflows.
 It stores large outputs as pointer-backed state (`ptr_*`) and runs dependency-aware DAG steps in parallel.
