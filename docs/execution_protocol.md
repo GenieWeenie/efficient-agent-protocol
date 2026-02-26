@@ -24,7 +24,7 @@ This protocol prevents ad-hoc execution and keeps all work in a visible ordered 
 
 ## Current Ordered Queue
 
-Updated: 2026-02-25
+Updated: 2026-02-26
 
 | Order | EAP ID | Linear | Status | Notes |
 | --- | --- | --- | --- | --- |
@@ -43,8 +43,8 @@ Updated: 2026-02-25
 | 13 | `EAP-096` | `GEN-56` | `Done` | Runtime rate limits and concurrency guards |
 | 14 | `EAP-097` | `GEN-57` | `Done` | Audit log export + signed integrity manifest |
 | 15 | `EAP-100` | `GEN-60` | `Done` | Reproducible benchmark + competitor comparison suite |
-| 16 | `EAP-101` | `GEN-61` | `Todo` | Docs deepening: custom tools, pointer internals, architecture completeness |
-| 17 | `EAP-102` | `GEN-62` | `Blocked` | Security hardening for expression evaluation paths |
+| 16 | `EAP-101` | `GEN-61` | `Done` | Docs deepening: custom tools, pointer internals, architecture completeness |
+| 17 | `EAP-102` | `GEN-62` | `Todo` | Security hardening for expression evaluation paths |
 | 18 | `EAP-103` | `GEN-63` | `Blocked` | README conversion pack (demo GIF, architecture prominence, badges hygiene) |
 | 19 | `EAP-104` | `GEN-64` | `Blocked` | Type rigor tranche (mypy scope + stricter typing checks) |
 | 20 | `EAP-098` | `GEN-58` | `Blocked` | Backup/restore workflow for state + diagnostics |
@@ -53,4 +53,4 @@ Updated: 2026-02-25
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: `EAP-101` is the active top `Todo` item.
+Current state: `EAP-102` is the active top `Todo` item.
