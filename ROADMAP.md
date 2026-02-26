@@ -116,3 +116,4 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 9 `EAP-096` runtime rate limits and concurrency guards completed (`GEN-56`, PR #60).
 - Phase 9 `EAP-097` audit bundle export + integrity verification workflow completed (`GEN-57`).
 - Phase 10 `EAP-100` reproducible benchmark + competitor comparison suite completed (`GEN-60`).
+- Phase 10 `EAP-101` docs deepening completed (custom tool authoring guide, pointer internals deep dive, architecture flow pass) (`GEN-61`).

@@ -162,6 +162,12 @@ docker compose --env-file deploy/self_hosted/.env -f deploy/self_hosted/docker-c
 python scripts/self_hosted_stack_smoke.py --base-url http://127.0.0.1:8080 --bearer-token "<runtime-token>"
 ```
 
+10. Architecture + extension deep dives
+
+- `docs/architecture.md`
+- `docs/custom_tool_authoring.md`
+- `docs/pointer_internals.md`
+
 ## Programmatic Example
 
 ```python
@@ -209,6 +215,8 @@ python3 -m build
   - `docs/eap_proof_sheet.md`
   - `docs/configuration.md`
   - `docs/architecture.md`
+  - `docs/custom_tool_authoring.md`
+  - `docs/pointer_internals.md`
   - `docs/troubleshooting.md`
 - Contract and policy:
   - `STABILITY.md`
