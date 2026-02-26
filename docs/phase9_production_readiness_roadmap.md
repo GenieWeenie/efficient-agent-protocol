@@ -1,6 +1,6 @@
 # Phase 9 Production Readiness Roadmap
 
-Status: In progress (started 2026-02-24)  
+Status: Completed (all Phase 9 items merged)  
 Source of truth: Linear project `Efficient Agent Protocol Roadmap`
 
 Current status:
@@ -8,7 +8,7 @@ Current status:
 - [x] `EAP-096` runtime rate limits and concurrency guards (`GEN-56`)
 - [x] `EAP-097` audit log export + signed integrity manifest (`GEN-57`)
 - [x] `EAP-098` backup/restore workflow for state + diagnostics (`GEN-58`)
-- [ ] `EAP-099` long-run soak + chaos reliability gate (`GEN-59`)
+- [x] `EAP-099` long-run soak + chaos reliability gate (`GEN-59`)
 
 ## Objective
 
@@ -43,4 +43,4 @@ Move from feature-complete Phase 8 to production-readiness controls that improve
 
 ## Execution Constraint
 
-`EAP-098` is complete. Global queue now advances to `EAP-099` as the active reliability gate item.
+`EAP-099` is complete. Phase 9 production-readiness tranche is now fully completed.

@@ -218,6 +218,7 @@ python3 scripts/migrate_state_db.py --db-path agent_state.db --dry-run
 python3 scripts/export_metrics.py --db-path agent_state.db --output metrics/latest.json
 python3 scripts/export_telemetry_pack.py --db-path agent_state.db --output-dir artifacts/telemetry
 python scripts/eap_state_backup.py backup --db-path agent_state.db --output-root artifacts/state_backups
+python scripts/soak_chaos_scorecard.py --output-dir artifacts/soak_chaos --threshold-config docs/soak_chaos_thresholds.json --baseline docs/soak_chaos_baseline.json
 ./scripts/interop_openclaw_smoke.sh v2026.2.22
 docker compose --env-file deploy/self_hosted/.env -f deploy/self_hosted/docker-compose.yml up --build -d
 python scripts/self_hosted_stack_smoke.py --base-url http://127.0.0.1:8080 --bearer-token "<runtime-token>"
@@ -246,6 +247,7 @@ python3 -m build
   - `docs/observability.md`
   - `docs/operator_telemetry_pack.md`
   - `docs/state_backup_restore.md`
+  - `docs/soak_chaos_reliability.md`
   - `docs/self_hosted_control_plane.md`
   - `docs/remote_ops_governance.md`
   - `docs/migrations.md`

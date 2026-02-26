@@ -1,0 +1,11 @@
+{
+  "metadata": {
+    "captured_at_utc": "2026-02-26T00:00:00Z",
+    "note": "Bootstrap baseline for EAP-099 soak + chaos regression checks."
+  },
+  "metrics": {
+    "soak_failure_rate": 0.0,
+    "soak_latency_p95_ms": 180.0,
+    "chaos_pass_rate": 1.0
+  }
+}

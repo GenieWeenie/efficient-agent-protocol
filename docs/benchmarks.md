@@ -46,6 +46,22 @@ This command emits:
 - `artifacts/competitive_benchmarks/comparison_scorecard.md`
 - `artifacts/competitive_benchmarks/manifest.json`
 
+Run the soak + chaos reliability gate (sustained load and injected faults):
+
+```bash
+python scripts/soak_chaos_scorecard.py \
+  --output-dir artifacts/soak_chaos \
+  --threshold-config docs/soak_chaos_thresholds.json \
+  --baseline docs/soak_chaos_baseline.json
+```
+
+This command emits:
+
+- `artifacts/soak_chaos/scorecard.json`
+- `artifacts/soak_chaos/scorecard.md`
+- `artifacts/soak_chaos/trend.json`
+- `artifacts/soak_chaos/history.ndjson`
+
 ## Baseline (2026-02-23)
 
 Measured on local macOS development machine, Python 3.9:
@@ -69,6 +85,11 @@ Competitive benchmark gate uses:
 - Reference fixture profiles: `docs/competitive_reference_profiles.json`
 - Competitive thresholds: `docs/competitive_thresholds.json`
 - Source eval thresholds/baseline: `docs/eval_thresholds.json`, `docs/eval_baseline.json`
+
+Soak + chaos gate uses:
+
+- Thresholds: `docs/soak_chaos_thresholds.json`
+- Baseline: `docs/soak_chaos_baseline.json`
 
 Methodology caveat:
 

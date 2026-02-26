@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "soak": {
+    "min_runs": 40,
+    "max_failure_rate": 0.05,
+    "max_latency_p95_ms": 400.0,
+    "min_retry_events_total": 3
+  },
+  "chaos": {
+    "min_pass_rate": 1.0,
+    "required_scenarios": [
+      "dependency_outage",
+      "timeout_recovery",
+      "retry_storm"
+    ],
+    "scenario_requirements": {
+      "timeout_recovery": {
+        "min_retry_events": 1
+      },
+      "retry_storm": {
+        "min_retry_events": 10
+      }
+    }
+  },
+  "regression": {
+    "max_failure_rate_increase": 0.02,
+    "max_latency_p95_ratio_increase": 1.5,
+    "max_chaos_pass_rate_drop": 0.0
+  }
+}
