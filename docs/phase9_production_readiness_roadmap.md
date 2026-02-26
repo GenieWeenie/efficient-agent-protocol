@@ -43,4 +43,4 @@ Move from feature-complete Phase 8 to production-readiness controls that improve
 
 ## Execution Constraint
 
-`EAP-097` is complete. Global queue now advances to `EAP-100`; Phase 9 deferred items (`EAP-098`, `EAP-099`) remain blocked behind the ordered global chain.
+`EAP-104` is complete. Global queue has returned to deferred Phase 9 items, with `EAP-098` now active and `EAP-099` still dependency-blocked.

@@ -1,6 +1,6 @@
 # Phase 10 Competitiveness Hardening Roadmap
 
-Status: Queued (inserted after `EAP-097` in `docs/execution_protocol.md`)  
+Status: Completed (all Phase 10 items merged)  
 Source of truth: Linear project `Efficient Agent Protocol Roadmap`
 
 Current status:
@@ -8,7 +8,7 @@ Current status:
 - [x] `EAP-101` docs deepening for custom tools, pointer internals, architecture completeness (`GEN-61`)
 - [x] `EAP-102` security hardening for expression-evaluation paths (`GEN-62`)
 - [x] `EAP-103` README conversion pack (demo GIF, architecture prominence, badges hygiene) (`GEN-63`)
-- [ ] `EAP-104` type rigor tranche (mypy scope + stricter CI typing checks) (`GEN-64`)
+- [x] `EAP-104` type rigor tranche (mypy scope + stricter CI typing checks) (`GEN-64`)
 
 ## Objective
 
@@ -45,4 +45,4 @@ Convert external "strong but early" feedback into measurable competitiveness upg
 
 ## Execution Constraint
 
-Only the first non-blocked `Todo` item in `docs/execution_protocol.md` may be started (currently `EAP-104`).
+Only the first non-blocked `Todo` item in `docs/execution_protocol.md` may be started (now `EAP-098` after Phase 10 completion).
