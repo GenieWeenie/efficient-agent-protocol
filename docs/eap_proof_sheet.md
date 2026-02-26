@@ -13,6 +13,7 @@ Scope: EAP `0.1.7` with OpenClaw interop, eval gating, and operator telemetry (E
 | Crash-safe resume/replay | Checkpointed runs can resume deterministically after interruption | Runtime resume endpoint available to plugin clients | `tests/integration/test_resume_replay.py`, `tests/integration/test_runtime_http_api.py` |
 | MCP tool interoperability | Built-in `invoke_mcp_tool` bridge in runtime tool registry | Can be invoked in EAP workflows used by interop flows | `environment/tools/mcp_tools.py`, `tests/integration/test_mcp_interop.py` |
 | CI-gated quality scorecard | Correctness/reliability/latency harness with hard thresholds | Runs as required CI lane on PR/push | `scripts/eval_scorecard.py`, `.github/workflows/ci.yml`, `docs/eval_thresholds.json` |
+| Soak + chaos reliability gate | Sustained-load and fault-injection scorecard with regression thresholds | Runs as required CI lane on PR/push | `scripts/soak_chaos_scorecard.py`, `.github/workflows/ci.yml`, `docs/soak_chaos_thresholds.json` |
 | Operator diagnostics | Dashboard-ready retry/failure/latency/saturation telemetry export | Maintainers can triage failed runs from artifacts only | `scripts/export_telemetry_pack.py`, `docs/operator_telemetry_pack.md`, `tests/integration/test_telemetry_pack.py` |
 
 ## Reproducible Commands

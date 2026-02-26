@@ -63,3 +63,21 @@ python scripts/competitive_benchmark_suite.py \
 ```
 
 This layer generates a reproducible comparison matrix against versioned reference profiles and applies an additional threshold gate.
+
+## Soak + Chaos Reliability Layer (EAP-099)
+
+For sustained-load and fault-injection reliability gating, run:
+
+```bash
+python scripts/soak_chaos_scorecard.py \
+  --output-dir artifacts/soak_chaos \
+  --threshold-config docs/soak_chaos_thresholds.json \
+  --baseline docs/soak_chaos_baseline.json
+```
+
+This layer verifies:
+
+- soak run pass/failure rate under repeated execution
+- retry behavior under deterministic transient timeout injection
+- chaos scenarios for dependency outage, timeout recovery, and retry storm
+- baseline-relative reliability regression limits
