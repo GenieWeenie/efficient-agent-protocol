@@ -1,5 +1,6 @@
 import ast
-from typing import TypeAlias, cast
+import operator as py_operator
+from typing import Dict, List, Set, Tuple, Union, cast
 
 
 MAX_EXPRESSION_LENGTH = 2048
@@ -11,15 +12,15 @@ class UnsafeExpressionError(ValueError):
     """Raised when a branch expression contains unsupported/unsafe constructs."""
 
 
-ExpressionPrimitive: TypeAlias = str | int | float | bool | None
-ExpressionScalar: TypeAlias = str | int | float | bool
-ExpressionValue: TypeAlias = (
-    ExpressionPrimitive
-    | list["ExpressionValue"]
-    | tuple["ExpressionValue", ...]
-    | set[ExpressionPrimitive]
-    | dict[ExpressionPrimitive, "ExpressionValue"]
-)
+ExpressionPrimitive = Union[str, int, float, bool, None]
+ExpressionScalar = Union[str, int, float, bool]
+ExpressionValue = Union[
+    ExpressionPrimitive,
+    List["ExpressionValue"],
+    Tuple["ExpressionValue", ...],
+    Set[ExpressionPrimitive],
+    Dict[ExpressionPrimitive, "ExpressionValue"],
+]
 
 
 class _SafeExpressionValidator(ast.NodeVisitor):
@@ -109,52 +110,19 @@ def _evaluate_ordered_comparison(operator: ast.AST, left: ExpressionValue, right
     if type(left_scalar) is not type(right_scalar):
         raise UnsafeExpressionError("Ordered comparisons require matching operand types.")
 
-    if isinstance(left_scalar, str):
-        right_str = cast(str, right_scalar)
-        if isinstance(operator, ast.Lt):
-            return bool(left_scalar < right_str)
-        if isinstance(operator, ast.LtE):
-            return bool(left_scalar <= right_str)
-        if isinstance(operator, ast.Gt):
-            return bool(left_scalar > right_str)
-        if isinstance(operator, ast.GtE):
-            return bool(left_scalar >= right_str)
+    comparator = None
+    if isinstance(operator, ast.Lt):
+        comparator = py_operator.lt
+    elif isinstance(operator, ast.LtE):
+        comparator = py_operator.le
+    elif isinstance(operator, ast.Gt):
+        comparator = py_operator.gt
+    elif isinstance(operator, ast.GtE):
+        comparator = py_operator.ge
+
+    if comparator is None:
         raise UnsafeExpressionError("Unsupported ordered comparison operator.")
-    elif isinstance(left_scalar, bool):
-        right_bool = cast(bool, right_scalar)
-        if isinstance(operator, ast.Lt):
-            return bool(left_scalar < right_bool)
-        if isinstance(operator, ast.LtE):
-            return bool(left_scalar <= right_bool)
-        if isinstance(operator, ast.Gt):
-            return bool(left_scalar > right_bool)
-        if isinstance(operator, ast.GtE):
-            return bool(left_scalar >= right_bool)
-        raise UnsafeExpressionError("Unsupported ordered comparison operator.")
-    elif isinstance(left_scalar, int):
-        right_int = cast(int, right_scalar)
-        if isinstance(operator, ast.Lt):
-            return bool(left_scalar < right_int)
-        if isinstance(operator, ast.LtE):
-            return bool(left_scalar <= right_int)
-        if isinstance(operator, ast.Gt):
-            return bool(left_scalar > right_int)
-        if isinstance(operator, ast.GtE):
-            return bool(left_scalar >= right_int)
-        raise UnsafeExpressionError("Unsupported ordered comparison operator.")
-    elif isinstance(left_scalar, float):
-        right_float = cast(float, right_scalar)
-        if isinstance(operator, ast.Lt):
-            return bool(left_scalar < right_float)
-        if isinstance(operator, ast.LtE):
-            return bool(left_scalar <= right_float)
-        if isinstance(operator, ast.Gt):
-            return bool(left_scalar > right_float)
-        if isinstance(operator, ast.GtE):
-            return bool(left_scalar >= right_float)
-        raise UnsafeExpressionError("Unsupported ordered comparison operator.")
-    else:  # pragma: no cover - guarded by _to_scalar
-        raise UnsafeExpressionError("Ordered comparisons require scalar operands.")
+    return bool(comparator(left_scalar, right_scalar))
 
 
 def _evaluate_membership(operator: ast.AST, left: ExpressionValue, right: ExpressionValue) -> bool:
@@ -189,10 +157,11 @@ def _evaluate_node(node: ast.AST) -> ExpressionValue:
     if isinstance(node, ast.Set):
         if len(node.elts) > MAX_CONTAINER_ITEMS:
             raise UnsafeExpressionError("Branch set literal exceeds max item limit.")
-        values = {_evaluate_node(elt) for elt in node.elts}
-        if not all(isinstance(value, (str, int, float, bool, type(None))) for value in values):
+        resolved_values = [_evaluate_node(elt) for elt in node.elts]
+        if not all(isinstance(value, (str, int, float, bool, type(None))) for value in resolved_values):
             raise UnsafeExpressionError("Set literals only support scalar/None values.")
-        return cast(set[ExpressionPrimitive], values)
+        values = set(resolved_values)
+        return cast(Set[ExpressionPrimitive], values)
 
     if isinstance(node, ast.Dict):
         if len(node.keys) > MAX_CONTAINER_ITEMS:
