@@ -21,6 +21,22 @@ It also ships OpenClaw interop paths for gateway/tool integration.
 
 See `docs/eap_proof_sheet.md` for reproducible evidence and command-level validation.
 
+## What We Closed Recently
+
+- OpenClaw interoperability moved from spike to shipped paths:
+  - plugin adapter + skill pack
+  - gateway `/tools/invoke` bridge
+  - agent-routing header support
+- Runtime control plane shipped with scoped auth and ownership governance:
+  - execute/run-summary/pointer-summary/resume endpoints
+  - policy guardrails with deterministic JSON errors
+- Reliability hardening is now CI-enforced:
+  - eval scorecard gate
+  - competitive benchmark lane
+  - soak + chaos reliability gate with regression thresholds
+- Crash-safe resume/replay and MCP tool bridge are implemented and covered by integration tests.
+- Self-hosted reference stack, telemetry export pack, and runbooks are in-repo and exercised in CI smoke lanes.
+
 ## Demo Flow
 
 Short flow: chat request -> pointer inspection -> trace/HITL checkpoint.
@@ -51,14 +67,15 @@ Best for:
 
 Not ideal yet:
 - strict long-term API compatibility requirements before `v1.0`
-- non-technical users expecting zero-configuration onboarding
-- teams that want a fully managed hosted control plane instead of running local/runtime components
+- teams expecting a fully managed hosted control plane (instead of self-hosting runtime components)
+- non-technical users wanting no-ops onboarding without any runtime/provider configuration
 
 ## Current Limits (Honest)
 
 - Pre-1.0 contract: APIs and schema can still change (`STABILITY.md`).
-- `responses` streaming behavior depends on gateway SSE event support and can vary by gateway release/configuration.
-- This is an engineering-first runtime, not a no-code platform.
+- `responses` streaming behavior still depends on gateway SSE support and may vary by gateway version/configuration.
+- Performance/reliability thresholds are calibrated from repo baselines; production teams should tune them for their own workloads.
+- This remains an engineering-first runtime, not a no-code orchestration product.
 
 ## What You Get
 
