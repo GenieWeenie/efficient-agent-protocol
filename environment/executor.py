@@ -15,6 +15,7 @@ from protocol.models import (
     ToolErrorPayload,
 )
 from protocol.state_manager import StateManager
+from environment.safe_eval import UnsafeExpressionError, evaluate_safe_expression
 from environment.tool_registry import InputValidationError, ToolRegistry
 
 logger = logging.getLogger("eap.environment.executor")
@@ -296,7 +297,7 @@ class AsyncLocalExecutor:
 
         reference_pattern = re.compile(r"\$step:([A-Za-z0-9_\-]+)(?:\.([A-Za-z0-9_\.]+))?")
 
-        def evaluate_branch_condition(condition_expression: str) -> bool:
+        def evaluate_branch_condition(step_id: str, condition_expression: str) -> bool:
             def replace_reference(match: re.Match) -> str:
                 step_id = match.group(1)
                 path = match.group(2)
@@ -314,14 +315,11 @@ class AsyncLocalExecutor:
             replaced = re.sub(r"\btrue\b", "True", replaced, flags=re.IGNORECASE)
             replaced = re.sub(r"\bfalse\b", "False", replaced, flags=re.IGNORECASE)
             try:
-                return bool(eval(replaced, {"__builtins__": {}}, {}))
-            except Exception as exc:
-                logger.warning(
-                    "branch condition evaluation failed: %s",
-                    str(exc),
-                    extra={"condition": condition_expression, "run_id": run_id},
-                )
-                return False
+                return evaluate_safe_expression(replaced)
+            except UnsafeExpressionError as exc:
+                raise InputValidationError(
+                    f"Unsafe branch condition expression for step '{step_id}': {str(exc)}"
+                ) from exc
 
         def resolve_branch_targets(step, status: str) -> None:
             if not step.branching:
@@ -329,7 +327,7 @@ class AsyncLocalExecutor:
 
             selected_targets: Set[str] = set()
             if status == "ok":
-                condition_is_true = evaluate_branch_condition(step.branching.condition)
+                condition_is_true = evaluate_branch_condition(step.step_id, step.branching.condition)
                 selected_targets = set(
                     step.branching.true_target_step_ids
                     if condition_is_true
@@ -761,6 +759,14 @@ class AsyncLocalExecutor:
                     metadata=_pointer_metadata({"step_id": step.step_id}),
                 )
                 step_duration_ms = round((time.perf_counter() - step_started_perf) * 1000, 3)
+                step_status[step.step_id] = {"status": "ok", "pointer_id": step_pointer["pointer_id"]}
+                step_contexts[step.step_id] = {
+                    "pointer_id": step_pointer["pointer_id"],
+                    "metadata": step_pointer.get("metadata"),
+                    "raw_data": raw_output,
+                    "status": "ok",
+                }
+                resolve_branch_targets(step, status="ok")
                 _append_trace_event(
                     step_id=step.step_id,
                     tool_name=step.tool_name,
@@ -771,14 +777,6 @@ class AsyncLocalExecutor:
                     output_pointer_id=step_pointer["pointer_id"],
                     duration_ms=step_duration_ms,
                 )
-                step_status[step.step_id] = {"status": "ok", "pointer_id": step_pointer["pointer_id"]}
-                step_contexts[step.step_id] = {
-                    "pointer_id": step_pointer["pointer_id"],
-                    "metadata": step_pointer.get("metadata"),
-                    "raw_data": raw_output,
-                    "status": "ok",
-                }
-                resolve_branch_targets(step, status="ok")
                 if not step_futures[step.step_id].done():
                     step_futures[step.step_id].set_result(step_pointer["pointer_id"])
                 await _persist_checkpoint(status="active")

@@ -51,3 +51,29 @@ Compilation behavior:
 4. Construct `BatchedMacroRequest` (optionally with supplied retry/execution limits).
 
 This keeps the visual graph format and executable macro format aligned without lossy conversion.
+
+## Branch Condition Security Posture
+
+Branch conditions are executed through a constrained evaluator, not Python `eval`.
+
+Allowed expression semantics:
+
+- boolean operators: `and`, `or`, `not`
+- comparisons: `==`, `!=`, `<`, `<=`, `>`, `>=`, `in`, `not in`, `is`, `is not`
+- literal constants: string, number, boolean, null/None
+- literal containers: list, tuple, set, dict
+- resolved step references after `$step:<id>[.<path>]` interpolation
+
+Rejected constructs include (non-exhaustive):
+
+- function or method calls
+- attribute access
+- indexing/subscript expressions
+- arithmetic expressions and comprehensions
+- any non-boolean final result
+
+Operational guidance:
+
+1. Keep conditions simple and deterministic.
+2. Use pointer-resolved metadata/value checks instead of executable logic.
+3. Treat validation failures as policy violations and fix workflow definitions rather than bypassing checks.
