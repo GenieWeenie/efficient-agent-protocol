@@ -6,7 +6,7 @@ Source of truth: Linear project `Efficient Agent Protocol Roadmap`
 Current status:
 - [x] `EAP-100` reproducible benchmark + competitor comparison suite (`GEN-60`)
 - [x] `EAP-101` docs deepening for custom tools, pointer internals, architecture completeness (`GEN-61`)
-- [ ] `EAP-102` security hardening for expression-evaluation paths (`GEN-62`)
+- [x] `EAP-102` security hardening for expression-evaluation paths (`GEN-62`)
 - [ ] `EAP-103` README conversion pack (demo GIF, architecture prominence, badges hygiene) (`GEN-63`)
 - [ ] `EAP-104` type rigor tranche (mypy scope + stricter CI typing checks) (`GEN-64`)
 
@@ -45,4 +45,4 @@ Convert external "strong but early" feedback into measurable competitiveness upg
 
 ## Execution Constraint
 
-Only the first non-blocked `Todo` item in `docs/execution_protocol.md` may be started (currently `EAP-102`).
+Only the first non-blocked `Todo` item in `docs/execution_protocol.md` may be started (currently `EAP-103`).
