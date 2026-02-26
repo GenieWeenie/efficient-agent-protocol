@@ -1,7 +1,9 @@
 # Efficient Agent Protocol (EAP)
 
 [![CI](https://github.com/GenieWeenie/efficient-agent-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/GenieWeenie/efficient-agent-protocol/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/python-3.9--3.13-blue)
+[![Coverage Gate](https://img.shields.io/badge/coverage-gated%20in%20CI-brightgreen)](./.github/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.9--3.13-blue)](./pyproject.toml)
+[![Release](https://img.shields.io/github/v/release/GenieWeenie/efficient-agent-protocol)](https://github.com/GenieWeenie/efficient-agent-protocol/releases)
 
 > Status: Experimental (pre-1.0). APIs and schema may change.
 > See `STABILITY.md` and `ROADMAP.md` for guarantees and planned milestones.
@@ -18,6 +20,18 @@ It also ships OpenClaw interop paths for gateway/tool integration.
 - It integrates with existing ecosystems instead of forcing a rewrite (`chat_completions`, `responses`, OpenClaw tooling, MCP tools).
 
 See `docs/eap_proof_sheet.md` for reproducible evidence and command-level validation.
+
+## Demo Flow
+
+Short flow: chat request -> pointer inspection -> trace/HITL checkpoint.
+
+![EAP demo flow](assets/readme/eap_demo.gif)
+
+## Architecture At A Glance
+
+High-level runtime architecture (planning -> execution -> pointers/state -> API/UI).
+
+![EAP architecture](assets/readme/eap_architecture.jpg)
 
 ## Why Choose EAP
 

@@ -45,12 +45,12 @@ Updated: 2026-02-26
 | 15 | `EAP-100` | `GEN-60` | `Done` | Reproducible benchmark + competitor comparison suite |
 | 16 | `EAP-101` | `GEN-61` | `Done` | Docs deepening: custom tools, pointer internals, architecture completeness |
 | 17 | `EAP-102` | `GEN-62` | `Done` | Security hardening for expression evaluation paths |
-| 18 | `EAP-103` | `GEN-63` | `Todo` | README conversion pack (demo GIF, architecture prominence, badges hygiene) |
-| 19 | `EAP-104` | `GEN-64` | `Blocked` | Type rigor tranche (mypy scope + stricter typing checks) |
+| 18 | `EAP-103` | `GEN-63` | `Done` | README conversion pack (demo GIF, architecture prominence, badges hygiene) |
+| 19 | `EAP-104` | `GEN-64` | `Todo` | Type rigor tranche (mypy scope + stricter typing checks) |
 | 20 | `EAP-098` | `GEN-58` | `Blocked` | Backup/restore workflow for state + diagnostics |
 | 21 | `EAP-099` | `GEN-59` | `Blocked` | Long-run soak + chaos reliability gate |
 
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: `EAP-103` is the active top `Todo` item.
+Current state: `EAP-104` is the active top `Todo` item.
