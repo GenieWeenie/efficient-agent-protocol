@@ -7,7 +7,7 @@ Current status:
 - [x] `EAP-095` runtime policy profile packs + deny-by-default templates (`GEN-55`)
 - [x] `EAP-096` runtime rate limits and concurrency guards (`GEN-56`)
 - [x] `EAP-097` audit log export + signed integrity manifest (`GEN-57`)
-- [ ] `EAP-098` backup/restore workflow for state + diagnostics (`GEN-58`)
+- [x] `EAP-098` backup/restore workflow for state + diagnostics (`GEN-58`)
 - [ ] `EAP-099` long-run soak + chaos reliability gate (`GEN-59`)
 
 ## Objective
@@ -43,4 +43,4 @@ Move from feature-complete Phase 8 to production-readiness controls that improve
 
 ## Execution Constraint
 
-`EAP-104` is complete. Global queue has returned to deferred Phase 9 items, with `EAP-098` now active and `EAP-099` still dependency-blocked.
+`EAP-098` is complete. Global queue now advances to `EAP-099` as the active reliability gate item.
