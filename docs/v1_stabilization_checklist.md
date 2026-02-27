@@ -24,7 +24,7 @@ Ship `v1.0` with a stable contract for core runtime APIs, workflow schema, and u
 
 - [x] Freeze `PersistedWorkflowGraph` required/optional fields and validation rules.
 - [x] Freeze executor error payload contract (`validation_error`, `dependency_error`, `tool_execution_error`).
-- [ ] Freeze pointer lifecycle semantics (TTL and cleanup behavior).
+- [x] Freeze pointer lifecycle semantics (TTL and cleanup behavior).
 
 ### Configuration and Operational Defaults
 

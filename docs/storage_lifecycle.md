@@ -2,6 +2,8 @@
 
 This document describes how pointer records age, expire, and are cleaned up.
 
+> **v1 Status:** Pointer lifecycle semantics are frozen for v1.0. See `docs/v1_contract.md` for the full contract.
+
 ## Pointer lifecycle fields
 
 Pointers in `state_store` track lifecycle metadata:
