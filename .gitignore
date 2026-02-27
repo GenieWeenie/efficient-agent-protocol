@@ -32,5 +32,8 @@ metrics/
 .env
 .DS_Store
 
+# Example-generated databases
+examples/.example_*.db
+
 # JS/TS
 node_modules/

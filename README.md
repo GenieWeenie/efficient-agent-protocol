@@ -1,7 +1,7 @@
 # Efficient Agent Protocol (EAP)
 
 [![CI](https://github.com/GenieWeenie/efficient-agent-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/GenieWeenie/efficient-agent-protocol/actions/workflows/ci.yml)
-[![Coverage Gate](https://img.shields.io/badge/coverage-gated%20in%20CI-brightgreen)](./.github/workflows/ci.yml)
+[![Coverage Gate](https://img.shields.io/badge/coverage-gated%20in%20CI-brightgreen)](https://github.com/GenieWeenie/efficient-agent-protocol/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.9--3.13-blue)](./pyproject.toml)
 [![Release](https://img.shields.io/github/v/release/GenieWeenie/efficient-agent-protocol)](https://github.com/GenieWeenie/efficient-agent-protocol/releases)
 
@@ -161,7 +161,7 @@ python scripts/eap_doctor.py doctor --env-file .env --output-json artifacts/doct
 
 ```bash
 pip install streamlit pandas
-streamlit run app.py
+streamlit run app.py  # from the repository root
 ```
 
 6. Use it
@@ -202,6 +202,7 @@ python scripts/self_hosted_stack_smoke.py --base-url http://127.0.0.1:8080 --bea
 ## Programmatic Example
 
 ```python
+import asyncio
 from eap.protocol import StateManager
 from eap.environment import AsyncLocalExecutor, ToolRegistry
 from eap.environment.tools import read_local_file, READ_FILE_SCHEMA
@@ -220,7 +221,8 @@ architect = AgentClient(
 
 manifest = registry.get_agent_manifest()
 macro = architect.generate_macro("Read README.md and summarize setup steps", manifest)
-# asyncio.run(executor.execute_macro(macro))
+result = asyncio.run(executor.execute_macro(macro))
+print(result)
 ```
 
 ## Common Commands
@@ -243,6 +245,8 @@ python3 -m build
 ```
 
 ## Docs
+
+Full documentation index: [`docs/README.md`](docs/README.md)
 
 - Start here:
   - `docs/eap_proof_sheet.md`

@@ -4,14 +4,14 @@ EAP pointer vault persistence is backend-pluggable via `PointerStoreBackend` in 
 
 ## Available Backends
 
-## SQLite (default)
+### SQLite (default)
 - Class: `SQLitePointerStore`
 - File: `protocol/storage/sqlite_store.py`
 - Behavior:
   - Local file persistence using `agent_state.db` by default.
   - Automatic lifecycle column migration (`created_at_utc`, `ttl_seconds`, `expires_at_utc`).
 
-## Redis
+### Redis
 - Class: `RedisPointerStore`
 - File: `protocol/storage/redis_store.py`
 - Dependency: `redis` (`pip install redis`)
@@ -20,7 +20,7 @@ EAP pointer vault persistence is backend-pluggable via `PointerStoreBackend` in 
   - Tracks pointer IDs in a Redis set for listing.
   - Lifecycle cleanup (`list_expired_pointers`, `cleanup_expired_pointers`) uses backend contract defaults.
 
-## PostgreSQL
+### PostgreSQL
 - Class: `PostgresPointerStore`
 - File: `protocol/storage/postgres_store.py`
 - Dependency: `psycopg` (`pip install psycopg[binary]`)
