@@ -1,5 +1,5 @@
 {
-  "generated_from_package_version": "0.1.7",
+  "generated_from_package_version": "0.1.9",
   "lock_format_version": 1,
   "snapshot": {
     "public_api_exports": {
@@ -60,6 +60,9 @@
         "WorkflowGraphNode",
         "configure_logging",
         "load_settings"
+      ],
+      "eap.runtime": [
+        "EAPRuntimeHTTPServer"
       ]
     },
     "sdk_http_paths": [

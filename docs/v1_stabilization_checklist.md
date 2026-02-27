@@ -18,7 +18,7 @@ Ship `v1.0` with a stable contract for core runtime APIs, workflow schema, and u
 
 - [x] Freeze exported symbols in `eap.protocol`, `eap.environment`, and `eap.agent`.
 - [x] Document all symbols considered `v1.0` contract surface.
-- [ ] Identify and remove or deprecate unstable public entry points before tag cut.
+- [x] Identify and remove or deprecate unstable public entry points before tag cut.
 
 ### Workflow and Data Contract Freeze
 

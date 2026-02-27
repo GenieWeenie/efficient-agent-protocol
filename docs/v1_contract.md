@@ -14,6 +14,7 @@ The `v1.0` contract covers:
   - `eap.protocol`
   - `eap.environment`
   - `eap.agent`
+  - `eap.runtime`
 - Workflow graph schema fields and enum values for:
   - `PersistedWorkflowGraph`
   - `WorkflowGraphNode`
@@ -79,6 +80,29 @@ The following pointer lifecycle semantics are frozen for `v1.0`:
 
 - All backends (`SQLitePointerStore`, `RedisPointerStore`, `PostgresPointerStore`) share the same lifecycle semantics via `PointerStoreBackend` base class.
 - `list_expired_pointers` and `cleanup_expired_pointers` are implemented in the base class and delegate to backend-specific `list_pointers` and `delete_pointer`.
+
+## Deprecated Namespaces
+
+The following legacy import paths are deprecated as of `v0.1.9` and will be
+removed in `v2.0`:
+
+| Legacy namespace | Replacement |
+| --- | --- |
+| `protocol` | `eap.protocol` |
+| `environment` | `eap.environment` |
+| `agent` | `eap.agent` |
+
+Importing any symbol from these legacy namespaces emits a `DeprecationWarning`
+with the recommended replacement.
+
+## Unstable / Excluded Surfaces
+
+The following are explicitly **not** part of the `v1.0` contract and may change
+without a contract-lock bump:
+
+- `eap.environment.tools` / `environment.tools` — bundled convenience tools
+  and schemas.  These are starter-pack utilities; pin a specific package version
+  if you depend on them.
 
 ## Non-Goals
 

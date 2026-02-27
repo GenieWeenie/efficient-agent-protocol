@@ -1,4 +1,12 @@
 # environment/tools/__init__.py
+"""Bundled tool implementations for EAP.
+
+.. warning::
+    **Unstable / not part of the v1 contract.**  These tools are provided as
+    convenience utilities and starter-pack examples.  Their signatures,
+    schemas, and behavior may change between minor releases without a
+    contract-lock bump.  Pin specific versions if you depend on them.
+"""
 from .example_tools import fetch_user_data, analyze_data, FETCH_SCHEMA, ANALYZE_SCHEMA
 from .file_tools import (
     LIST_DIRECTORY_SCHEMA,

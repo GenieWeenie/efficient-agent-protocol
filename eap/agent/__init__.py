@@ -1,14 +1,13 @@
-from agent import (
-    AgentClient,
+from agent.compiler import MacroCompiler, WorkflowGraphCompiler
+from agent.agent_client import AgentClient
+from agent.providers import (
     AnthropicProvider,
     CompletionRequest,
     CompletionResponse,
     GoogleProvider,
     LLMProvider,
-    MacroCompiler,
     OpenAIProvider,
     ProviderMessage,
-    WorkflowGraphCompiler,
     create_provider,
 )
 
