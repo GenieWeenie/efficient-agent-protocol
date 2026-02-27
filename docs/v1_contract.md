@@ -81,6 +81,100 @@ The following pointer lifecycle semantics are frozen for `v1.0`:
 - All backends (`SQLitePointerStore`, `RedisPointerStore`, `PostgresPointerStore`) share the same lifecycle semantics via `PointerStoreBackend` base class.
 - `list_expired_pointers` and `cleanup_expired_pointers` are implemented in the base class and delegate to backend-specific `list_pointers` and `delete_pointer`.
 
+## Observability Contract (Frozen)
+
+The following observability schemas are frozen for `v1.0`.  Operators may
+depend on these field names, types, and semantics for log aggregation,
+dashboards, and alerting.
+
+### Structured Log JSON Schema
+
+When `EAP_LOG_FORMAT=json` (default), each log line is a JSON object with:
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `timestamp_utc` | `string` | yes | ISO 8601 local time (`%Y-%m-%dT%H:%M:%S`) |
+| `level` | `string` | yes | One of `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
+| `logger` | `string` | yes | Logger name (e.g. `eap`) |
+| `message` | `string` | yes | Log message (post-redaction) |
+| `step_id` | `string` | no | Present when the log originates from a step context |
+| `tool_name` | `string` | no | Present when the log originates from a tool context |
+
+Redaction: patterns matching `api_key`, `token`, or `password` followed by
+`=` or `:` are replaced with `[REDACTED]` before emission.
+
+### Logging Environment Variables
+
+| Variable | Values | Default |
+| --- | --- | --- |
+| `EAP_LOG_LEVEL` | `DEBUG` / `INFO` / `WARNING` / `ERROR` | `INFO` |
+| `EAP_LOG_FORMAT` | `json` / `text` | `json` |
+| `EAP_LOG_JSON` | `1` / `true` / `yes` (legacy override) | — |
+
+### Operational Metrics Schema
+
+`StateManager.collect_operational_metrics()` returns:
+
+```
+{
+  "snapshot_utc":  string (ISO 8601 with timezone),
+  "db_path":       string,
+  "pointer_store": {
+    "total_pointers":   int,
+    "active_pointers":  int,
+    "expired_pointers": int
+  },
+  "execution": {
+    "run_count":             int,
+    "failed_run_count":      int,
+    "total_steps":           int,
+    "succeeded_steps":       int,
+    "failed_steps":          int,
+    "avg_duration_ms":       float,
+    "trace_event_total":     int,
+    "diagnostics_run_count": int,
+    "trace_events_by_type":  { "<event_type>": int }
+  },
+  "conversation": {
+    "session_count": int,
+    "turn_count":    int
+  }
+}
+```
+
+`trace_events_by_type` keys are the `ExecutionTraceEventType` enum values:
+`replayed`, `queued`, `approval_required`, `approved`, `rejected`, `started`,
+`retried`, `failed`, `completed`.
+
+### Telemetry Pack Artifacts
+
+`scripts/export_telemetry_pack.py` writes these artifacts to the output
+directory.  Each is a JSON file except `operator_report.md`:
+
+| Artifact | Required top-level keys |
+| --- | --- |
+| `overview.json` | `generated_at_utc`, `total_runs`, `failed_runs`, `failure_rate_pct` |
+| `retries.json` | `generated_at_utc`, `total_retries`, `retries_by_tool` |
+| `fail_reasons.json` | `generated_at_utc`, `total_failures`, `by_error_type` |
+| `latency_percentiles.json` | `generated_at_utc`, `overall`, `by_tool` |
+| `saturation.json` | `generated_at_utc`, `aggregate` |
+| `actors.json` | `generated_at_utc`, `actors` |
+| `failed_run_diagnostics.json` | `generated_at_utc`, `runs` |
+| `operator_report.md` | (Markdown — no JSON keys) |
+| `manifest.json` | `generated_at_utc`, `artifacts` |
+
+### Execution Diagnostics Payload
+
+`StateManager.store_execution_diagnostics(run_id, payload)` accepts a
+free-form dict.  The following top-level keys are used by the telemetry
+pipeline and are frozen:
+
+| Key | Type | Description |
+| --- | --- | --- |
+| `saturation_metrics` | `dict` | Guardrail wait counts and durations |
+| `approval_metrics` | `dict` | Step approval/rejection counts |
+| `actor_metadata` | `dict` | Run ownership and scope information |
+
 ## Deprecated Namespaces
 
 The following legacy import paths are deprecated as of `v0.1.9` and will be
