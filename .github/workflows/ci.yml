@@ -45,7 +45,7 @@ jobs:
       - name: Type rigor gate (mypy scoped modules)
         if: matrix.python-version == '3.11'
         run: |
-          mypy --follow-imports=skip environment/safe_eval.py environment/executor.py eap/runtime/auth_scopes.py eap/runtime/guardrails.py
+          mypy --follow-imports=skip environment/safe_eval.py environment/executor.py eap/runtime/auth_scopes.py eap/runtime/guardrails.py eap/runtime/http_api.py
 
       - name: Run tests
         if: matrix.python-version != '3.11'
