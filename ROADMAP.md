@@ -85,6 +85,14 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Keep CI mypy scoped gate aligned with typed-critical runtime modules.
 - Checklist: `docs/phase11_typing_rigor_completion_roadmap.md`
 
+## Phase 12: V1 Launch Readiness (Planned)
+
+- Execute ordered v1 stabilization queue (`EAP-110` to `EAP-118`) tracked in Linear.
+- Freeze remaining pointer/API/observability contracts and prove upgrade/migration safety.
+- Consolidate v1 required gates and finalize operator/release handoff artifacts.
+- Complete RC dry-run and go/no-go checklist before v1 cut.
+- Checklist: `docs/phase12_v1_launch_readiness_roadmap.md`
+
 ## Done
 
 - Branch protection on `main` with required CI checks and PR review.

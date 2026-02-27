@@ -13,8 +13,8 @@ Thanks for contributing to Efficient Agent Protocol (EAP).
 
 ```bash
 python3 -m pytest -q
-python3 -m pre_commit run --all-files
-python3 -m pip_audit -r requirements.txt
+pre-commit run --all-files
+pip-audit -r requirements.txt
 ```
 
 ## Pull Request Expectations
