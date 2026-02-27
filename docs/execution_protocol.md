@@ -52,7 +52,7 @@ Updated: 2026-02-26 (v0.1.8 baseline)
 | 22 | `EAP-109` | `GEN-65` | `Done` | Strict typing tranche: executor runtime path (`environment/executor.py`) |
 | 23 | `EAP-110` | `GEN-66` | `Done` | Strict typing tranche: runtime HTTP API path (`eap/runtime/http_api.py`) |
 | 24 | `EAP-111` | `GEN-67` | `Done` | Freeze pointer lifecycle semantics for v1 (`TTL/expiry/cleanup`) |
-| 25 | `EAP-112` | `GEN-68` | `Todo` | Public API deprecation sweep + unstable export cleanup |
+| 25 | `EAP-112` | `GEN-68` | `Done` | Public API deprecation sweep + unstable export cleanup |
 | 26 | `EAP-113` | `GEN-69` | `Todo` | Upgrade migration verification from latest `0.x` baseline |
 | 27 | `EAP-114` | `GEN-70` | `Todo` | Observability compatibility lock (logs/metrics/telemetry schema) |
 | 28 | `EAP-115` | `GEN-71` | `Todo` | V1 readiness gatepack (coverage/perf/reliability/security) |
@@ -63,4 +63,4 @@ Updated: 2026-02-26 (v0.1.8 baseline)
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: next queued `Todo` item is `EAP-112`; extended queued backlog is defined through `EAP-118`.
+Current state: next queued `Todo` item is `EAP-113`; extended queued backlog is defined through `EAP-118`.
