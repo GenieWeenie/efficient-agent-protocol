@@ -1,16 +1,16 @@
 # Phase 12 V1 Launch Readiness Roadmap
 
-Status: Planned (queue created, awaiting execution approval)  
+Status: In Progress  
 Source of truth: Linear project `Efficient Agent Protocol Roadmap`
 
 Current status:
-- [ ] `EAP-110` strict typing tranche for runtime HTTP API (`GEN-66`)
-- [ ] `EAP-111` freeze pointer lifecycle semantics (`GEN-67`)
-- [ ] `EAP-112` public API deprecation sweep + unstable export cleanup (`GEN-68`)
-- [ ] `EAP-113` upgrade migration verification from latest `0.x` baseline (`GEN-69`)
-- [ ] `EAP-114` observability compatibility lock (`GEN-70`)
-- [ ] `EAP-115` v1 readiness gatepack (`GEN-71`)
-- [ ] `EAP-116` README/docs v1 alignment pass (`GEN-72`)
+- [x] `EAP-110` strict typing tranche for runtime HTTP API (`GEN-66`)
+- [x] `EAP-111` freeze pointer lifecycle semantics (`GEN-67`)
+- [x] `EAP-112` public API deprecation sweep + unstable export cleanup (`GEN-68`)
+- [x] `EAP-113` upgrade migration verification from latest `0.x` baseline (`GEN-69`)
+- [x] `EAP-114` observability compatibility lock (`GEN-70`)
+- [x] `EAP-115` v1 readiness gatepack (`GEN-71`)
+- [x] `EAP-116` README/docs v1 alignment pass (`GEN-72`)
 - [ ] `EAP-117` release + maintainer runbook v1 finalization (`GEN-73`)
 - [ ] `EAP-118` v1 upgrade handoff artifact + RC dry-run (`GEN-74`)
 
