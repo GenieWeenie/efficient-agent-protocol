@@ -29,7 +29,7 @@ Ship `v1.0` with a stable contract for core runtime APIs, workflow schema, and u
 ### Configuration and Operational Defaults
 
 - [x] Freeze required environment variables and defaults.
-- [ ] Verify migration scripts and migration docs cover upgrade from latest `0.x`.
+- [x] Verify migration scripts and migration docs cover upgrade from latest `0.x`.
 - [ ] Verify observability defaults (structured logs + metrics export) remain compatible.
 
 ### Reliability and Performance Gates

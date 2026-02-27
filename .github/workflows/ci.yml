@@ -109,6 +109,12 @@ jobs:
             tests/contract/test_v1_contract_lock.py \
             tests/unit/test_v1_contract_gate.py
 
+      - name: Upgrade migration verification (v0.1.8 baseline)
+        if: matrix.python-version == '3.11'
+        run: |
+          python scripts/verify_upgrade_from_baseline.py
+          python -m pytest -q tests/integration/test_upgrade_from_baseline.py
+
       - name: Dependency vulnerability audit
         if: matrix.python-version == '3.11'
         run: |

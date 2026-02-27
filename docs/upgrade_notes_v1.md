@@ -41,15 +41,56 @@ convenience utilities whose signatures may change between minor releases.
 None.  All existing imports continue to work; deprecated paths emit warnings
 but remain functional.
 
-## Verification
+## State Database Migration
 
-After upgrading, run the contract gate to confirm alignment:
+SQLite state databases created by v0.1.8 are fully compatible.  The
+``StateManager`` applies any pending schema migrations automatically on
+startup.
+
+### Pre-upgrade checklist
+
+1. Back up your state database:
+   ```bash
+   python scripts/migrate_state_db.py --db-path agent_state.db --backup --dry-run
+   python scripts/migrate_state_db.py --db-path agent_state.db --backup
+   ```
+2. Verify the planned migrations (should be empty for 0.1.8 → 0.1.9):
+   ```bash
+   python scripts/migrate_state_db.py --db-path agent_state.db --dry-run
+   ```
+
+### Post-upgrade verification
 
 ```bash
+# Contract gate
 PYTHONPATH=. python scripts/check_v1_contract.py --skip-version-history-check
+
+# Upgrade path verification (creates temp baseline DB and validates)
+PYTHONPATH=. python scripts/verify_upgrade_from_baseline.py
+
+# Full integration test suite
+PYTHONPATH=. python -m pytest -q tests/integration/test_upgrade_from_baseline.py
 ```
 
-To suppress deprecation warnings in test output while migrating:
+### Rollback
+
+If you need to revert after upgrading:
+
+1. Stop the application.
+2. Restore the backup: `cp agent_state.db.bak agent_state.db`
+3. Deploy the previous package version (0.1.8).
+
+For a full state restore including diagnostics and audit data:
+
+```bash
+python scripts/eap_state_backup.py restore \
+  --backup-dir artifacts/state_backups/<name> \
+  --force
+```
+
+## Suppressing Deprecation Warnings
+
+To suppress deprecation warnings in test output while migrating imports:
 
 ```python
 import warnings
