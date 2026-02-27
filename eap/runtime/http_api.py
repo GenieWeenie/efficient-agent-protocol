@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import threading
+import types
 import uuid
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Dict, Optional, Set
-from urllib.parse import unquote, urlparse
+from typing import Optional, Set, Tuple, Type
 
 from pydantic import ValidationError
 
@@ -32,6 +34,10 @@ from eap.runtime.guardrails import (
     normalize_rate_limit_rules,
 )
 
+AuthContext = dict[str, object]
+ScopedTokenPolicy = dict[str, object]
+JsonPayload = dict[str, object]
+
 
 def _timestamp_utc() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -41,44 +47,57 @@ def _request_id() -> str:
     return f"req_{uuid.uuid4().hex[:12]}"
 
 
+def _scopes_from_context(ctx: AuthContext) -> Set[str]:
+    raw = ctx.get("scopes")
+    if isinstance(raw, (set, frozenset)):
+        return set(raw)
+    if isinstance(raw, list):
+        return {str(s) for s in raw}
+    return set()
+
+
+def _str_field(ctx: dict[str, object], key: str, default: str = "") -> str:
+    val = ctx.get(key)
+    return str(val) if val is not None else default
+
+
 class _RuntimeRequestHandler(BaseHTTPRequestHandler):
-    server: "_RuntimeHTTPServer"
+    server: _RuntimeHTTPServer
 
     def do_POST(self) -> None:  # noqa: N802
-        parsed = urlparse(self.path)
-        if parsed.path == "/v1/eap/macro/execute":
+        parsed_path = self.path.split("?", 1)[0]
+        if parsed_path == "/v1/eap/macro/execute":
             self._handle_execute_macro()
             return
-        if parsed.path.startswith("/v1/eap/runs/") and parsed.path.endswith("/resume"):
-            run_id = unquote(parsed.path[len("/v1/eap/runs/") : -len("/resume")]).strip()
+        if parsed_path.startswith("/v1/eap/runs/") and parsed_path.endswith("/resume"):
+            run_id = parsed_path[len("/v1/eap/runs/"):-len("/resume")].strip()
             self._handle_resume_run(run_id=run_id)
             return
-        self._send_error(404, "not_found", f"Path '{parsed.path}' is not registered.")
+        self._send_error(404, "not_found", f"Path '{parsed_path}' is not registered.")
 
     def do_GET(self) -> None:  # noqa: N802
-        parsed = urlparse(self.path)
-        if parsed.path.startswith("/v1/eap/runs/"):
-            run_id = unquote(parsed.path[len("/v1/eap/runs/") :]).strip()
+        parsed_path = self.path.split("?", 1)[0]
+        if parsed_path.startswith("/v1/eap/runs/"):
+            run_id = parsed_path[len("/v1/eap/runs/"):].strip()
             self._handle_get_run(run_id=run_id)
             return
-        if parsed.path.startswith("/v1/eap/pointers/") and parsed.path.endswith("/summary"):
-            pointer_id = unquote(parsed.path[len("/v1/eap/pointers/") : -len("/summary")]).strip()
+        if parsed_path.startswith("/v1/eap/pointers/") and parsed_path.endswith("/summary"):
+            pointer_id = parsed_path[len("/v1/eap/pointers/"):-len("/summary")].strip()
             self._handle_get_pointer_summary(pointer_id=pointer_id)
             return
-        self._send_error(404, "not_found", f"Path '{parsed.path}' is not registered.")
+        self._send_error(404, "not_found", f"Path '{parsed_path}' is not registered.")
 
-    def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
-        # Keep test/runtime output quiet unless callers choose to add logging.
+    def log_message(self, format: str, *args: object) -> None:  # noqa: A003
         return
 
     def _parse_bearer_token(self) -> Optional[str]:
         auth_header = (self.headers.get("Authorization") or "").strip()
         if not auth_header.startswith("Bearer "):
             return None
-        token = auth_header[len("Bearer ") :].strip()
+        token = auth_header[len("Bearer "):].strip()
         return token or None
 
-    def _resolve_auth_context(self) -> Optional[Dict[str, Any]]:
+    def _resolve_auth_context(self) -> Optional[AuthContext]:
         token = self._parse_bearer_token()
         scoped_policies = self.server.scoped_bearer_tokens
         required = self.server.required_bearer_token
@@ -96,9 +115,17 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
 
         if token in scoped_policies:
             policy = scoped_policies[token]
+            raw_scopes = policy.get("scopes")
+            scopes: Set[str]
+            if isinstance(raw_scopes, (set, frozenset)):
+                scopes = set(raw_scopes)
+            elif isinstance(raw_scopes, list):
+                scopes = {str(s) for s in raw_scopes}
+            else:
+                scopes = set()
             return {
                 "actor_id": policy.get("actor_id"),
-                "scopes": set(policy.get("scopes", set())),
+                "scopes": scopes,
                 "auth_subject": policy.get("auth_subject"),
                 "policy_profile": policy.get("policy_profile"),
                 "template": policy.get("template"),
@@ -113,13 +140,13 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             }
         return None
 
-    def _require_auth(self, required_scope: str) -> Optional[Dict[str, Any]]:
+    def _require_auth(self, required_scope: str) -> Optional[AuthContext]:
         context = self._resolve_auth_context()
         if context is None:
             self._send_error(401, "unauthorized", "Missing or invalid bearer token.")
             return None
 
-        scopes: Set[str] = set(context.get("scopes", set()))
+        scopes = _scopes_from_context(context)
         if required_scope not in scopes and "*" not in scopes:
             self._send_error(
                 403,
@@ -129,17 +156,14 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             return None
         return context
 
-    def _enforce_rate_limit(self, *, operation: str, auth_context: Dict[str, Any]) -> bool:
-        actor_id = str(
-            auth_context.get("actor_id")
-            or auth_context.get("auth_subject")
-            or "anonymous"
-        ).strip() or "anonymous"
+    def _enforce_rate_limit(self, *, operation: str, auth_context: AuthContext) -> bool:
+        actor_id = _str_field(auth_context, "actor_id") or _str_field(auth_context, "auth_subject") or "anonymous"
+        actor_id = actor_id.strip() or "anonymous"
         decision = self.server.guardrails.check_rate_limit(operation=operation, actor_id=actor_id)
         if decision.allowed:
             return True
 
-        details = {
+        details: JsonPayload = {
             "operation": operation,
             "actor_id": actor_id,
             "limit": decision.limit,
@@ -161,7 +185,7 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         if decision.allowed and token is not None:
             return token
 
-        details = {
+        details: JsonPayload = {
             "operation": operation,
             "limit_type": decision.limit_type,
             "limit": decision.limit,
@@ -178,11 +202,12 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         )
         return None
 
-    def _to_actor_metadata(self, auth_context: Dict[str, Any], operation: str) -> Dict[str, Any]:
-        metadata: Dict[str, Any] = {
+    def _to_actor_metadata(self, auth_context: AuthContext, operation: str) -> JsonPayload:
+        scopes = _scopes_from_context(auth_context)
+        metadata: JsonPayload = {
             "actor_id": auth_context.get("actor_id"),
             "owner_actor_id": auth_context.get("actor_id"),
-            "actor_scopes": sorted(set(auth_context.get("scopes", set()))),
+            "actor_scopes": sorted(scopes),
             "operation": operation,
             "auth_subject": auth_context.get("auth_subject"),
         }
@@ -197,7 +222,7 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
     def _check_run_access(
         self,
         run_id: str,
-        auth_context: Dict[str, Any],
+        auth_context: AuthContext,
         *,
         allow_any_scope: str,
     ) -> bool:
@@ -207,7 +232,7 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             return True
 
         actor_id = auth_context.get("actor_id")
-        scopes: Set[str] = set(auth_context.get("scopes", set()))
+        scopes = _scopes_from_context(auth_context)
         if actor_id == owner_actor_id or allow_any_scope in scopes or "*" in scopes:
             return True
         self._send_error(
@@ -217,7 +242,7 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         )
         return False
 
-    def _read_json_body(self, required: bool = True) -> Optional[Dict[str, Any]]:
+    def _read_json_body(self, required: bool = True) -> Optional[JsonPayload]:
         content_length_header = self.headers.get("Content-Length")
         if not content_length_header:
             if required:
@@ -306,7 +331,7 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             )
             return
 
-        response_payload = {
+        response_payload: JsonPayload = {
             "request_id": _request_id(),
             "timestamp_utc": _timestamp_utc(),
             "pointer_id": result["pointer_id"],
@@ -389,7 +414,7 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             )
             return
 
-        response_payload = {
+        response_payload: JsonPayload = {
             "request_id": _request_id(),
             "timestamp_utc": _timestamp_utc(),
             "run_id": run_id,
@@ -424,14 +449,14 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             self._send_error(404, "not_found", f"Execution summary for run '{run_id}' not found.")
             return
 
-        trace_events = [
+        trace_events: list[dict[str, object]] = [
             event.model_dump(mode="json")
             for event in self.server.state_manager.list_trace_events(run_id)
         ]
         actor_metadata = self.server.state_manager.get_run_actor_metadata(run_id=run_id)
         status = "failed" if summary.get("failed_steps", 0) > 0 else "succeeded"
 
-        response_payload = {
+        response_payload: JsonPayload = {
             "request_id": _request_id(),
             "timestamp_utc": _timestamp_utc(),
             "run_id": run_id,
@@ -456,7 +481,7 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             self._send_error(400, "validation_error", "pointer_id is required.")
             return
 
-        pointer = next(
+        pointer: Optional[dict[str, object]] = next(
             (
                 item
                 for item in self.server.state_manager.list_pointers(include_expired=True)
@@ -468,10 +493,11 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
             self._send_error(404, "not_found", f"Pointer '{pointer_id}' not found.")
             return
 
-        pointer_metadata = pointer.get("metadata") if isinstance(pointer.get("metadata"), dict) else {}
+        raw_metadata = pointer.get("metadata")
+        pointer_metadata: dict[str, object] = raw_metadata if isinstance(raw_metadata, dict) else {}
         run_id = pointer_metadata.get("execution_run_id")
         if isinstance(run_id, str) and run_id:
-            scopes: Set[str] = set(auth_context.get("scopes", set()))
+            scopes = _scopes_from_context(auth_context)
             if SCOPE_POINTERS_READ_ANY not in scopes and "*" not in scopes:
                 if not self._check_run_access(
                     run_id=run_id,
@@ -480,7 +506,7 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
                 ):
                     return
 
-        response_payload = {
+        response_payload: JsonPayload = {
             "request_id": _request_id(),
             "timestamp_utc": _timestamp_utc(),
             "pointer": {
@@ -498,8 +524,8 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
     def _send_json(
         self,
         status_code: int,
-        payload: Dict[str, Any],
-        headers: Optional[Dict[str, str]] = None,
+        payload: JsonPayload,
+        headers: Optional[dict[str, str]] = None,
     ) -> None:
         encoded = json.dumps(payload, sort_keys=True).encode("utf-8")
         self.send_response(status_code)
@@ -516,10 +542,10 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
         status_code: int,
         error_type: str,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        details: Optional[JsonPayload] = None,
+        headers: Optional[dict[str, str]] = None,
     ) -> None:
-        payload: Dict[str, Any] = {
+        payload: JsonPayload = {
             "error_type": error_type,
             "message": message,
         }
@@ -531,33 +557,33 @@ class _RuntimeRequestHandler(BaseHTTPRequestHandler):
 class _RuntimeHTTPServer(ThreadingHTTPServer):
     def __init__(
         self,
-        server_address,
-        RequestHandlerClass,  # noqa: N803
+        server_address: Tuple[str, int],
+        handler_class: Type[_RuntimeRequestHandler],
         executor: AsyncLocalExecutor,
         state_manager: StateManager,
         required_bearer_token: Optional[str],
-        scoped_bearer_tokens: Optional[Dict[str, Dict[str, Any]]],
+        scoped_bearer_tokens: dict[str, ScopedTokenPolicy],
         guardrails: RuntimeGuardrails,
-    ):
-        super().__init__(server_address, RequestHandlerClass)
+    ) -> None:
+        super().__init__(server_address, handler_class)
         self.executor = executor
         self.state_manager = state_manager
         self.required_bearer_token = required_bearer_token
-        self.scoped_bearer_tokens = scoped_bearer_tokens or {}
+        self.scoped_bearer_tokens: dict[str, ScopedTokenPolicy] = scoped_bearer_tokens
         self.guardrails = guardrails
         self._guardrail_lock = threading.Lock()
-        self.guardrail_counters = {"rate_limited": 0, "throttled": 0}
+        self.guardrail_counters: dict[str, int] = {"rate_limited": 0, "throttled": 0}
 
-    def record_guardrail_event(self, event_type: str, details: Dict[str, Any]) -> None:
+    def record_guardrail_event(self, event_type: str, details: JsonPayload) -> None:
         with self._guardrail_lock:
             self.guardrail_counters[event_type] = self.guardrail_counters.get(event_type, 0) + 1
-        payload = {
+        log_payload: JsonPayload = {
             "event_type": event_type,
             "details": details,
             "counters": dict(self.guardrail_counters),
             "timestamp_utc": _timestamp_utc(),
         }
-        print(f"[runtime:guardrail] {json.dumps(payload, sort_keys=True)}")
+        print(f"[runtime:guardrail] {json.dumps(log_payload, sort_keys=True)}")
 
 
 class EAPRuntimeHTTPServer:
@@ -565,9 +591,9 @@ class EAPRuntimeHTTPServer:
 
     @staticmethod
     def _normalize_scoped_bearer_tokens(
-        scoped_bearer_tokens: Optional[Dict[str, Dict[str, Any]]],
-    ) -> Dict[str, Dict[str, Any]]:
-        normalized: Dict[str, Dict[str, Any]] = {}
+        scoped_bearer_tokens: Optional[dict[str, dict[str, object]]],
+    ) -> dict[str, ScopedTokenPolicy]:
+        normalized: dict[str, ScopedTokenPolicy] = {}
         if not scoped_bearer_tokens:
             return normalized
 
@@ -581,6 +607,7 @@ class EAPRuntimeHTTPServer:
             template = str(raw_policy.get("template", "")).strip()
 
             scopes_value = raw_policy.get("scopes", [])
+            scopes: list[str]
             if isinstance(scopes_value, str):
                 scopes = [scope.strip() for scope in scopes_value.split(",") if scope.strip()]
             elif isinstance(scopes_value, list):
@@ -593,15 +620,16 @@ class EAPRuntimeHTTPServer:
                 continue
             if not scopes:
                 continue
-            normalized[token] = {
+            entry: ScopedTokenPolicy = {
                 "actor_id": actor_id,
                 "auth_subject": auth_subject or f"scoped_token:{actor_id}",
                 "scopes": sorted(set(scopes)),
             }
             if policy_profile:
-                normalized[token]["policy_profile"] = policy_profile
+                entry["policy_profile"] = policy_profile
             if template:
-                normalized[token]["template"] = template
+                entry["template"] = template
+            normalized[token] = entry
         return normalized
 
     def __init__(
@@ -611,10 +639,10 @@ class EAPRuntimeHTTPServer:
         host: str = "127.0.0.1",
         port: int = 0,
         required_bearer_token: Optional[str] = None,
-        scoped_bearer_tokens: Optional[Dict[str, Dict[str, Any]]] = None,
-        rate_limit_rules: Optional[Dict[str, Dict[str, Any]]] = None,
-        concurrency_limits: Optional[Dict[str, Any]] = None,
-    ):
+        scoped_bearer_tokens: Optional[dict[str, dict[str, object]]] = None,
+        rate_limit_rules: Optional[dict[str, dict[str, object]]] = None,
+        concurrency_limits: Optional[dict[str, object]] = None,
+    ) -> None:
         self._host = host
         normalized_scoped_tokens = self._normalize_scoped_bearer_tokens(scoped_bearer_tokens)
         normalized_rate_limits = normalize_rate_limit_rules(rate_limit_rules)
@@ -645,7 +673,7 @@ class EAPRuntimeHTTPServer:
     def base_url(self) -> str:
         return f"http://{self.host}:{self.port}"
 
-    def start(self) -> "EAPRuntimeHTTPServer":
+    def start(self) -> EAPRuntimeHTTPServer:
         if self._thread and self._thread.is_alive():
             return self
         self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
@@ -658,8 +686,13 @@ class EAPRuntimeHTTPServer:
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=5)
 
-    def __enter__(self) -> "EAPRuntimeHTTPServer":
+    def __enter__(self) -> EAPRuntimeHTTPServer:
         return self.start()
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc: Optional[BaseException],
+        tb: Optional[types.TracebackType],
+    ) -> None:
         self.stop()

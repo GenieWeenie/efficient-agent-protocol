@@ -4,7 +4,7 @@ This document defines EAP's incremental static typing enforcement plan.
 
 ## EAP-104 Scoped Strictness Baseline
 
-Extended in `EAP-109` to include executor runtime path typing hardening.
+Extended in `EAP-109` to include executor runtime path, and in `EAP-110` to include runtime HTTP API typing hardening.
 
 Current strict-typed target modules (required in CI):
 
@@ -12,13 +12,14 @@ Current strict-typed target modules (required in CI):
 - `environment.executor`
 - `eap.runtime.auth_scopes`
 - `eap.runtime.guardrails`
+- `eap.runtime.http_api`
 
 CI gate:
 
 - Workflow: `.github/workflows/ci.yml`
 - Step: `Type rigor gate (mypy scoped modules)` under required `Lint/Test (py3.11)`
 - Command:
-  - `mypy --follow-imports=skip environment/safe_eval.py environment/executor.py eap/runtime/auth_scopes.py eap/runtime/guardrails.py`
+  - `mypy --follow-imports=skip environment/safe_eval.py environment/executor.py eap/runtime/auth_scopes.py eap/runtime/guardrails.py eap/runtime/http_api.py`
 
 `--follow-imports=skip` keeps enforcement bounded to the scoped modules so legacy typing debt in non-scoped imports does not block this tranche.
 
@@ -33,13 +34,11 @@ Configured in:
 
 ## Residual Exclusions (Explicit And Time-Bounded)
 
-The following runtime-critical modules remain outside the current strict scope and are tracked for follow-up tranches.
+No runtime-critical modules remain outside the current strict scope. All planned tranches are complete.
 
-| Module | Reason Not In EAP-104 Scope | Target Tranche | Target Date |
-| --- | --- | --- | --- |
-| `eap/runtime/http_api.py` | High-volume JSON/request parsing path requires typed boundary adapters before strict mode. | `EAP-110` | 2026-05-15 |
-
-These dates are planning commitments and should be updated if tranche ordering changes.
+| Module | Status | Completed In |
+| --- | --- | --- |
+| `eap/runtime/http_api.py` | Strict typing enforced | `EAP-110` |
 
 ## Rules For New Scope Additions
 

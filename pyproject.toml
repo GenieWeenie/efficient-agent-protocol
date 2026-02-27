@@ -68,6 +68,7 @@ module = [
   "environment.executor",
   "eap.runtime.auth_scopes",
   "eap.runtime.guardrails",
+  "eap.runtime.http_api",
 ]
 strict = true
 disallow_any_explicit = true
