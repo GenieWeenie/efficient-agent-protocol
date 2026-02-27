@@ -24,7 +24,7 @@ This protocol prevents ad-hoc execution and keeps all work in a visible ordered 
 
 ## Current Ordered Queue
 
-Updated: 2026-02-26
+Updated: 2026-02-26 (v0.1.8 baseline)
 
 | Order | EAP ID | Linear | Status | Notes |
 | --- | --- | --- | --- | --- |
@@ -49,8 +49,10 @@ Updated: 2026-02-26
 | 19 | `EAP-104` | `GEN-64` | `Done` | Type rigor tranche (mypy scope + stricter typing checks) |
 | 20 | `EAP-098` | `GEN-58` | `Done` | Backup/restore workflow for state + diagnostics |
 | 21 | `EAP-099` | `GEN-59` | `Done` | Long-run soak + chaos reliability gate |
+| 22 | `EAP-109` | `GEN-65` | `Done` | Strict typing tranche: executor runtime path (`environment/executor.py`) |
+| 23 | `EAP-110` | `GEN-66` | `Todo` | Strict typing tranche: runtime HTTP API path (`eap/runtime/http_api.py`) |
 
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: no active `Todo` items remain in the current ordered queue.
+Current state: next queued `Todo` item is `EAP-110`.
