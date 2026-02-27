@@ -11,7 +11,7 @@ Current status:
 - [x] `EAP-114` observability compatibility lock (`GEN-70`)
 - [x] `EAP-115` v1 readiness gatepack (`GEN-71`)
 - [x] `EAP-116` README/docs v1 alignment pass (`GEN-72`)
-- [ ] `EAP-117` release + maintainer runbook v1 finalization (`GEN-73`)
+- [x] `EAP-117` release + maintainer runbook v1 finalization (`GEN-73`)
 - [ ] `EAP-118` v1 upgrade handoff artifact + RC dry-run (`GEN-74`)
 
 ## Objective
