@@ -61,6 +61,9 @@ For release candidates before the final `v1.0.0` tag:
 - Run the full gatepack against each RC to catch regressions.
 - Promote to stable only after RC validation passes with no blockers.
 
+For the full RC dry-run procedure, go/no-go decision criteria, and promotion
+steps, see `docs/v1_go_no_go_checklist.md`.
+
 ## Publish Authentication
 
 - Stable tags (`vX.Y.Z`) publish via PyPI Trusted Publishing (OIDC, no long-lived token).

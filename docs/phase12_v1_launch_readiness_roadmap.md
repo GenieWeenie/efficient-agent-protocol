@@ -1,6 +1,6 @@
 # Phase 12 V1 Launch Readiness Roadmap
 
-Status: In Progress  
+Status: Complete  
 Source of truth: Linear project `Efficient Agent Protocol Roadmap`
 
 Current status:
@@ -12,7 +12,7 @@ Current status:
 - [x] `EAP-115` v1 readiness gatepack (`GEN-71`)
 - [x] `EAP-116` README/docs v1 alignment pass (`GEN-72`)
 - [x] `EAP-117` release + maintainer runbook v1 finalization (`GEN-73`)
-- [ ] `EAP-118` v1 upgrade handoff artifact + RC dry-run (`GEN-74`)
+- [x] `EAP-118` v1 upgrade handoff artifact + RC dry-run (`GEN-74`)
 
 ## Objective
 

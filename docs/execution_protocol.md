@@ -58,9 +58,9 @@ Updated: 2026-02-27 (v0.1.9 baseline)
 | 28 | `EAP-115` | `GEN-71` | `Done` | V1 readiness gatepack (coverage/perf/reliability/security) |
 | 29 | `EAP-116` | `GEN-72` | `Done` | README/docs v1 alignment pass |
 | 30 | `EAP-117` | `GEN-73` | `Done` | Release + maintainer runbook v1 finalization |
-| 31 | `EAP-118` | `GEN-74` | `Todo` | V1 upgrade handoff artifact + RC dry-run |
+| 31 | `EAP-118` | `GEN-74` | `Done` | V1 upgrade handoff artifact + RC dry-run |
 
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: next queued `Todo` item is `EAP-118`; extended queued backlog is defined through `EAP-118`.
+Current state: Phase 12 (V1 Launch Readiness) is complete.  All items `EAP-110` through `EAP-118` are `Done`.
