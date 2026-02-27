@@ -1,17 +1,53 @@
-# Upgrade Notes: 0.1.8 → 0.1.9 (v1 API Deprecation Sweep)
+# Upgrade Notes: 0.1.9 → 1.0.0
 
-## Summary
+## Scope
 
-This release finalises the public namespace stability for the upcoming `v1.0`
-cut.  Legacy import paths are deprecated, unstable surfaces are documented, and
-the runtime HTTP server is formally added to the v1 contract.
+### What changed from 0.1.9
+
+- Package version bumped from `0.1.9` to `1.0.0`.
+- All stabilization checklist items are complete (see `docs/v1_stabilization_checklist.md`).
+- V1 readiness gatepack passes all 9 gates (`scripts/v1_readiness_gatepack.py`).
+- Release and maintainer runbooks finalized for v1 process.
+- Release Drafter template aligned with `docs/release_notes_template.md` structure.
+- No runtime behavior changes between `0.1.9` and `1.0.0`; this is a stability milestone.
+
+### What is now guaranteed stable
+
+The following are frozen and covered by contract tests (see `docs/v1_contract.md`):
+
+- **Public APIs**: `eap.protocol`, `eap.environment`, `eap.agent`, `eap.runtime` exports.
+- **Workflow schema**: `PersistedWorkflowGraph`, `WorkflowGraphNode`, `WorkflowGraphEdge`, `WorkflowEdgeKind` fields and validation.
+- **Error payloads**: `ToolErrorPayload` envelope and allowed `error_type` values.
+- **Settings surface**: all keys returned by `load_settings()`.
+- **Pointer lifecycle**: TTL, expiry evaluation, listing, retrieval, deletion, cleanup semantics.
+- **Observability**: structured log JSON schema, operational metrics schema, telemetry pack artifact keys, execution diagnostics payload keys.
+- **Storage migrations**: upgrade path from `v0.1.8+` with rollback support.
+
+## Added
+
+- Unified V1 readiness gatepack (`scripts/v1_readiness_gatepack.py`) — one command to validate all 9 pre-release gates.
+- `docs/v1_readiness_gates.md` — gate-to-evidence mapping.
+- `docs/v1_go_no_go_checklist.md` — release candidate decision criteria.
+- Contract tests for docs/README alignment (`tests/contract/test_docs_v1_alignment.py`).
+
+## Changed
+
+- README status updated from "Experimental (pre-1.0)" to "v1.0 Release Candidate".
+- `STABILITY.md` rewritten to reflect v1 contract posture with stable/unstable surface boundaries.
+- Release Drafter template aligned with `docs/release_notes_template.md` sections.
+- Release runbook expanded with V1.0 Release Checklist and RC tag procedures.
+- Maintainer runbook expanded with V1 Contract Maintenance guidance.
+
+## Fixed
+
+- Version references across README, docs, and STABILITY.md now consistent with `pyproject.toml`.
 
 ## Deprecated
 
-### Legacy top-level namespaces
+### Legacy top-level namespaces (since 0.1.9)
 
 The bare `protocol`, `environment`, and `agent` import paths are deprecated.
-They continue to work but now emit `DeprecationWarning` on attribute access.
+They continue to work but emit `DeprecationWarning` on attribute access.
 These legacy paths will be **removed in v2.0**.
 
 | Before | After |
@@ -23,70 +59,94 @@ These legacy paths will be **removed in v2.0**.
 **Action required:** update your imports to the `eap.*` namespace to silence
 the warnings and prepare for v2.0 removal.
 
-## Added
+### Unstable surfaces
 
-### `eap.runtime` in v1 contract
+`eap.environment.tools` (and `environment.tools`) are explicitly **not part of
+the v1 contract**. Pin a specific package version if you depend on these
+bundled tool implementations.
 
-`EAPRuntimeHTTPServer` is now formally part of the v1 contract surface and is
-tracked by the contract lock and CI gate.
+## Removed
 
-## Unstable surfaces documented
-
-`eap.environment.tools` (and `environment.tools`) are explicitly marked as
-**not part of the v1 contract**.  These bundled tool implementations are
-convenience utilities whose signatures may change between minor releases.
+None. All existing APIs continue to work.
 
 ## Breaking Changes
 
-None.  All existing imports continue to work; deprecated paths emit warnings
-but remain functional.
+None. The `1.0.0` release is a stability milestone with no runtime behavior
+changes from `0.1.9`. All existing imports, configurations, and state
+databases continue to work without modification.
 
-## State Database Migration
+## Migration Actions
 
-SQLite state databases created by v0.1.8 are fully compatible.  The
-``StateManager`` applies any pending schema migrations automatically on
-startup.
+### Required code changes
 
-### Pre-upgrade checklist
+- **Import paths**: migrate from legacy namespaces (`protocol`, `environment`, `agent`) to `eap.*` equivalents. Legacy paths still work but emit deprecation warnings.
 
-1. Back up your state database:
-   ```bash
-   python scripts/migrate_state_db.py --db-path agent_state.db --backup --dry-run
-   python scripts/migrate_state_db.py --db-path agent_state.db --backup
-   ```
-2. Verify the planned migrations (should be empty for 0.1.8 → 0.1.9):
-   ```bash
-   python scripts/migrate_state_db.py --db-path agent_state.db --dry-run
-   ```
+### Required config changes
 
-### Post-upgrade verification
+None. All environment variables and configuration keys are unchanged.
+
+### Required data/schema migration commands
+
+SQLite state databases created by `v0.1.8+` are fully compatible. The
+`StateManager` applies any pending schema migrations automatically on startup.
+
+Pre-upgrade backup:
 
 ```bash
-# Contract gate
+python scripts/eap_state_backup.py backup \
+  --db-path agent_state.db \
+  --output-root artifacts/state_backups
+
+python scripts/migrate_state_db.py --db-path agent_state.db --backup --dry-run
+python scripts/migrate_state_db.py --db-path agent_state.db --backup
+```
+
+## Verification Steps
+
+After upgrading to `1.0.0`, run these commands to validate runtime behavior:
+
+```bash
+# 1. V1 readiness gatepack (all 9 gates)
+PYTHONPATH=. python scripts/v1_readiness_gatepack.py
+
+# 2. Contract lock validation
 PYTHONPATH=. python scripts/check_v1_contract.py --skip-version-history-check
 
-# Upgrade path verification (creates temp baseline DB and validates)
+# 3. Upgrade path verification (creates temp baseline DB and validates)
 PYTHONPATH=. python scripts/verify_upgrade_from_baseline.py
 
-# Full integration test suite
-PYTHONPATH=. python -m pytest -q tests/integration/test_upgrade_from_baseline.py
+# 4. Full test suite
+PYTHONPATH=. python -m pytest -q
+
+# 5. Contract tests
+PYTHONPATH=. python -m pytest -q tests/contract/
+
+# 6. Smoke workflow
+python -m examples.01_minimal
 ```
 
-### Rollback
+## Rollback Guidance
 
-If you need to revert after upgrading:
+### Safe downgrade path
 
 1. Stop the application.
-2. Restore the backup: `cp agent_state.db.bak agent_state.db`
-3. Deploy the previous package version (0.1.8).
+2. Restore the database backup:
+   ```bash
+   python scripts/eap_state_backup.py restore \
+     --backup-dir artifacts/state_backups/<name> \
+     --force
+   ```
+   Or manually: `cp agent_state.db.bak agent_state.db`
+3. Install the previous package version:
+   ```bash
+   pip install efficient-agent-protocol==0.1.9
+   ```
 
-For a full state restore including diagnostics and audit data:
+### Constraints
 
-```bash
-python scripts/eap_state_backup.py restore \
-  --backup-dir artifacts/state_backups/<name> \
-  --force
-```
+- Downgrading is safe because `1.0.0` introduces no schema changes relative to `0.1.9`.
+- If data was written after upgrading, the rollback restores the pre-upgrade snapshot; any data written post-upgrade is lost.
+- For production environments, always take a backup before upgrading.
 
 ## Suppressing Deprecation Warnings
 
