@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "efficient-agent-protocol"
-version = "0.1.9"
+version = "1.0.0"
 description = "Local-first framework for multi-step tool workflows with pointer-backed state and DAG execution."
 readme = "README.md"
 license = {text = "MIT"}

@@ -57,8 +57,8 @@ class ReadmeVersionConsistencyTest(unittest.TestCase):
     def test_latest_release_matches_pyproject(self) -> None:
         version = _pyproject_version()
         readme = README.read_text(encoding="utf-8")
-        m = re.search(r"Latest stable release:\s*`v?([\d.]+)`", readme)
-        self.assertIsNotNone(m, "Latest stable release line not found in README")
+        m = re.search(r"Latest(?:\s+stable)?\s+release:\s*`v?([\d.]+(?:rc\d+)?)`", readme)
+        self.assertIsNotNone(m, "Latest release line not found in README")
         self.assertEqual(
             m.group(1),  # type: ignore[union-attr]
             version,
