@@ -28,6 +28,58 @@ The source-of-truth lock file is:
 
 - `docs/v1_contract_lock.json`
 
+## Pointer Lifecycle Contract (Frozen)
+
+The following pointer lifecycle semantics are frozen for `v1.0`:
+
+### Creation
+
+- `store_and_point(..., ttl_seconds=<int>)` creates a pointer with lifecycle fields.
+- `ttl_seconds` must be a positive integer when provided, or `None` for no expiry.
+- `ttl_seconds=0`, negative values, booleans, and floats raise `ValueError`.
+- `created_at_utc` is set to current UTC (ISO 8601).
+- `expires_at_utc` is computed as `created_at_utc + timedelta(seconds=ttl_seconds)`.
+- Pointers without `ttl_seconds` never expire automatically.
+
+### Expiry Evaluation
+
+- A pointer is expired when `expires_at_utc <= now_utc` (inclusive of boundary).
+- Pointers without `expires_at_utc` (or with empty/null value) are never expired.
+- All UTC comparisons use timezone-aware datetimes; naive inputs are treated as UTC.
+
+### Listing
+
+- `list_pointers(include_expired=True)` returns all pointers including expired ones.
+- `list_pointers(include_expired=False)` excludes expired pointers.
+- Each returned record includes an `is_expired` boolean field.
+- Results are ordered by `created_at_utc DESC, pointer_id DESC`.
+- `limit` must be a positive integer when provided; `limit <= 0` raises `ValueError`.
+
+### Retrieval
+
+- `retrieve(pointer_id)` returns raw payload for any pointer, including expired ones.
+- Expired pointers remain retrievable until explicitly deleted or cleaned up.
+- Missing pointers raise `KeyError`.
+
+### Deletion
+
+- `delete_pointer(pointer_id)` removes a single pointer.
+- Missing pointers raise `KeyError`.
+- Deletion is idempotent at the backend level (backend returns `False` for missing).
+
+### Cleanup
+
+- `cleanup_expired_pointers(now_utc, limit)` deletes expired pointers up to `limit`.
+- Returns a report: `deleted_count`, `deleted_pointer_ids`, `remaining_expired_count`, `ran_at_utc`.
+- Cleanup is idempotent: calling with no expired pointers returns `deleted_count=0`.
+- `remaining_expired_count` reflects the state after deletion.
+- Non-expired pointers are never deleted by cleanup.
+
+### Backend Consistency
+
+- All backends (`SQLitePointerStore`, `RedisPointerStore`, `PostgresPointerStore`) share the same lifecycle semantics via `PointerStoreBackend` base class.
+- `list_expired_pointers` and `cleanup_expired_pointers` are implemented in the base class and delegate to backend-specific `list_pointers` and `delete_pointer`.
+
 ## Non-Goals
 
 The following remain out of scope for `v1.0` stability guarantees:

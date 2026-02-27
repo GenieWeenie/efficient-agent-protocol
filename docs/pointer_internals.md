@@ -92,13 +92,21 @@ Implications:
 - For structured payloads, explicitly `json.dumps(...)` before storing or return JSON text from tools.
 - Consumers should parse with `json.loads(...)` only when payload is valid JSON.
 
-## TTL And Expiry Semantics
+## TTL And Expiry Semantics (v1 Frozen)
 
-- `ttl_seconds` must be a positive integer when provided.
-- `expires_at_utc` is computed as `created_at_utc + ttl_seconds`.
-- Expiry is evaluated by backend-agnostic UTC comparison.
-- Expired pointers are still listable when `include_expired=True`.
-- Cleanup is explicit via `cleanup_expired_pointers(...)` and returns deletion stats.
+These semantics are frozen for v1.0 stability. See `docs/v1_contract.md` for the full contract.
+
+- `ttl_seconds` must be a positive integer when provided; zero, negative, boolean, and float values raise `ValueError`.
+- `expires_at_utc` is computed as `created_at_utc + timedelta(seconds=ttl_seconds)`.
+- A pointer is expired when `expires_at_utc <= now_utc` (boundary-inclusive).
+- Pointers without `ttl_seconds`/`expires_at_utc` never expire automatically.
+- Expired pointers remain retrievable until explicitly deleted or cleaned up.
+- `list_pointers(include_expired=True)` returns all pointers; `include_expired=False` filters expired.
+- Each listed record includes an `is_expired` boolean field.
+- Results are ordered by `created_at_utc DESC, pointer_id DESC`.
+- `cleanup_expired_pointers(now_utc, limit)` deletes expired pointers and returns a report with `deleted_count`, `deleted_pointer_ids`, `remaining_expired_count`, `ran_at_utc`.
+- Cleanup is idempotent: calling with no expired pointers returns `deleted_count=0`.
+- Non-expired pointers are never deleted by cleanup.
 
 ## Checkpoints, Resume, And Replay
 
