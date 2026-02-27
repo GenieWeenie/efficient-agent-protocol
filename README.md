@@ -5,9 +5,9 @@
 [![Python](https://img.shields.io/badge/python-3.9--3.13-blue)](./pyproject.toml)
 [![Release](https://img.shields.io/github/v/release/GenieWeenie/efficient-agent-protocol)](https://github.com/GenieWeenie/efficient-agent-protocol/releases)
 
-> Status: Experimental (pre-1.0). APIs and schema may change.
+> Status: v1.0 Release Candidate. Core APIs and schema are frozen per [`docs/v1_contract.md`](docs/v1_contract.md).
 > See `STABILITY.md` and `ROADMAP.md` for guarantees and planned milestones.
-> Latest stable release: `v0.1.8`
+> Latest stable release: `v0.1.9`
 
 Efficient Agent Protocol is a local-first framework for multi-step tool workflows.
 It stores large outputs as pointer-backed state (`ptr_*`) and runs dependency-aware DAG steps in parallel.
@@ -65,14 +65,13 @@ Best for:
 - Python developers building local-first orchestration with explicit execution semantics.
 - Teams that care about observability, replayability, and controlled failure behavior.
 
-Not ideal yet:
-- strict long-term API compatibility requirements before `v1.0`
-- teams expecting a fully managed hosted control plane (instead of self-hosting runtime components)
-- non-technical users wanting no-ops onboarding without any runtime/provider configuration
+Not ideal for:
+- Teams expecting a fully managed hosted control plane (instead of self-hosting runtime components).
+- Non-technical users wanting no-ops onboarding without any runtime/provider configuration.
 
 ## Current Limits (Honest)
 
-- Pre-1.0 contract: APIs and schema can still change (`STABILITY.md`).
+- Core APIs and schema are frozen for v1 (see [`docs/v1_contract.md`](docs/v1_contract.md)). Surfaces marked *unstable* may still change.
 - `responses` streaming behavior still depends on gateway SSE support and may vary by gateway version/configuration.
 - Performance/reliability thresholds are calibrated from repo baselines; production teams should tune them for their own workloads.
 - This remains an engineering-first runtime, not a no-code orchestration product.

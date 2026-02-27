@@ -101,6 +101,11 @@ jobs:
             tests/contract/test_eap_proof_sheet_contract.py \
             tests/contract/test_readme_conversion_pack_contract.py
 
+      - name: Docs v1 alignment checks
+        if: matrix.python-version == '3.11'
+        run: |
+          python -m pytest -q tests/contract/test_docs_v1_alignment.py
+
       - name: V1 compatibility contract gate
         if: matrix.python-version == '3.11'
         run: |
