@@ -50,7 +50,7 @@ Updated: 2026-02-26 (v0.1.8 baseline)
 | 20 | `EAP-098` | `GEN-58` | `Done` | Backup/restore workflow for state + diagnostics |
 | 21 | `EAP-099` | `GEN-59` | `Done` | Long-run soak + chaos reliability gate |
 | 22 | `EAP-109` | `GEN-65` | `Done` | Strict typing tranche: executor runtime path (`environment/executor.py`) |
-| 23 | `EAP-110` | `GEN-66` | `Todo` | Strict typing tranche: runtime HTTP API path (`eap/runtime/http_api.py`) |
+| 23 | `EAP-110` | `GEN-66` | `Done` | Strict typing tranche: runtime HTTP API path (`eap/runtime/http_api.py`) |
 | 24 | `EAP-111` | `GEN-67` | `Todo` | Freeze pointer lifecycle semantics for v1 (`TTL/expiry/cleanup`) |
 | 25 | `EAP-112` | `GEN-68` | `Todo` | Public API deprecation sweep + unstable export cleanup |
 | 26 | `EAP-113` | `GEN-69` | `Todo` | Upgrade migration verification from latest `0.x` baseline |
@@ -63,4 +63,4 @@ Updated: 2026-02-26 (v0.1.8 baseline)
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: next queued `Todo` item is `EAP-110`; extended queued backlog is defined through `EAP-118`.
+Current state: next queued `Todo` item is `EAP-111`; extended queued backlog is defined through `EAP-118`.
