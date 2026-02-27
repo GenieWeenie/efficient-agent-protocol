@@ -39,6 +39,28 @@ Compatibility policy:
    - confirm `docs/v1_contract_lock.json` was updated intentionally
    - confirm `Breaking Changes` and `Upgrade Notes` sections are populated
 
+## V1.0 Release Checklist
+
+Before tagging `v1.0.0`, complete every item below in order:
+
+1. **Stabilization checklist**: verify all boxes in `docs/v1_stabilization_checklist.md` are checked.
+2. **Readiness gatepack**: run `PYTHONPATH=. python scripts/v1_readiness_gatepack.py` and confirm `PASS (9/9)`.
+3. **CI green**: all workflows on the release branch are green (CI, Security, CodeQL).
+4. **Contract lock**: `docs/v1_contract_lock.json` reflects the intended v1.0 surface.
+5. **Upgrade notes**: `docs/upgrade_notes_v1.md` is complete with breaking changes, migration actions, and rollback guidance.
+6. **Release notes**: draft release body follows `docs/release_notes_template.md` structure (Added, Changed, Fixed, Deprecated, Removed, Breaking Changes, Upgrade Notes).
+7. **Version bump**: `pyproject.toml` version is set to `1.0.0`.
+8. **Owner sign-off**: all three sign-off lines in `docs/v1_stabilization_checklist.md` are approved.
+
+### Pre-Release (RC) Tags
+
+For release candidates before the final `v1.0.0` tag:
+
+- Tag as `v1.0.0-rc1`, `v1.0.0-rc2`, etc.
+- RC tags publish to TestPyPI (not production PyPI).
+- Run the full gatepack against each RC to catch regressions.
+- Promote to stable only after RC validation passes with no blockers.
+
 ## Publish Authentication
 
 - Stable tags (`vX.Y.Z`) publish via PyPI Trusted Publishing (OIDC, no long-lived token).
@@ -69,19 +91,21 @@ Use rollback only when a bad release is published.
    - root cause
    - corrective actions
 
+### State Database Rollback
+
+If the release introduced a schema migration that caused data issues:
+
+1. Restore from the pre-upgrade backup (see `docs/state_backup_restore.md`).
+2. Verify restored data with `scripts/verify_upgrade_from_baseline.py`.
+3. Pin the previous package version until a fix is released.
+
 ## Post-Release Checklist
 
 - CI release workflow succeeded.
-- Release notes are accurate.
+- Release notes are accurate and follow `docs/release_notes_template.md` structure.
 - Security scanning workflows remain green.
 - Roadmap issue/task status updated.
-
-## V1 Readiness Handoff
-
-For `v1.0` cutover, complete and attach:
-
-- `docs/v1_stabilization_checklist.md`
-- Fully populated `Breaking Changes` and `Upgrade Notes` sections from `docs/release_notes_template.md`
+- Post-release install smoke test passed (verified by release workflow).
 
 ## Security Workflow Notes
 

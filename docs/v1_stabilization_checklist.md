@@ -48,7 +48,7 @@ Ship `v1.0` with a stable contract for core runtime APIs, workflow schema, and u
 
 - [x] Update `docs/v1_contract.md` from draft to final `v1.0` contract.
 - [x] Ensure README quickstart and docs links are current.
-- [ ] Confirm release runbook and maintainer runbook reflect final `v1.0` process.
+- [x] Confirm release runbook and maintainer runbook reflect final `v1.0` process.
 
 ## Upgrade Notes Handoff (Required Artifact)
 

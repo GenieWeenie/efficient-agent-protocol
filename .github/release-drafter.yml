@@ -22,22 +22,46 @@ categories:
   - title: "Breaking Changes"
     labels:
       - "major"
-  - title: "Features"
+  - title: "Added"
     labels:
       - "enhancement"
       - "minor"
-  - title: "Fixes"
+  - title: "Fixed"
     labels:
       - "bug"
-      - "patch"
   - title: "Documentation"
     labels:
       - "documentation"
+      - "patch"
 
 template: |
-  ## Changes
+  ## Added
 
   $CHANGES
+
+  ## Changed
+
+  _No changes._
+
+  ## Fixed
+
+  _No fixes._
+
+  ## Deprecated
+
+  _None._
+
+  ## Removed
+
+  _None._
+
+  ## Breaking Changes
+
+  _None._
+
+  ## Upgrade Notes
+
+  _See `docs/upgrade_notes_v1.md` for migration guidance._
 
   ## Contributors
 
