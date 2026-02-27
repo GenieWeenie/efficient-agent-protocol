@@ -55,7 +55,7 @@ Updated: 2026-02-26 (v0.1.8 baseline)
 | 25 | `EAP-112` | `GEN-68` | `Done` | Public API deprecation sweep + unstable export cleanup |
 | 26 | `EAP-113` | `GEN-69` | `Done` | Upgrade migration verification from latest `0.x` baseline |
 | 27 | `EAP-114` | `GEN-70` | `Done` | Observability compatibility lock (logs/metrics/telemetry schema) |
-| 28 | `EAP-115` | `GEN-71` | `Todo` | V1 readiness gatepack (coverage/perf/reliability/security) |
+| 28 | `EAP-115` | `GEN-71` | `Done` | V1 readiness gatepack (coverage/perf/reliability/security) |
 | 29 | `EAP-116` | `GEN-72` | `Todo` | README/docs v1 alignment pass |
 | 30 | `EAP-117` | `GEN-73` | `Todo` | Release + maintainer runbook v1 finalization |
 | 31 | `EAP-118` | `GEN-74` | `Todo` | V1 upgrade handoff artifact + RC dry-run |
@@ -63,4 +63,4 @@ Updated: 2026-02-26 (v0.1.8 baseline)
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: next queued `Todo` item is `EAP-115`; extended queued backlog is defined through `EAP-118`.
+Current state: next queued `Todo` item is `EAP-116`; extended queued backlog is defined through `EAP-118`.

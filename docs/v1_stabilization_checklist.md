@@ -34,15 +34,15 @@ Ship `v1.0` with a stable contract for core runtime APIs, workflow schema, and u
 
 ### Reliability and Performance Gates
 
-- [ ] Keep line/branch coverage gates passing in CI.
-- [ ] Keep perf regression thresholds green (`tests/perf` upper bounds).
-- [ ] Validate retry/timeout/dependency failure integration tests pass.
+- [x] Keep line/branch coverage gates passing in CI.
+- [x] Keep perf regression thresholds green (`tests/perf` upper bounds).
+- [x] Validate retry/timeout/dependency failure integration tests pass.
 
 ### Security and Supply Chain
 
-- [ ] Dependency audit and secret scan pipelines green.
-- [ ] Code scanning alerts triaged with high-severity baseline at zero.
-- [ ] Release workflow publishes and validates package install from PyPI.
+- [x] Dependency audit and secret scan pipelines green.
+- [x] Code scanning alerts triaged with high-severity baseline at zero.
+- [x] Release workflow publishes and validates package install from PyPI.
 
 ### Documentation and Operator Readiness
 

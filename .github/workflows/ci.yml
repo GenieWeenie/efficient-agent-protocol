@@ -120,6 +120,11 @@ jobs:
         run: |
           python -m pip_audit -r requirements.txt
 
+      - name: V1 readiness gatepack (unified)
+        if: matrix.python-version == '3.11'
+        run: |
+          python scripts/v1_readiness_gatepack.py
+
   quickstart-smoke:
     name: Quickstart smoke (py3.11)
     runs-on: ubuntu-latest
