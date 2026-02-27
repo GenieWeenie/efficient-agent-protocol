@@ -78,6 +78,13 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Raise typing rigor with enforceable mypy targets and CI gates.
 - Checklist: `docs/phase10_competitiveness_hardening_roadmap.md`
 
+## Phase 11: Typing Rigor Completion (In Progress)
+
+- Complete strict typing tranche for executor runtime path (`EAP-109`).
+- Complete strict typing tranche for runtime HTTP API boundary path (`EAP-110`).
+- Keep CI mypy scoped gate aligned with typed-critical runtime modules.
+- Checklist: `docs/phase11_typing_rigor_completion_roadmap.md`
+
 ## Done
 
 - Branch protection on `main` with required CI checks and PR review.
@@ -120,5 +127,6 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Phase 10 `EAP-102` security hardening completed (constrained branch-expression evaluator, unsafe-expression rejection tests, security posture docs) (`GEN-62`).
 - Phase 10 `EAP-103` README conversion pack completed (demo GIF, architecture image prominence, badge normalization, CI README asset contract checks) (`GEN-63`).
 - Phase 10 `EAP-104` type rigor tranche completed (scoped strict mypy gate for `safe_eval`, runtime auth scopes, and runtime guardrails, plus typing policy doc) (`GEN-64`).
+- Phase 11 `EAP-109` strict typing tranche completed for executor runtime path with CI scoped gate expansion (`GEN-65`).
 - Phase 9 `EAP-098` backup/restore workflow completed (state DB + diagnostics snapshot command set, restore verification/rollback flow, and recovery runbook) (`GEN-58`).
 - Phase 9 `EAP-099` soak + chaos reliability gate completed (fault-injection scorecard harness, CI release gate lane, thresholds/baseline, and remediation docs) (`GEN-59`).
