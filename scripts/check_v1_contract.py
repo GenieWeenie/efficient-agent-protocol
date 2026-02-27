@@ -14,6 +14,7 @@ from typing import Any, Dict, Optional, Tuple
 import eap.agent as eap_agent
 import eap.environment as eap_environment
 import eap.protocol as eap_protocol
+import eap.runtime as eap_runtime
 from eap.protocol import (
     PersistedWorkflowGraph,
     ToolErrorPayload,
@@ -93,6 +94,7 @@ def build_current_snapshot(repo_root: Path) -> Dict[str, Any]:
             "eap.protocol": sorted(eap_protocol.__all__),
             "eap.environment": sorted(eap_environment.__all__),
             "eap.agent": sorted(eap_agent.__all__),
+            "eap.runtime": sorted(eap_runtime.__all__),
         },
         "workflow_schema": {
             "persisted_workflow_graph": _schema_contract(PersistedWorkflowGraph),

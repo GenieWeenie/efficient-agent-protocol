@@ -1,3 +1,11 @@
+"""Bundled tool implementations for EAP.
+
+.. warning::
+    **Unstable / not part of the v1 contract.**  These tools are provided as
+    convenience utilities and starter-pack examples.  Their signatures,
+    schemas, and behavior may change between minor releases without a
+    contract-lock bump.  Pin specific versions if you depend on them.
+"""
 from environment.tools import (
     ANALYZE_SCHEMA,
     FETCH_SCHEMA,
