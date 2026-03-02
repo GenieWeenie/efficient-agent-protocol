@@ -14,7 +14,7 @@ from eap.runtime.auth_scopes import (
 )
 
 DEFAULT_POLICY_PROFILE = "strict"
-SUPPORTED_POLICY_PROFILES = {"strict", "balanced", "trusted"}
+SUPPORTED_POLICY_PROFILES = {"strict", "balanced", "trusted", "multi_tenant", "sandboxed"}
 
 _PROFILE_ALLOWED_SCOPES: Dict[str, Set[str]] = {
     "strict": {
@@ -27,6 +27,17 @@ _PROFILE_ALLOWED_SCOPES: Dict[str, Set[str]] = {
     },
     "balanced": set(FULL_RUNTIME_SCOPES),
     "trusted": set(FULL_RUNTIME_SCOPES) | {"*"},
+    "multi_tenant": {
+        SCOPE_RUNS_EXECUTE,
+        SCOPE_RUNS_RESUME,
+        SCOPE_RUNS_READ,
+        SCOPE_POINTERS_READ,
+    },
+    "sandboxed": {
+        SCOPE_RUNS_EXECUTE,
+        SCOPE_RUNS_READ,
+        SCOPE_POINTERS_READ,
+    },
 }
 
 _PROFILE_TEMPLATES: Dict[str, Dict[str, Set[str]]] = {
@@ -47,6 +58,18 @@ _PROFILE_TEMPLATES: Dict[str, Dict[str, Set[str]]] = {
         "operator": {SCOPE_RUNS_EXECUTE, SCOPE_RUNS_RESUME, SCOPE_RUNS_READ, SCOPE_POINTERS_READ},
         "auditor": {SCOPE_RUNS_READ, SCOPE_POINTERS_READ, SCOPE_RUNS_READ_ANY, SCOPE_POINTERS_READ_ANY},
         "admin": {"*"},
+    },
+    "multi_tenant": {
+        "viewer": {SCOPE_RUNS_READ, SCOPE_POINTERS_READ},
+        "operator": {SCOPE_RUNS_EXECUTE, SCOPE_RUNS_RESUME, SCOPE_RUNS_READ, SCOPE_POINTERS_READ},
+        "auditor": {SCOPE_RUNS_READ, SCOPE_POINTERS_READ},
+        "admin": {SCOPE_RUNS_EXECUTE, SCOPE_RUNS_RESUME, SCOPE_RUNS_READ, SCOPE_POINTERS_READ},
+    },
+    "sandboxed": {
+        "viewer": {SCOPE_RUNS_READ, SCOPE_POINTERS_READ},
+        "operator": {SCOPE_RUNS_EXECUTE, SCOPE_RUNS_READ, SCOPE_POINTERS_READ},
+        "auditor": {SCOPE_RUNS_READ, SCOPE_POINTERS_READ},
+        "admin": {SCOPE_RUNS_EXECUTE, SCOPE_RUNS_READ, SCOPE_POINTERS_READ},
     },
 }
 

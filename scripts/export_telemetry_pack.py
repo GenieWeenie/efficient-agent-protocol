@@ -5,6 +5,7 @@ import argparse
 import json
 import math
 import sqlite3
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
@@ -564,19 +565,60 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional specific failed run ID for diagnosis drilldown.",
     )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print detailed progress information during export.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate inputs and print what would be exported without writing files.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    verbose = args.verbose
+    dry_run = args.dry_run
+    db_path = Path(args.db_path)
     output_dir = Path(args.output_dir)
+
+    if not db_path.exists():
+        print(
+            f"[telemetry:error] Database not found: {db_path.resolve()}\n"
+            "  Hint: Ensure the state DB path is correct. Default is 'agent_state.db' in the working directory.\n"
+            "  Run 'python scripts/eap_doctor.py doctor' to verify your environment.",
+            file=sys.stderr,
+        )
+        return 1
+
+    if verbose:
+        print(f"[telemetry] Database: {db_path.resolve()}")
+        print(f"[telemetry] Output directory: {output_dir.resolve()}")
+        print(f"[telemetry] Run limit: {args.limit_runs}")
+
+    if dry_run:
+        print("[telemetry:dry-run] Would connect to database and export telemetry artifacts.")
+        print(f"[telemetry:dry-run] Output directory: {output_dir.resolve()}")
+        print("[telemetry:dry-run] Files: overview.json, retries.json, fail_reasons.json, "
+              "latency_percentiles.json, saturation.json, actors.json, "
+              "failed_run_diagnostics.json, operator_report.md, manifest.json")
+        return 0
+
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    with sqlite3.connect(args.db_path) as conn:
+    if verbose:
+        print("[telemetry] Loading runs from database...")
+    with sqlite3.connect(str(db_path)) as conn:
         runs = _load_runs(conn, limit=args.limit_runs)
         run_ids = [run["run_id"] for run in runs]
         trace_rows = _load_trace_rows(conn, run_ids=run_ids)
         diagnostics_by_run = _load_diagnostics(conn, run_ids=run_ids)
+
+    if verbose:
+        print(f"[telemetry] Loaded {len(runs)} runs, {len(trace_rows)} trace events.")
 
     retries_view = _build_retries_view(trace_rows)
     fail_reasons_view = _build_fail_reasons_view(trace_rows)
@@ -613,6 +655,8 @@ def main() -> int:
             json.dumps(payload, indent=2, sort_keys=True),
             encoding="utf-8",
         )
+        if verbose:
+            print(f"[telemetry] Wrote {filename}")
 
     report = _render_markdown_report(
         overview=overview,
@@ -621,10 +665,12 @@ def main() -> int:
         failed_run_diagnostics=failed_run_diagnostics,
     )
     (output_dir / "operator_report.md").write_text(report, encoding="utf-8")
+    if verbose:
+        print("[telemetry] Wrote operator_report.md")
 
     manifest = {
         "generated_at_utc": _now_utc_iso(),
-        "db_path": str(Path(args.db_path).resolve()),
+        "db_path": str(db_path.resolve()),
         "output_dir": str(output_dir.resolve()),
         "files": sorted(
             [path.name for path in output_dir.iterdir() if path.is_file()] + ["manifest.json"]

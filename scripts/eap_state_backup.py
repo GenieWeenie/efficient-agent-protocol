@@ -158,13 +158,29 @@ def _print_json(payload: Mapping[str, Any]) -> None:
 
 
 def _backup(args: argparse.Namespace) -> int:
+    verbose = getattr(args, "verbose", False)
+    dry_run = getattr(args, "dry_run", False)
     source_db_path = Path(args.db_path).resolve()
     _ensure_exists(source_db_path, path_label="source state DB")
 
     backup_root = Path(args.output_root).resolve()
-    backup_root.mkdir(parents=True, exist_ok=True)
     backup_name = args.name or f"state-backup-{_utc_timestamp_slug()}"
     backup_dir = backup_root / backup_name
+
+    if verbose:
+        print(f"[backup] Source DB: {source_db_path}")
+        print(f"[backup] Backup destination: {backup_dir}")
+
+    if dry_run:
+        validation = _validate_state_db(source_db_path)
+        table_counts = _collect_table_counts(source_db_path)
+        print("[backup:dry-run] Would create backup with the following source data:")
+        for table_name, count in sorted(table_counts.items()):
+            print(f"[backup:dry-run]   {table_name}: {count} rows")
+        print(f"[backup:dry-run] Backup would be written to: {backup_dir}")
+        return 0
+
+    backup_root.mkdir(parents=True, exist_ok=True)
     temp_dir = backup_root / f"{backup_name}.tmp"
 
     if backup_dir.exists() and not args.overwrite:
@@ -186,9 +202,13 @@ def _backup(args: argparse.Namespace) -> int:
 
         snapshot_db_path = state_dir / DEFAULT_STATE_DB_FILENAME
         shutil.copy2(source_db_path, snapshot_db_path)
+        if verbose:
+            print("[backup] Copied state DB snapshot.")
         db_validation = _validate_state_db(snapshot_db_path)
         table_counts = _collect_table_counts(snapshot_db_path)
         run_ids = _collect_run_ids(snapshot_db_path, limit=max(1, int(args.run_id_limit)))
+        if verbose:
+            print(f"[backup] Validated snapshot: {sum(table_counts.values())} total rows across {len(table_counts)} tables.")
 
         _run_script(
             [
@@ -407,6 +427,16 @@ def _build_parser() -> argparse.ArgumentParser:
         default="state-backup-local",
         help="Signer key identifier in the backup manifest when signing is enabled.",
     )
+    backup.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print detailed progress information during backup.",
+    )
+    backup.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate inputs and show what would be backed up without creating files.",
+    )
 
     restore = subparsers.add_parser("restore", help="Restore a state DB from a backup snapshot.")
     restore.add_argument("--backup-dir", required=True, help="Backup directory created by the backup command.")
@@ -441,6 +471,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--report-path",
         default=None,
         help="Optional explicit path for restore report JSON.",
+    )
+    restore.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print detailed progress information during restore.",
     )
 
     return parser

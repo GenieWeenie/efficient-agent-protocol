@@ -35,6 +35,8 @@ class StateManager:
     def _init_db(self):
         self.pointer_store.initialize()
         with sqlite3.connect(self.db_path) as conn:
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=NORMAL")
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS execution_trace_events (
@@ -265,6 +267,39 @@ class StateManager:
                     payload["retry_delay_seconds"],
                     json.dumps(payload["error"]) if payload["error"] is not None else None,
                 ),
+            )
+
+    def append_trace_events_batch(self, events: List[ExecutionTraceEvent]) -> None:
+        """Write multiple trace events in a single transaction for better throughput."""
+        if not events:
+            return
+        rows = []
+        for event in events:
+            payload = event.model_dump(mode="json")
+            rows.append((
+                payload["run_id"],
+                payload["step_id"],
+                payload["tool_name"],
+                payload["event_type"],
+                payload["timestamp_utc"],
+                payload["attempt"],
+                json.dumps(payload["resolved_arguments"]) if payload["resolved_arguments"] is not None else None,
+                json.dumps(payload["input_pointer_ids"]) if payload["input_pointer_ids"] is not None else None,
+                payload["output_pointer_id"],
+                payload["duration_ms"],
+                payload["retry_delay_seconds"],
+                json.dumps(payload["error"]) if payload["error"] is not None else None,
+            ))
+        with sqlite3.connect(self.db_path) as conn:
+            conn.executemany(
+                """
+                INSERT INTO execution_trace_events (
+                    run_id, step_id, tool_name, event_type, timestamp_utc, attempt,
+                    resolved_arguments, input_pointer_ids, output_pointer_id, duration_ms,
+                    retry_delay_seconds, error_payload
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                rows,
             )
 
     def list_trace_events(self, run_id: str) -> List[ExecutionTraceEvent]:
