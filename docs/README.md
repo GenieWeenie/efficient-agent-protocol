@@ -19,6 +19,7 @@
 | [tools.md](tools.md) | Built-in tools reference |
 | [plugin_spec.md](plugin_spec.md) | Third-party plugin contract and discovery |
 | [distributed_execution.md](distributed_execution.md) | Coordinator-worker protocol for multi-node execution |
+| [streaming_compatibility.md](streaming_compatibility.md) | Gateway streaming compatibility matrix and known quirks |
 
 ## Storage and State
 
@@ -28,6 +29,7 @@
 | [storage_lifecycle.md](storage_lifecycle.md) | Pointer TTL, expiry, and cleanup |
 | [migrations.md](migrations.md) | SQLite schema migration policy |
 | [state_backup_restore.md](state_backup_restore.md) | Backup/restore workflows and recovery drills |
+| [performance_tuning.md](performance_tuning.md) | SQLite WAL, concurrency, retry/timeout, and profiling guidance |
 
 ## Operations and Deployment
 
@@ -39,6 +41,8 @@
 | [operator_telemetry_pack.md](operator_telemetry_pack.md) | Diagnostic export and telemetry pack guide |
 | [soak_chaos_reliability.md](soak_chaos_reliability.md) | Soak tests and chaos/fault-injection harness |
 | [maintainer_runbook.md](maintainer_runbook.md) | Daily operations, triage, and incident response |
+| [slo_sla_guidance.md](slo_sla_guidance.md) | Golden signals, example SLOs, and Prometheus alerting rules |
+| [dashboards/grafana_eap_overview.json](dashboards/grafana_eap_overview.json) | Reference Grafana dashboard for EAP monitoring |
 
 ## Quality and Evaluation
 
