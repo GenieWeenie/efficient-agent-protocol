@@ -1,9 +1,12 @@
 # agent/agent_client.py
 import json
+import logging
 from typing import Callable, Dict, Any, Optional
 from .compiler import MacroCompiler
 from .providers import CompletionRequest, LLMProvider, ProviderMessage, create_provider
 from protocol.models import BatchedMacroRequest
+
+logger = logging.getLogger("eap.agent.agent_client")
 
 
 class AgentClient:
@@ -91,9 +94,15 @@ class AgentClient:
                 chunks.append(token)
                 if on_token:
                     on_token(token)
-        except Exception:
+        except Exception as stream_exc:
             if not fallback_to_non_stream:
                 raise
+            logger.warning(
+                "Streaming failed (%s: %s), falling back to non-stream completion. "
+                "See docs/streaming_compatibility.md for gateway SSE requirements.",
+                type(stream_exc).__name__,
+                stream_exc,
+            )
             fallback_text = self.provider.complete(request).text
             streamed_text = "".join(chunks)
             if streamed_text and fallback_text.startswith(streamed_text):

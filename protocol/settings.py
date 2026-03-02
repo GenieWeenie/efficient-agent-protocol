@@ -61,8 +61,16 @@ def _parse_int(value: str, field_name: str) -> int:
 
 def _validate_base_url(base_url: str, field_name: str) -> str:
     normalized = base_url.rstrip("/")
+    if not normalized:
+        raise ValueError(
+            f"{field_name} is empty. Set it to your LLM gateway URL "
+            f"(e.g., 'http://localhost:1234'). See docs/configuration.md for details."
+        )
     if not normalized.startswith(("http://", "https://")):
-        raise ValueError(f"{field_name} must start with http:// or https://")
+        raise ValueError(
+            f"{field_name} must start with http:// or https:// (got '{normalized}'). "
+            f"Example: 'http://localhost:1234'. See docs/configuration.md."
+        )
     return normalized
 
 
@@ -107,7 +115,9 @@ def _parse_openai_api_mode(value: str, field_name: str) -> str:
     if normalized in {"chat_completions", "responses"}:
         return normalized
     raise ValueError(
-        f"{field_name} must be one of: chat_completions, responses"
+        f"{field_name} must be one of: chat_completions, responses (got '{value.strip()}'). "
+        f"Use 'chat_completions' for standard OpenAI-compatible gateways or 'responses' "
+        f"for the OpenAI Responses API. See docs/configuration.md."
     )
 
 
@@ -119,7 +129,10 @@ def _build_client_settings(role_prefix: str) -> LLMClientSettings:
 
     model_name = os.getenv(f"{role_prefix}_MODEL", os.getenv("EAP_MODEL", DEFAULT_MODEL)).strip()
     if not model_name:
-        raise ValueError(f"{role_prefix}_MODEL cannot be empty")
+        raise ValueError(
+            f"{role_prefix}_MODEL cannot be empty. Set it to your model name "
+            f"(e.g., 'gpt-4o', 'nemotron-orchestrator-8b'). See docs/configuration.md."
+        )
 
     api_key = os.getenv(f"{role_prefix}_API_KEY", os.getenv("EAP_API_KEY", "not-needed")).strip()
     if not api_key:

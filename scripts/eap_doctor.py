@@ -532,6 +532,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Socket timeout for connectivity checks.",
     )
     doctor.add_argument("--output-json", default="", help="Write machine-readable JSON diagnostics to this path.")
+    doctor.add_argument("--verbose", action="store_true", help="Print additional detail for each diagnostic check.")
     return parser
 
 

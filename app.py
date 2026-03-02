@@ -206,7 +206,15 @@ def get_vault_data():
 
 vault_df = get_vault_data()
 if not vault_df.empty:
-    st.sidebar.dataframe(vault_df, hide_index=True)
+    vault_search = st.sidebar.text_input("Search pointers", key="vault_search", placeholder="Filter by ID or summary...")
+    display_vault = vault_df
+    if vault_search.strip():
+        mask = (
+            display_vault["pointer_id"].str.contains(vault_search.strip(), case=False, na=False)
+            | display_vault["summary"].astype(str).str.contains(vault_search.strip(), case=False, na=False)
+        )
+        display_vault = display_vault[mask]
+    st.sidebar.dataframe(display_vault, hide_index=True)
 else:
     st.sidebar.info("Vault is currently empty.")
 
@@ -454,7 +462,26 @@ with tab3:
     if trace_runs_df.empty:
         st.info("No trace runs found yet. Execute a macro to generate traces.")
     else:
-        selected_run = st.selectbox("Select execution run:", trace_runs_df["run_id"])
+        search_col, filter_col = st.columns([3, 1])
+        with search_col:
+            run_search = st.text_input("Search runs (by run ID or pointer ID)", key="trace_run_search")
+        with filter_col:
+            show_failed_only = st.checkbox("Failed only", key="trace_failed_only")
+
+        display_df = trace_runs_df
+        if run_search.strip():
+            mask = (
+                display_df["run_id"].str.contains(run_search.strip(), case=False, na=False)
+                | display_df["final_pointer_id"].astype(str).str.contains(run_search.strip(), case=False, na=False)
+            )
+            display_df = display_df[mask]
+        if show_failed_only:
+            display_df = display_df[display_df["failed_steps"] > 0]
+
+        if display_df.empty:
+            st.warning("No runs match the current filter.")
+        else:
+            selected_run = st.selectbox("Select execution run:", display_df["run_id"])
         summary_row = trace_runs_df[trace_runs_df["run_id"] == selected_run].iloc[0]
         events = state_manager.list_trace_events(selected_run)
 

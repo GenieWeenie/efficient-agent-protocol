@@ -1,0 +1,97 @@
+{
+  "__info": "Reference Grafana dashboard for EAP operational metrics. Import into Grafana and configure a JSON/Prometheus data source.",
+  "dashboard": {
+    "title": "EAP Operations Overview",
+    "uid": "eap-ops-overview",
+    "tags": ["eap", "operations"],
+    "timezone": "utc",
+    "refresh": "1m",
+    "panels": [
+      {
+        "title": "Run Success Rate",
+        "type": "gauge",
+        "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
+        "targets": [
+          {"expr": "1 - eap_failed_run_rate", "legendFormat": "Success Rate"}
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 0.95},
+                {"color": "green", "value": 0.99}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Step Latency (p95)",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 6, "x": 6, "y": 0},
+        "targets": [
+          {"expr": "eap_step_latency_p95_ms", "legendFormat": "p95 ms"}
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 500},
+                {"color": "red", "value": 1000}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Total Runs",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 6, "x": 12, "y": 0},
+        "targets": [
+          {"expr": "eap_total_runs", "legendFormat": "Runs"}
+        ]
+      },
+      {
+        "title": "Active Pointers",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 6, "x": 18, "y": 0},
+        "targets": [
+          {"expr": "eap_active_pointers", "legendFormat": "Active"}
+        ]
+      },
+      {
+        "title": "Retry Events by Tool",
+        "type": "barchart",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+        "targets": [
+          {"expr": "eap_retry_count_by_tool", "legendFormat": "{{tool_name}}"}
+        ]
+      },
+      {
+        "title": "Failure Reasons",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+        "targets": [
+          {"expr": "eap_failure_count_by_type", "legendFormat": "{{error_type}}"}
+        ]
+      },
+      {
+        "title": "Concurrency Saturation",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 14},
+        "targets": [
+          {"expr": "eap_global_concurrency_wait_p95", "legendFormat": "Global Wait (p95)"},
+          {"expr": "eap_per_tool_concurrency_wait_p95", "legendFormat": "Per-Tool Wait (p95)"},
+          {"expr": "eap_rate_wait_p95", "legendFormat": "Rate Limit Wait (p95)"}
+        ],
+        "fieldConfig": {
+          "defaults": {"unit": "s"}
+        }
+      }
+    ]
+  }
+}

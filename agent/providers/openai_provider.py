@@ -205,19 +205,33 @@ class OpenAIProvider(LLMProvider):
             if request.tools:
                 payload["tools"] = request.tools
 
-            response = requests.post(
-                self.endpoint,
-                json=payload,
-                headers=self._headers(),
-                timeout=self.timeout_seconds,
-                stream=True,
-            )
+            try:
+                response = requests.post(
+                    self.endpoint,
+                    json=payload,
+                    headers=self._headers(),
+                    timeout=self.timeout_seconds,
+                    stream=True,
+                )
+            except requests.ConnectionError as exc:
+                raise RuntimeError(
+                    f"Failed to connect to responses streaming endpoint ({self.endpoint}). "
+                    f"Verify the gateway is running and supports the /v1/responses path. "
+                    f"See docs/streaming_compatibility.md for supported gateways."
+                ) from exc
+            except requests.Timeout as exc:
+                raise RuntimeError(
+                    f"Timeout connecting to responses streaming endpoint ({self.endpoint}). "
+                    f"Consider increasing EAP_TIMEOUT_SECONDS (current: {self.timeout_seconds}s)."
+                ) from exc
             try:
                 response.raise_for_status()
             except requests.HTTPError as exc:
                 if response.status_code in {404, 405, 410, 501}:
                     raise RuntimeError(
-                        "OpenAI Responses API path is unavailable on this endpoint."
+                        f"OpenAI Responses API path is unavailable on this endpoint ({self.endpoint}). "
+                        f"Switch to chat_completions mode or use a compatible gateway. "
+                        f"See docs/streaming_compatibility.md."
                     ) from exc
                 raise
 
@@ -261,13 +275,24 @@ class OpenAIProvider(LLMProvider):
         if request.tools:
             payload["tools"] = request.tools
 
-        response = requests.post(
-            self.endpoint,
-            json=payload,
-            headers=self._headers(),
-            timeout=self.timeout_seconds,
-            stream=True,
-        )
+        try:
+            response = requests.post(
+                self.endpoint,
+                json=payload,
+                headers=self._headers(),
+                timeout=self.timeout_seconds,
+                stream=True,
+            )
+        except requests.ConnectionError as exc:
+            raise RuntimeError(
+                f"Failed to connect to streaming endpoint ({self.endpoint}). "
+                f"Verify the gateway is running and reachable."
+            ) from exc
+        except requests.Timeout as exc:
+            raise RuntimeError(
+                f"Timeout connecting to streaming endpoint ({self.endpoint}). "
+                f"Consider increasing EAP_TIMEOUT_SECONDS (current: {self.timeout_seconds}s)."
+            ) from exc
         response.raise_for_status()
         for raw_line in response.iter_lines():
             if not raw_line:

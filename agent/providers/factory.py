@@ -3,6 +3,7 @@ from typing import Dict, Optional
 from .anthropic_provider import AnthropicProvider
 from .base import LLMProvider
 from .google_provider import GoogleProvider
+from .ollama_provider import OllamaProvider, DEFAULT_OLLAMA_BASE_URL
 from .openai_provider import OpenAIProvider
 
 
@@ -56,6 +57,14 @@ def _build_provider(
             raise ValueError("google provider requires a valid API key")
         resolved_base = base_url.rstrip("/") if base_url else DEFAULT_GOOGLE_BASE_URL
         return GoogleProvider(base_url=resolved_base, api_key=api_key, timeout_seconds=timeout_seconds)
+
+    if normalized == "ollama":
+        resolved_base = base_url.rstrip("/") if base_url else DEFAULT_OLLAMA_BASE_URL
+        return OllamaProvider(
+            base_url=resolved_base,
+            timeout_seconds=timeout_seconds,
+            extra_headers=extra_headers,
+        )
 
     raise ValueError(f"Unsupported provider: {provider_name}")
 
