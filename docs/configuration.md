@@ -69,6 +69,32 @@ Mode guidance:
 - Use `responses` when your gateway exposes `POST /v1/responses`; EAP supports SSE streaming in this mode when the gateway emits stream events.
 - If `responses` endpoint is disabled/unsupported, EAP surfaces an explicit runtime error and you should switch mode back to `chat_completions`.
 
+## Provider Selection
+
+When creating an `AgentClient` programmatically, use the `provider_name` parameter to select the LLM backend:
+
+| `provider_name` | Backend | Default Base URL | Notes |
+| --- | --- | --- | --- |
+| `local` (default) | OpenAI-compatible | (uses `EAP_BASE_URL`) | Works with LM Studio, vLLM, text-generation-inference |
+| `openai` | OpenAI API | (uses `EAP_BASE_URL`) | Same as `local`; supports `chat_completions` and `responses` modes |
+| `anthropic` | Anthropic API | `https://api.anthropic.com` | Requires valid API key |
+| `google` | Google Gemini | `https://generativelanguage.googleapis.com/v1beta` | Requires valid API key |
+| `ollama` | Ollama native API | `http://localhost:11434` | Uses `/api/chat` directly (not the OpenAI compatibility shim) |
+
+Example:
+
+```python
+from eap.agent import AgentClient
+
+client = AgentClient(
+    base_url="http://localhost:11434",
+    model_name="llama3",
+    provider_name="ollama",
+)
+```
+
+For streaming compatibility across providers and gateways, see [`streaming_compatibility.md`](streaming_compatibility.md).
+
 ## Validation Rules
 
 - Base URLs must start with `http://` or `https://`.

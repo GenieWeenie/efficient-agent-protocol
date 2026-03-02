@@ -60,7 +60,7 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Publish a self-hosted control-plane reference path plus remote-ops governance baseline.
 - Checklist: `docs/phase8_adoption_limits_closure_roadmap.md`
 
-## Phase 9: Production Readiness (Now)
+## Phase 9: Production Readiness (Completed)
 
 - Ship policy profile packs for safer default remote operations.
 - Add runtime rate-limit and concurrency control guardrails.
@@ -69,7 +69,7 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Add long-run soak + chaos reliability gate in CI.
 - Checklist: `docs/phase9_production_readiness_roadmap.md`
 
-## Phase 10: Competitiveness Hardening (In Progress)
+## Phase 10: Competitiveness Hardening (Completed)
 
 - Add reproducible benchmark + comparison suite with publishable scorecard output.
 - Expand docs depth for custom tool authoring, pointer internals, and architecture flow.
@@ -78,20 +78,32 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Raise typing rigor with enforceable mypy targets and CI gates.
 - Checklist: `docs/phase10_competitiveness_hardening_roadmap.md`
 
-## Phase 11: Typing Rigor Completion (In Progress)
+## Phase 11: Typing Rigor Completion (Completed)
 
 - Complete strict typing tranche for executor runtime path (`EAP-109`).
 - Complete strict typing tranche for runtime HTTP API boundary path (`EAP-110`).
 - Keep CI mypy scoped gate aligned with typed-critical runtime modules.
 - Checklist: `docs/phase11_typing_rigor_completion_roadmap.md`
 
-## Phase 12: V1 Launch Readiness (Planned)
+## Phase 12: V1 Launch Readiness (Completed)
 
 - Execute ordered v1 stabilization queue (`EAP-110` to `EAP-118`) tracked in Linear.
 - Freeze remaining pointer/API/observability contracts and prove upgrade/migration safety.
 - Consolidate v1 required gates and finalize operator/release handoff artifacts.
 - Complete RC dry-run and go/no-go checklist before v1 cut.
 - Checklist: `docs/phase12_v1_launch_readiness_roadmap.md`
+
+## Post-v1: Hardening and Ecosystem (Completed)
+
+Post-v1.0.0 work tracked as Linear issues GEN-75 through GEN-81.
+
+- **1.0.1 Stability** (GEN-79): Improved error messages, added `--verbose`/`--dry-run` to CLI scripts.
+- **1.0.2 Performance** (GEN-77): SQLite WAL mode, batch trace writes, performance tuning guide.
+- **1.0.3 Operational Tooling** (GEN-78): State healthcheck, support bundle generator, expanded runbook.
+- **1.1 Ecosystem** (GEN-80): Ollama native provider, TypeScript/Go SDKs.
+- **1.2 Observability** (GEN-75): SLO/SLA guidance, reference Grafana dashboard, `multi_tenant`/`sandboxed` policy profiles.
+- **1.3 UX** (GEN-76): Streamlit search/filter, `WorkflowBuilder` API, onboarding wizard.
+- **Streaming Robustness** (GEN-81): 9-gateway compatibility matrix, defensive error handling, stream fallback logging.
 
 ## Done
 

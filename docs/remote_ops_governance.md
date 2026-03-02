@@ -178,6 +178,10 @@ Profiles:
   - same templates as `strict`, but `admin` also gets resume-any (`runs:resume:any`)
 - `trusted`
   - same templates as `strict`, but `admin` maps to `*` (full runtime scope)
+- `multi_tenant`
+  - same templates as `strict`, but removes cross-tenant read scopes (`runs:read:any`, `pointers:read:any`) from all roles including auditor and admin. Use this for shared infrastructure where tenants must not see each other's runs.
+- `sandboxed`
+  - most restrictive profile: read-only plus execute. No resume capability, no state writes. Suitable for untrusted or demo environments where callers should only submit macros and read results.
 
 Policy-profile config format:
 

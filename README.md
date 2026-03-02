@@ -59,7 +59,7 @@ High-level runtime architecture (planning -> execution -> pointers/state -> API/
 | Predictable behavior under failure | DAG scheduling, retries, typed errors, and checkpointed resume/replay |
 | Human control at critical steps | Step-level HITL checkpoints (`approval_required`, `approved`, `rejected`) |
 | Operator-grade confidence | Trace visibility, telemetry export pack, and CI eval threshold gates |
-| Portability across runtimes | OpenAI-compatible providers + OpenClaw bridge + MCP bridge |
+| Portability across runtimes | OpenAI, Anthropic, Google, Ollama providers + OpenClaw bridge + MCP bridge |
 
 ## Where EAP Fits
 
@@ -74,7 +74,7 @@ Not ideal for:
 ## Current Limits (Honest)
 
 - Core APIs and schema are frozen for v1 (see [`docs/v1_contract.md`](docs/v1_contract.md)). Surfaces marked *unstable* may still change.
-- `responses` streaming behavior still depends on gateway SSE support and may vary by gateway version/configuration.
+- `responses` streaming behavior depends on gateway SSE support; see [`docs/streaming_compatibility.md`](docs/streaming_compatibility.md) for the 9-gateway compatibility matrix and known quirks.
 - Performance/reliability thresholds are calibrated from repo baselines; production teams should tune them for their own workloads.
 - This remains an engineering-first runtime, not a no-code orchestration product.
 
@@ -90,6 +90,8 @@ Not ideal for:
 - Scoped runtime auth + run ownership governance for remote operations
 - Built-in chat UI (Streamlit) with trace + data inspection
 - Conversation memory (full/window/summary)
+- Fluent workflow builder API (`WorkflowBuilder`) for declarative step definitions
+- Guided onboarding wizard (`scripts/eap_onboarding_wizard.py`) for new users
 - Pluggable pointer storage backends (SQLite, Redis, PostgreSQL)
 - OpenClaw and MCP interop:
   - OpenAI-compatible modes: `chat_completions` and `responses`
@@ -123,6 +125,13 @@ Expected output includes:
 Windows fallback:
 - Use WSL2 (Ubuntu) and run the same bootstrap command inside WSL.
 - If you are not using WSL2, follow the manual setup path below.
+
+Guided onboarding wizard (interactive):
+
+```bash
+pip install -e .
+python scripts/eap_onboarding_wizard.py
+```
 
 Manual setup (cross-platform):
 
