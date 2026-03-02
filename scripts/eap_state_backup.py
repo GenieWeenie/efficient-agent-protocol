@@ -201,7 +201,15 @@ def _backup(args: argparse.Namespace) -> int:
         audit_dir.mkdir(parents=True, exist_ok=True)
 
         snapshot_db_path = state_dir / DEFAULT_STATE_DB_FILENAME
-        shutil.copy2(source_db_path, snapshot_db_path)
+        # Use SQLite backup API instead of shutil.copy2 to safely handle WAL mode.
+        # Plain file copy misses data in the -wal file, producing an incomplete snapshot.
+        src_conn = sqlite3.connect(source_db_path)
+        dst_conn = sqlite3.connect(snapshot_db_path)
+        try:
+            src_conn.backup(dst_conn)
+        finally:
+            dst_conn.close()
+            src_conn.close()
         if verbose:
             print("[backup] Copied state DB snapshot.")
         db_validation = _validate_state_db(snapshot_db_path)
