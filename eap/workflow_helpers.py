@@ -18,7 +18,7 @@ Example::
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence  # noqa: F401 – Sequence used in signatures
 
 from eap.protocol import BatchedMacroRequest, RetryPolicy, ToolCall
 
@@ -34,7 +34,6 @@ class WorkflowBuilder:
         self,
         step_id: str,
         tool_name: str,
-        depends_on: Optional[Sequence[str]] = None,
         **arguments: Any,
     ) -> WorkflowBuilder:
         """Add a step to the workflow.
@@ -47,7 +46,6 @@ class WorkflowBuilder:
                 step_id=step_id,
                 tool_name=tool_name,
                 arguments=dict(arguments),
-                depends_on=list(depends_on) if depends_on else None,
             )
         )
         return self
@@ -97,13 +95,11 @@ def linear_pipeline(
     """
     tool_calls: List[ToolCall] = []
     for i, entry in enumerate(steps):
-        depends = [steps[i - 1]["step_id"]] if i > 0 else None
         tool_calls.append(
             ToolCall(
                 step_id=entry["step_id"],
                 tool_name=entry["tool_name"],
                 arguments=entry.get("arguments", {}),
-                depends_on=depends,
             )
         )
     kwargs: Dict[str, Any] = {"steps": tool_calls}
