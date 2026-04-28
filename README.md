@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/GenieWeenie/efficient-agent-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/GenieWeenie/efficient-agent-protocol/actions/workflows/ci.yml)
 [![Coverage Gate](https://img.shields.io/badge/coverage-gated%20in%20CI-brightgreen)](https://github.com/GenieWeenie/efficient-agent-protocol/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.9--3.13-blue)](./pyproject.toml)
+[![Python](https://img.shields.io/badge/python-3.10--3.13-blue)](./pyproject.toml)
 [![Release](https://img.shields.io/github/v/release/GenieWeenie/efficient-agent-protocol)](https://github.com/GenieWeenie/efficient-agent-protocol/releases)
 
 > Status: v1.0 Release Candidate. Core APIs and schema are frozen per [`docs/v1_contract.md`](docs/v1_contract.md).
@@ -108,7 +108,7 @@ Not ideal for:
 ## Quickstart (GitHub-first)
 
 Requirements:
-- Python 3.9-3.13 (3.11 recommended)
+- Python 3.10-3.13 (3.11 recommended)
 
 Recommended one-command bootstrap (macOS/Linux):
 

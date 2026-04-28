@@ -13,8 +13,8 @@ DOCTOR_SCRIPT = REPO_ROOT / "scripts" / "eap_doctor.py"
 class EAPDoctorIntegrationTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        if not ((3, 9) <= sys.version_info[:2] < (3, 14)):
-            raise unittest.SkipTest("Doctor integration tests require Python 3.9-3.13.")
+        if not ((3, 10) <= sys.version_info[:2] < (3, 14)):
+            raise unittest.SkipTest("Doctor integration tests require Python 3.10-3.13.")
 
     def test_init_env_generates_runnable_env_and_doctor_json(self) -> None:
         with tempfile.TemporaryDirectory(prefix="eap-doctor-init-") as temp_dir:
