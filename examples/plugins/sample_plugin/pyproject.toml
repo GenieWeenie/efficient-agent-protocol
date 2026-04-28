@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "eap-sample-plugin"
 version = "0.1.0"
 description = "Sample third-party plugin for Efficient Agent Protocol."
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 [project.entry-points."eap.tool_plugins"]
 sample_plugin = "sample_plugin:get_plugin_manifest"

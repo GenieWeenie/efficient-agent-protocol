@@ -6,7 +6,7 @@ This protocol prevents ad-hoc execution and keeps all work in a visible ordered 
 
 1. Linear issue state is the execution authority.
 2. This file mirrors the active order (`Now`, `Next`, `Blocked`).
-3. `docs/phase7_competitive_openclaw_roadmap.md`, `docs/phase8_adoption_limits_closure_roadmap.md`, `docs/phase9_production_readiness_roadmap.md`, and `docs/phase10_competitiveness_hardening_roadmap.md` are narrative roadmaps, not the live queue.
+3. Phase roadmap docs are planning artifacts; this file mirrors the live queue.
 
 ## Start Gate (Must Be True Before Coding)
 
@@ -24,7 +24,7 @@ This protocol prevents ad-hoc execution and keeps all work in a visible ordered 
 
 ## Current Ordered Queue
 
-Updated: 2026-02-27 (v0.1.9 baseline)
+Updated: 2026-04-28 (v1.0.0 baseline plus Phase 13 hardening intake)
 
 | Order | EAP ID | Linear | Status | Notes |
 | --- | --- | --- | --- | --- |
@@ -59,8 +59,18 @@ Updated: 2026-02-27 (v0.1.9 baseline)
 | 29 | `EAP-116` | `GEN-72` | `Done` | README/docs v1 alignment pass |
 | 30 | `EAP-117` | `GEN-73` | `Done` | Release + maintainer runbook v1 finalization |
 | 31 | `EAP-118` | `GEN-74` | `Done` | V1 upgrade handoff artifact + RC dry-run |
+| 32 | `EAP-119` | `GEN-199` | `In Progress` | Production hardening intake and v1.0.1 blocker plan |
+| 33 | `EAP-120` | `GEN-200` | `Todo` | Collapse duplicate package trees and define canonical imports |
+| 34 | `EAP-121` | `GEN-201` | `Todo` | Add import and package compatibility migration tests |
+| 35 | `EAP-122` | `GEN-202` | `Todo` | Replace runtime HTTP server with production ASGI path |
+| 36 | `EAP-123` | `GEN-203` | `Todo` | Fail-closed runtime auth defaults |
+| 37 | `EAP-124` | `GEN-204` | `Todo` | Sandbox local file tools |
+| 38 | `EAP-125` | `GEN-205` | `Todo` | Add SSRF protection and streaming byte caps to web tools |
+| 39 | `EAP-126` | `GEN-206` | `Todo` | Add macro cycle detection and execution timeout controls |
+| 40 | `EAP-127` | `GEN-207` | `Todo` | Harden connection pooling and request lifecycle |
+| 41 | `EAP-128` | `GEN-208` | `Todo` | Add production-hardening regression gatepack |
 
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: Phase 12 (V1 Launch Readiness) is complete.  All items `EAP-110` through `EAP-118` are `Done`.
+Current state: Phase 13 (Production Hardening / v1.0.1 Blockers) is active. `EAP-119` is the current intake/tracker item; implementation starts with `EAP-120` only after `EAP-119` is complete and the queue is confirmed.

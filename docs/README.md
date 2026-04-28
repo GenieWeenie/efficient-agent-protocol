@@ -94,5 +94,6 @@
 | [phase8_adoption_limits_closure_roadmap.md](phase8_adoption_limits_closure_roadmap.md) | Adoption improvements (completed) |
 | [phase9_production_readiness_roadmap.md](phase9_production_readiness_roadmap.md) | Production readiness controls (completed) |
 | [phase10_competitiveness_hardening_roadmap.md](phase10_competitiveness_hardening_roadmap.md) | Competitive hardening (completed) |
-| [phase11_typing_rigor_completion_roadmap.md](phase11_typing_rigor_completion_roadmap.md) | Typing rigor completion (in progress) |
-| [phase12_v1_launch_readiness_roadmap.md](phase12_v1_launch_readiness_roadmap.md) | V1 launch readiness stabilization (planned) |
+| [phase11_typing_rigor_completion_roadmap.md](phase11_typing_rigor_completion_roadmap.md) | Typing rigor completion (completed) |
+| [phase12_v1_launch_readiness_roadmap.md](phase12_v1_launch_readiness_roadmap.md) | V1 launch readiness stabilization (completed) |
+| [phase13_production_hardening_roadmap.md](phase13_production_hardening_roadmap.md) | Production hardening and v1.0.1 blockers (active) |

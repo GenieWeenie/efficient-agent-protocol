@@ -64,7 +64,7 @@ This command emits:
 
 ## Baseline (2026-02-23)
 
-Measured on local macOS development machine, Python 3.9:
+Measured on local macOS development machine, Python 3.11:
 
 - `tests/perf/test_concurrency_limits.py::ConcurrencyLimitsPerfTest::test_rate_limit_generates_saturation_metrics`: `1.70s`
 - `tests/perf/test_concurrency_limits.py::ConcurrencyLimitsPerfTest::test_global_concurrency_limit_caps_parallel_work`: `0.28s`

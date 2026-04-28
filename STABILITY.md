@@ -4,7 +4,7 @@ This project is in **v1.0 Release Candidate** status. Core APIs, workflow schema
 
 ## Current Guarantees
 
-- Python runtime requirement (`>=3.9`) is intentional and documented.
+- Python runtime requirement (`>=3.10`) is intentional and documented.
 - CI must pass for merges to `main`.
 - Tagged releases are used for published milestones.
 - The v1 contract surface (`eap.protocol`, `eap.environment`, `eap.agent`, `eap.runtime`) is frozen and covered by contract tests.

@@ -17,7 +17,7 @@ class BootstrapLocalIntegrationTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.bootstrap_python = cls._find_supported_python()
         if cls.bootstrap_python is None:
-            raise unittest.SkipTest("No Python 3.9-3.13 interpreter available for bootstrap integration tests.")
+            raise unittest.SkipTest("No Python 3.10-3.13 interpreter available for bootstrap integration tests.")
 
     @staticmethod
     def _find_supported_python() -> Optional[str]:
@@ -27,7 +27,6 @@ class BootstrapLocalIntegrationTest(unittest.TestCase):
             "python3.12",
             "python3.11",
             "python3.10",
-            "python3.9",
             "python3",
         )
         for candidate in candidates:
@@ -38,7 +37,7 @@ class BootstrapLocalIntegrationTest(unittest.TestCase):
                 [
                     executable,
                     "-c",
-                    "import sys; raise SystemExit(0 if (3, 9) <= sys.version_info[:2] < (3, 14) else 1)",
+                    "import sys; raise SystemExit(0 if (3, 10) <= sys.version_info[:2] < (3, 14) else 1)",
                 ],
                 capture_output=True,
                 text=True,

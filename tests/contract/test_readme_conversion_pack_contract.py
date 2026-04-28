@@ -17,7 +17,7 @@ class ReadmeConversionPackContractTest(unittest.TestCase):
         required_snippets = [
             "actions/workflows/ci.yml/badge.svg",
             "coverage-gated%20in%20CI",
-            "python-3.9--3.13-blue",
+            "python-3.10--3.13-blue",
             "img.shields.io/github/v/release/GenieWeenie/efficient-agent-protocol",
             "assets/readme/eap_demo.gif",
             "assets/readme/eap_architecture.jpg",

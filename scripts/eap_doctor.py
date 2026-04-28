@@ -243,15 +243,15 @@ def run_doctor(args: argparse.Namespace) -> int:
     load_settings = None
     state_manager_cls = None
 
-    if sys.version_info < (3, 9) or sys.version_info >= (3, 14):
+    if sys.version_info < (3, 10) or sys.version_info >= (3, 14):
         _record(
             records,
             check_id="python_version",
             category="tools",
             status="fail",
             message="Unsupported Python version.",
-            details={"python_version": sys.version.split()[0], "supported": ">=3.9,<3.14"},
-            remediation="Use Python 3.9-3.13 (`docs/troubleshooting.md#bootstrap-fails-with-python-version-error`).",
+            details={"python_version": sys.version.split()[0], "supported": ">=3.10,<3.14"},
+            remediation="Use Python 3.10-3.13 (`docs/troubleshooting.md#bootstrap-fails-with-python-version-error`).",
         )
     else:
         _record(

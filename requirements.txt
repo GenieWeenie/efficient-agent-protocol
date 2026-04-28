@@ -6,7 +6,7 @@
 pydantic==2.6.1
 
 # (Optional) Required if using the requests library to hit local model APIs
-requests==2.32.4
+requests==2.33.0
 
 # Required for HTML parsing in web_tools.py
 beautifulsoup4==4.12.3

@@ -115,7 +115,7 @@ The following are enforced automatically by GitHub Actions CI on every push:
 
 | CI Job | What it checks |
 | --- | --- |
-| Lint/Test (py3.9, 3.10, 3.11) | Full test suite on three Python versions |
+| Lint/Test (py3.10, 3.11) | Full test suite on supported Python versions |
 | Coverage gates (py3.11) | Line/branch thresholds |
 | V1 compatibility contract gate | Contract lock + contract tests |
 | Upgrade migration verification | Baseline upgrade path |

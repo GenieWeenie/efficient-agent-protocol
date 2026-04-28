@@ -91,7 +91,7 @@ Document the following for each RC:
 
 - [ ] All 9 readiness gates pass (`scripts/v1_readiness_gatepack.py` reports `PASS 9/9`).
 - [ ] `docs/v1_stabilization_checklist.md` — all stabilization items checked.
-- [ ] CI green on `main`: lint/test (py3.9, 3.10, 3.11), coverage gates, contract gate, upgrade migration, eval scorecard, competitive benchmark, soak+chaos, security scans.
+- [ ] CI green on `main`: lint/test (py3.10, 3.11), coverage gates, contract gate, upgrade migration, eval scorecard, competitive benchmark, soak+chaos, security scans.
 - [ ] RC release workflow succeeds (build + TestPyPI publish).
 - [ ] RC installs cleanly from TestPyPI and passes smoke test.
 - [ ] `docs/upgrade_notes_v1.md` covers all 5 required sections (scope, breaking changes, migration, verification, rollback).
@@ -102,7 +102,7 @@ Document the following for each RC:
 
 ### Should-Pass (non-blocking but tracked)
 
-- [ ] TestPyPI package installs and imports on Python 3.9, 3.10, and 3.11.
+- [ ] TestPyPI package installs and imports on Python 3.10 and 3.11.
 - [ ] Self-hosted stack smoke test passes against RC build.
 - [ ] OpenClaw interop smoke tests pass.
 - [ ] Documentation links in README all resolve.

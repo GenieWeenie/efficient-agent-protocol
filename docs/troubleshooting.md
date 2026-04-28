@@ -27,12 +27,12 @@ Fix:
 
 ### Bootstrap fails with Python version error
 Cause:
-- Bootstrap supports Python `3.9` through `3.13`.
+- Bootstrap supports Python `3.10` through `3.13`.
 
 Fix:
 - Check version:
   - `python3 --version`
-- Use Python `3.11` or another `3.9-3.13` interpreter:
+- Use Python `3.11` or another `3.10-3.13` interpreter:
   - `./scripts/bootstrap_local.sh --python python3.11`
 
 ### Smoke workflow failed during bootstrap

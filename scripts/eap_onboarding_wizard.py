@@ -44,8 +44,8 @@ def main() -> int:
     # Step 1: Check Python version
     print("[1/5] Checking Python version...")
     version = sys.version_info
-    if version < (3, 9) or version >= (3, 14):
-        print(f"  ERROR: Python {version.major}.{version.minor} is not supported. Use 3.9-3.13.")
+    if version < (3, 10) or version >= (3, 14):
+        print(f"  ERROR: Python {version.major}.{version.minor} is not supported. Use 3.10-3.13.")
         return 1
     print(f"  OK: Python {version.major}.{version.minor}.{version.micro}")
     print()

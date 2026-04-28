@@ -96,9 +96,9 @@ cd "${REPO_ROOT}"
 
 command -v "${PYTHON_CMD}" >/dev/null 2>&1 || fail "Python executable not found: ${PYTHON_CMD}"
 
-"${PYTHON_CMD}" - <<'PY' || fail "Python 3.9-3.13 is required. Install a supported Python version and retry."
+"${PYTHON_CMD}" - <<'PY' || fail "Python 3.10-3.13 is required. Install a supported Python version and retry."
 import sys
-if sys.version_info < (3, 9) or sys.version_info >= (3, 14):
+if sys.version_info < (3, 10) or sys.version_info >= (3, 14):
     raise SystemExit(1)
 PY
 
