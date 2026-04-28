@@ -93,6 +93,13 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Complete RC dry-run and go/no-go checklist before v1 cut.
 - Checklist: `docs/phase12_v1_launch_readiness_roadmap.md`
 
+## Phase 13: Production Hardening / v1.0.1 Blockers (Active)
+
+- Execute ordered production-hardening queue (`EAP-119` to `EAP-128`) tracked in Linear.
+- Close confirmed P0 risks from the production-hardening brief before strengthening production-readiness claims.
+- Prioritize package ownership, runtime server/auth safety, sandboxed tools, SSRF controls, macro hang protection, and regression gates.
+- Checklist: `docs/phase13_production_hardening_roadmap.md`
+
 ## Post-v1: Hardening and Ecosystem (Completed)
 
 Post-v1.0.0 work tracked as Linear issues GEN-75 through GEN-81.
