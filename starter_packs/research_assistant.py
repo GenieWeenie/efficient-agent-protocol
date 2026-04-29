@@ -45,7 +45,11 @@ def run_research_assistant(
     source_url = f"http://127.0.0.1:{server.server_address[1]}/{html_path.name}"
     state_manager = StateManager(db_path=db_path)
     registry = ToolRegistry()
-    registry.register("scrape_url", scrape_url, SCRAPE_SCHEMA)
+    registry.register(
+        "scrape_url",
+        partial(scrape_url, host_allowlist={"127.0.0.1", "localhost"}),
+        SCRAPE_SCHEMA,
+    )
     registry.register("analyze_data", analyze_data, ANALYZE_SCHEMA)
     executor = AsyncLocalExecutor(state_manager, registry)
 

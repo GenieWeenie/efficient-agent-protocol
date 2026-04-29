@@ -55,6 +55,14 @@ Built-in file tools:
   - `read_local_file`, `write_local_file`, and `list_local_directory` reject paths that resolve outside this root.
   - Use a dedicated workspace directory when exposing file tools to an agent.
 
+Built-in web tools:
+- `EAP_WEB_TOOL_HOST_ALLOWLIST` (optional comma-separated exact hosts/IPs)
+  - Defaults to empty.
+  - `scrape_url`, `fetch_json_url`, and `extract_links_from_url` reject hosts that resolve to private, loopback, link-local, reserved, multicast, metadata, or CGNAT addresses.
+  - Redirect targets are rechecked before each request.
+  - Responses are read as streams and fail as soon as `max_bytes` is exceeded.
+  - Add only hosts you intentionally expose to agent tools, for example `127.0.0.1,localhost` for a local-only demo.
+
 Pointer janitor (dashboard):
 - `EAP_POINTER_JANITOR_ENABLED` (default: enabled)
 - `EAP_POINTER_JANITOR_INTERVAL_SECONDS` (default: `300`)
@@ -113,3 +121,4 @@ For streaming compatibility across providers and gateways, see [`streaming_compa
 - Global burst capacity requires global RPS to be set.
 - Per-tool limits JSON must be an object keyed by non-empty tool names.
 - `EAP_FILE_TOOL_ROOT`, when set, must point to an existing directory.
+- `EAP_WEB_TOOL_HOST_ALLOWLIST` is read directly by built-in web tools as comma-separated exact host/IP values.
