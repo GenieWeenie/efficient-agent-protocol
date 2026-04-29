@@ -93,7 +93,7 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Complete RC dry-run and go/no-go checklist before v1 cut.
 - Checklist: `docs/phase12_v1_launch_readiness_roadmap.md`
 
-## Phase 13: Production Hardening / v1.0.1 Blockers (Active)
+## Phase 13: Production Hardening / v1.0.1 Blockers (Completed)
 
 - Execute ordered production-hardening queue (`EAP-119` to `EAP-128`) tracked in Linear.
 - Close confirmed P0 risks from the production-hardening brief before strengthening production-readiness claims.
@@ -157,3 +157,4 @@ Post-v1.0.0 work tracked as Linear issues GEN-75 through GEN-81.
 - Phase 11 `EAP-109` strict typing tranche completed for executor runtime path with CI scoped gate expansion (`GEN-65`).
 - Phase 9 `EAP-098` backup/restore workflow completed (state DB + diagnostics snapshot command set, restore verification/rollback flow, and recovery runbook) (`GEN-58`).
 - Phase 9 `EAP-099` soak + chaos reliability gate completed (fault-injection scorecard harness, CI release gate lane, thresholds/baseline, and remediation docs) (`GEN-59`).
+- Phase 13 `EAP-128` production-hardening regression gatepack completed (Phase 13 package, runtime auth/server, sandbox, SSRF, macro safety, and network lifecycle gates) (`GEN-208`).

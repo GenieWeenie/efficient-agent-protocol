@@ -28,7 +28,7 @@ git push -u origin release/v1.0.0-rc1
 ### 2. Run Local Validation
 
 ```bash
-# Full readiness gatepack (9 gates)
+# Full readiness gatepack (10 gates)
 PYTHONPATH=. python scripts/v1_readiness_gatepack.py
 
 # Contract lock check
@@ -77,7 +77,7 @@ Document the following for each RC:
 
 | Evidence | Location |
 | --- | --- |
-| Gatepack output (9/9 PASS) | Terminal output or CI log |
+| Gatepack output (10/10 PASS) | Terminal output or CI log |
 | CI release workflow run URL | GitHub Actions |
 | TestPyPI package URL | `https://test.pypi.org/project/efficient-agent-protocol/1.0.0rc1/` |
 | Install smoke test result | Terminal output |
@@ -89,7 +89,7 @@ Document the following for each RC:
 
 ### Must-Pass (blocking)
 
-- [ ] All 9 readiness gates pass (`scripts/v1_readiness_gatepack.py` reports `PASS 9/9`).
+- [ ] All 10 readiness gates pass (`scripts/v1_readiness_gatepack.py` reports `PASS 10/10`).
 - [ ] `docs/v1_stabilization_checklist.md` — all stabilization items checked.
 - [ ] CI green on `main`: lint/test (py3.10, 3.11), coverage gates, contract gate, upgrade migration, eval scorecard, competitive benchmark, soak+chaos, security scans.
 - [ ] RC release workflow succeeds (build + TestPyPI publish).

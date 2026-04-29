@@ -6,7 +6,7 @@
 
 - Package version bumped from `0.1.9` to `1.0.0`.
 - All stabilization checklist items are complete (see `docs/v1_stabilization_checklist.md`).
-- V1 readiness gatepack passes all 9 gates (`scripts/v1_readiness_gatepack.py`).
+- V1 readiness gatepack passes all 10 gates (`scripts/v1_readiness_gatepack.py`).
 - Release and maintainer runbooks finalized for v1 process.
 - Release Drafter template aligned with `docs/release_notes_template.md` structure.
 - No runtime behavior changes between `0.1.9` and `1.0.0`; this is a stability milestone.
@@ -25,7 +25,7 @@ The following are frozen and covered by contract tests (see `docs/v1_contract.md
 
 ## Added
 
-- Unified V1 readiness gatepack (`scripts/v1_readiness_gatepack.py`) — one command to validate all 9 pre-release gates.
+- Unified V1 readiness gatepack (`scripts/v1_readiness_gatepack.py`) — one command to validate all 10 pre-release gates.
 - `docs/v1_readiness_gates.md` — gate-to-evidence mapping.
 - `docs/v1_go_no_go_checklist.md` — release candidate decision criteria.
 - Contract tests for docs/README alignment (`tests/contract/test_docs_v1_alignment.py`).
@@ -110,7 +110,7 @@ python scripts/migrate_state_db.py --db-path agent_state.db --backup
 After upgrading to `1.0.0`, run these commands to validate runtime behavior:
 
 ```bash
-# 1. V1 readiness gatepack (all 9 gates)
+# 1. V1 readiness gatepack (all 10 gates)
 PYTHONPATH=. python scripts/v1_readiness_gatepack.py
 
 # 2. Contract lock validation
