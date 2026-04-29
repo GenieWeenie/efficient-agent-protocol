@@ -5,6 +5,7 @@ import asyncio
 import json
 import os
 import tempfile
+from functools import partial
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -49,6 +50,13 @@ TRANSFORM_SALES_SCHEMA = {
 }
 
 
+def _nearest_existing_parent(path: Path) -> Path:
+    for candidate in [path.parent, *path.parents]:
+        if candidate.exists():
+            return candidate.resolve()
+    return Path.cwd().resolve()
+
+
 def run_local_etl(
     input_file: str,
     output_file: str,
@@ -68,9 +76,17 @@ def run_local_etl(
 
     state_manager = StateManager(db_path=db_path)
     registry = ToolRegistry()
-    registry.register("read_local_file", read_local_file, READ_FILE_SCHEMA)
+    registry.register(
+        "read_local_file",
+        partial(read_local_file, sandbox_root=str(input_path.parent)),
+        READ_FILE_SCHEMA,
+    )
     registry.register("transform_sales_jsonl", transform_sales_jsonl, TRANSFORM_SALES_SCHEMA)
-    registry.register("write_local_file", write_local_file, WRITE_FILE_SCHEMA)
+    registry.register(
+        "write_local_file",
+        partial(write_local_file, sandbox_root=str(_nearest_existing_parent(output_path))),
+        WRITE_FILE_SCHEMA,
+    )
     executor = AsyncLocalExecutor(state_manager, registry)
 
     try:

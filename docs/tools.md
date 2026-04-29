@@ -4,12 +4,22 @@ This document describes the built-in tools shipped in `eap.environment.tools`.
 
 ## File tools
 
+File tools run inside a filesystem sandbox:
+
+- Default sandbox root: current working directory.
+- Operator override: set `EAP_FILE_TOOL_ROOT=/path/to/workspace`.
+- Embedded callers can pass `sandbox_root` directly when registering wrapper functions.
+- Relative paths resolve under the sandbox root.
+- Absolute paths are allowed only when they resolve inside the sandbox root.
+- `..` traversal and symlinks that resolve outside the sandbox root are rejected.
+
 ### `read_local_file`
 - Purpose: Read UTF-8 text from a local file.
 - Parameters:
   - `file_path` (`string`, required, `minLength=1`)
   - `max_characters` (`integer`, optional, `1..1000000`)
 - Notes:
+  - Path must resolve inside the file tool sandbox.
   - Rejects directories.
   - Fails when content exceeds `max_characters`.
   - Schema uses `additionalProperties: false`.
@@ -22,6 +32,7 @@ This document describes the built-in tools shipped in `eap.environment.tools`.
   - `mode` (`string`, optional, enum: `overwrite|append`)
   - `create_directories` (`boolean`, optional)
 - Notes:
+  - Path must resolve inside the file tool sandbox.
   - Can create parent directories when `create_directories=true`.
   - Rejects directory paths.
   - Schema uses `additionalProperties: false`.
@@ -34,6 +45,7 @@ This document describes the built-in tools shipped in `eap.environment.tools`.
   - `include_hidden` (`boolean`, optional)
   - `max_entries` (`integer`, optional, `1..1000`)
 - Notes:
+  - Directory and returned entries must resolve inside the file tool sandbox.
   - Output includes `entries`, `entry_count`, and `truncated`.
   - Schema uses `additionalProperties: false`.
 
