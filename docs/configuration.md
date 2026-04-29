@@ -43,6 +43,11 @@ Logging:
 
 Executor concurrency/rate limits:
 - `EAP_EXECUTOR_MAX_CONCURRENCY` (integer > 0, default `8`)
+- `EAP_EXECUTOR_MAX_TOTAL_RUNTIME_SECONDS` (optional float > 0)
+  - Applies a total wall-clock cap to macro execution when used as executor default limits.
+  - Timed-out runs return structured `macro_timeout` error pointers and trace events.
+- `EAP_EXECUTOR_MAX_REFERENCE_RESOLUTION_DEPTH` (integer > 0, default `32`)
+  - Caps nested macro argument reference resolution to avoid unbounded expansion.
 - `EAP_EXECUTOR_GLOBAL_RPS` (optional float > 0)
 - `EAP_EXECUTOR_GLOBAL_BURST` (optional integer > 0, requires `EAP_EXECUTOR_GLOBAL_RPS`)
 - `EAP_EXECUTOR_PER_TOOL_LIMITS_JSON` (optional JSON object)
@@ -118,6 +123,7 @@ For streaming compatibility across providers and gateways, see [`streaming_compa
 - OpenAI API mode must be `chat_completions` or `responses`.
 - Extra header JSON values must be objects with non-empty string keys and values.
 - Executor global concurrency must be a positive integer.
+- Executor total runtime and reference-depth limits must be positive when set.
 - Global burst capacity requires global RPS to be set.
 - Per-tool limits JSON must be an object keyed by non-empty tool names.
 - `EAP_FILE_TOOL_ROOT`, when set, must point to an existing directory.

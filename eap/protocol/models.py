@@ -1,4 +1,5 @@
 # protocol/models.py
+import re
 from collections import defaultdict
 from datetime import datetime, timezone
 from enum import Enum
@@ -24,7 +25,8 @@ class ToolErrorPayload(BaseModel):
     error_type: str = Field(
         ...,
         description=(
-            "validation_error | dependency_error | tool_execution_error | approval_rejected"
+            "validation_error | dependency_error | tool_execution_error | "
+            "approval_rejected | macro_timeout"
         ),
     )
     message: str = Field(..., description="Short human-readable failure reason.")
@@ -178,6 +180,17 @@ class ExecutionLimits(BaseModel):
         default=8,
         ge=1,
         description="Maximum concurrent in-flight tool executions across the whole run.",
+    )
+    max_total_runtime_seconds: Optional[float] = Field(
+        default=None,
+        gt=0.0,
+        description="Optional wall-clock cap for the whole macro run.",
+    )
+    max_reference_resolution_depth: int = Field(
+        default=32,
+        ge=1,
+        le=256,
+        description="Maximum nested depth to inspect and resolve macro step references.",
     )
     global_requests_per_second: Optional[float] = Field(
         default=None,
@@ -422,6 +435,8 @@ class BatchedMacroRequest(BaseModel):
     @model_validator(mode="after")
     def validate_branch_targets(self) -> "BatchedMacroRequest":
         step_ids = {step.step_id for step in self.steps}
+        if len(step_ids) != len(self.steps):
+            raise ValueError("macro step_id values must be unique")
         step_by_id: Dict[str, ToolCall] = {step.step_id: step for step in self.steps}
         for step in self.steps:
             if not step.branching:
@@ -451,7 +466,96 @@ class BatchedMacroRequest(BaseModel):
                     f"approval decision provided for step '{approval_step_id}' "
                     "without approval.required=true"
                 )
+        self._validate_dependency_graph_acyclic()
         return self
+
+    @staticmethod
+    def _extract_argument_step_references(value: Any, *, depth: int = 0, max_depth: int = 32) -> set[str]:
+        if depth > max_depth:
+            raise ValueError(f"macro argument nesting exceeds max reference depth {max_depth}")
+        if isinstance(value, str):
+            if value.startswith("$step:"):
+                ref = value[len("$step:"):]
+                return {ref.split(".", 1)[0]} if ref else set()
+            if value.startswith("$") and not value.startswith("ptr_"):
+                ref = value[1:]
+                return {ref.split(".", 1)[0]} if ref else set()
+            return set()
+        if isinstance(value, dict):
+            refs: set[str] = set()
+            for nested_value in value.values():
+                refs.update(
+                    BatchedMacroRequest._extract_argument_step_references(
+                        nested_value,
+                        depth=depth + 1,
+                        max_depth=max_depth,
+                    )
+                )
+            return refs
+        if isinstance(value, list):
+            refs = set()
+            for nested_value in value:
+                refs.update(
+                    BatchedMacroRequest._extract_argument_step_references(
+                        nested_value,
+                        depth=depth + 1,
+                        max_depth=max_depth,
+                    )
+                )
+            return refs
+        return set()
+
+    @staticmethod
+    def _extract_condition_step_references(condition: str) -> set[str]:
+        return set(re.findall(r"\$step:([A-Za-z0-9_\-]+)(?:\.[A-Za-z0-9_\.]+)?", condition))
+
+    def _validate_dependency_graph_acyclic(self) -> None:
+        step_ids = {step.step_id for step in self.steps}
+        adjacency: Dict[str, set[str]] = {step_id: set() for step_id in step_ids}
+        in_degree: Dict[str, int] = {step_id: 0 for step_id in step_ids}
+
+        def add_edge(source: str, target: str) -> None:
+            if source not in step_ids:
+                raise ValueError(f"step reference '{source}' is not a valid step_id")
+            if target not in step_ids:
+                raise ValueError(f"step reference target '{target}' is not a valid step_id")
+            if target not in adjacency[source]:
+                adjacency[source].add(target)
+                in_degree[target] += 1
+
+        for step in self.steps:
+            for argument_value in step.arguments.values():
+                for dependency_step_id in self._extract_argument_step_references(argument_value):
+                    if dependency_step_id in step_ids:
+                        add_edge(dependency_step_id, step.step_id)
+
+            if not step.branching:
+                continue
+            for condition_dependency in self._extract_condition_step_references(step.branching.condition):
+                if condition_dependency == step.step_id:
+                    continue
+                if condition_dependency in step_ids:
+                    add_edge(condition_dependency, step.step_id)
+            for target_step_id in (
+                step.branching.true_target_step_ids
+                + step.branching.false_target_step_ids
+                + step.branching.fallback_target_step_ids
+            ):
+                add_edge(step.step_id, target_step_id)
+
+        ordered: List[str] = []
+        frontier = sorted(step_id for step_id, degree in in_degree.items() if degree == 0)
+        while frontier:
+            current = frontier.pop(0)
+            ordered.append(current)
+            for target in sorted(adjacency[current]):
+                in_degree[target] -= 1
+                if in_degree[target] == 0:
+                    frontier.append(target)
+            frontier.sort()
+
+        if len(ordered) != len(step_ids):
+            raise ValueError("macro dependency graph contains a cycle")
 
 
 class WorkflowEdgeKind(str, Enum):

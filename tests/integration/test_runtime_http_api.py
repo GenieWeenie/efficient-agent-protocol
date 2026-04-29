@@ -138,6 +138,26 @@ class RuntimeHttpApiIntegrationTest(unittest.TestCase):
         self.assertEqual(body["error_type"], "validation_error")
         self.assertIn("Invalid macro payload", body["message"])
 
+    def test_execute_macro_rejects_dependency_cycle(self) -> None:
+        response = requests.post(
+            f"{self.server.base_url}/v1/eap/macro/execute",
+            headers={"Authorization": "Bearer secret-token"},
+            json={
+                "macro": {
+                    "steps": [
+                        {"step_id": "a", "tool_name": "echo_text", "arguments": {"text": "$step:b"}},
+                        {"step_id": "b", "tool_name": "echo_text", "arguments": {"text": "$step:a"}},
+                    ]
+                }
+            },
+            timeout=5,
+        )
+        self.assertEqual(response.status_code, 400)
+        body = response.json()
+        self.assertEqual(body["error_type"], "validation_error")
+        self.assertIn("Invalid macro payload", body["message"])
+        self.assertIn("macro dependency graph contains a cycle", str(body["details"]))
+
     def test_execute_macro_rejects_oversized_request_body(self) -> None:
         self.server.stop()
         self.server = EAPRuntimeHTTPServer(

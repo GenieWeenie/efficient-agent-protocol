@@ -139,3 +139,4 @@ Suggested existing suites to copy:
 - `InputValidationError`: runtime arguments violate schema.
 - `KeyError` during dependency resolution: referenced step did not complete successfully.
 - `tool_execution_error`: callable raised an exception after validation.
+- `macro_timeout`: the macro exceeded the configured total runtime limit.
