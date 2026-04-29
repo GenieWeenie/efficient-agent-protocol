@@ -39,6 +39,15 @@ Compatibility policy:
    - confirm `docs/v1_contract_lock.json` was updated intentionally
    - confirm `Breaking Changes` and `Upgrade Notes` sections are populated
 
+## Current v1.0.1 Evidence
+
+The active patch-release evidence file is `docs/releases/v1.0.1-readiness.md`.
+Use it as the release decision source for current CI links, completed hardening
+work, known warnings, and remaining blockers before tagging `v1.0.1`.
+
+Do not tag `v1.0.1` until the `EAP-133` final readiness dry-run is complete
+and the go/no-go rule in `docs/releases/v1.0.1-readiness.md` is satisfied.
+
 ## V1.0 Release Checklist
 
 Before tagging `v1.0.0`, complete every item below in order:

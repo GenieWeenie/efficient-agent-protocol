@@ -22,6 +22,7 @@ It also ships OpenClaw interop paths for gateway/tool integration.
 - It integrates with existing ecosystems instead of forcing a rewrite (`chat_completions`, `responses`, OpenClaw tooling, MCP tools).
 
 See `docs/eap_proof_sheet.md` for reproducible evidence and command-level validation.
+Current patch-release evidence is tracked in `docs/releases/v1.0.1-readiness.md`.
 
 ## What We Closed Recently
 
@@ -282,6 +283,10 @@ Full documentation index: [`docs/README.md`](docs/README.md)
   - `docs/self_hosted_control_plane.md`
   - `docs/remote_ops_governance.md`
   - `docs/migrations.md`
+- Release evidence:
+  - `docs/releases/v1.0.1-readiness.md`
+  - `docs/release.md`
+  - `docs/github_actions_runtime_inventory.md`
 - Interop and starter packs:
   - `docs/openclaw_interop.md`
   - `integrations/openclaw/eap-runtime-plugin/README.md`
