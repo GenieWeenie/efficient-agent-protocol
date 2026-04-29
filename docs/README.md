@@ -83,6 +83,7 @@
 | [release.md](release.md) | Release process and versioning |
 | [release_notes_template.md](release_notes_template.md) | Template for release notes |
 | [releases/v0.1.8.md](releases/v0.1.8.md) | Release notes for v0.1.8 |
+| [releases/v1.0.1-readiness.md](releases/v1.0.1-readiness.md) | Current v1.0.1 readiness evidence, blockers, and go/no-go rule |
 
 ## Roadmaps
 
