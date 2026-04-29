@@ -71,11 +71,11 @@ Updated: 2026-04-29 (Phase 14 release maintenance intake)
 | 41 | `EAP-128` | `GEN-208` | `Done` | Add production-hardening regression gatepack |
 | 42 | `EAP-129` | `GEN-209` | `Done` | Create Phase 14 release maintenance queue |
 | 43 | `EAP-130` | `GEN-210` | `Done` | Clean up package license metadata |
-| 44 | `EAP-131` | `GEN-211` | `Todo` | Resolve GitHub Actions Node runtime warnings |
+| 44 | `EAP-131` | `GEN-211` | `Done` | Resolve GitHub Actions Node runtime warnings |
 | 45 | `EAP-132` | `GEN-212` | `Todo` | Refresh release evidence and docs index |
 | 46 | `EAP-133` | `GEN-213` | `Todo` | Run v1.0.1 release readiness dry-run |
 
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: Phase 14 (Release Maintenance / v1.0.1 Readiness) is active. `EAP-130` is complete; `EAP-131` is the next ordered `Todo`.
+Current state: Phase 14 (Release Maintenance / v1.0.1 Readiness) is active. `EAP-131` is complete; `EAP-132` is the next ordered `Todo`.
