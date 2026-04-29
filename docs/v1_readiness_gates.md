@@ -20,6 +20,7 @@ PYTHONPATH=. python scripts/v1_readiness_gatepack.py
 | 7 | Coverage | Line >= 80%, branch >= 65% | `coverage.json` |
 | 8 | Dependency security | `pip-audit` reports zero vulnerabilities | pip-audit output |
 | 9 | Threshold files | All baseline/threshold JSON files present | file existence check |
+| 10 | Production hardening regressions | Phase 13 P0/P1 risk classes have direct regression coverage | `scripts/production_hardening_gatepack.py` output |
 
 ## Gate Details
 
@@ -109,6 +110,16 @@ All CI threshold and baseline files must be present and version-controlled:
 - `docs/competitive_reference_profiles.json`
 - `docs/v1_contract_lock.json`
 
+### 10. Production Hardening Regression Gates
+
+Runs the focused Phase 13 gatepack for package ownership, ASGI runtime
+boundary, fail-closed auth, file sandboxing, SSRF protections, macro cycle and
+timeout controls, and bounded network lifecycle.
+
+```bash
+PYTHONPATH=. python scripts/production_hardening_gatepack.py
+```
+
 ## CI Gates (Automated)
 
 The following are enforced automatically by GitHub Actions CI on every push:
@@ -123,6 +134,7 @@ The following are enforced automatically by GitHub Actions CI on every push:
 | Competitive benchmark | Advantage gates vs reference profiles |
 | Soak + chaos reliability | Failure rate, latency, chaos scenario pass rate |
 | Dependency vulnerability audit | pip-audit scan |
+| Production hardening regression gates | Phase 13 production-risk regression suite |
 | Secret scan (Gitleaks) | No leaked secrets |
 | CodeQL analysis | No high-severity code scanning alerts |
 | Build package | Wheel builds and installs cleanly |

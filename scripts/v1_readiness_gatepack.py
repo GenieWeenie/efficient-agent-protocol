@@ -211,7 +211,7 @@ def gate_security_audit() -> GateResult:
         timeout=60,
     )
     passed = result.returncode == 0
-    detail = "No vulnerabilities found" if passed else result.stdout.strip()[:300]
+    detail = "No vulnerabilities found" if passed else (result.stdout.strip() or result.stderr.strip())[:300]
     return GateResult(
         name="Dependency security audit",
         passed=passed,
@@ -241,6 +241,27 @@ def gate_threshold_files() -> GateResult:
     )
 
 
+def gate_production_hardening() -> GateResult:
+    """Gate 10: Phase 13 production-hardening regressions stay covered."""
+    result = _run([sys.executable, "scripts/production_hardening_gatepack.py", "--json-only"], timeout=180)
+    passed = result.returncode == 0
+    if passed:
+        try:
+            report = json.loads(result.stdout)
+            detail = f"All {report.get('gates_passed')}/{report.get('gates_total')} hardening gates passed"
+        except (json.JSONDecodeError, AttributeError):
+            lines = result.stdout.strip().splitlines()
+            detail = lines[-1] if lines else "production hardening gatepack passed"
+    else:
+        detail = (result.stdout.strip() or result.stderr.strip())[-800:]
+    return GateResult(
+        name="Production hardening regression gates",
+        passed=passed,
+        detail=detail,
+        evidence="scripts/production_hardening_gatepack.py output",
+    )
+
+
 GATES = [
     gate_v1_contract,
     gate_upgrade_migration,
@@ -251,6 +272,7 @@ GATES = [
     gate_coverage,
     gate_security_audit,
     gate_threshold_files,
+    gate_production_hardening,
 ]
 
 

@@ -44,7 +44,7 @@ Compatibility policy:
 Before tagging `v1.0.0`, complete every item below in order:
 
 1. **Stabilization checklist**: verify all boxes in `docs/v1_stabilization_checklist.md` are checked.
-2. **Readiness gatepack**: run `PYTHONPATH=. python scripts/v1_readiness_gatepack.py` and confirm `PASS (9/9)`.
+2. **Readiness gatepack**: run `PYTHONPATH=. python scripts/v1_readiness_gatepack.py` and confirm `PASS (10/10)`.
 3. **CI green**: all workflows on the release branch are green (CI, Security, CodeQL).
 4. **Contract lock**: `docs/v1_contract_lock.json` reflects the intended v1.0 surface.
 5. **Upgrade notes**: `docs/upgrade_notes_v1.md` is complete with breaking changes, migration actions, and rollback guidance.

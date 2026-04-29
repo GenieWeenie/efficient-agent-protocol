@@ -1,6 +1,6 @@
 # Phase 13 Production Hardening Roadmap
 
-Status: Active  
+Status: Completed
 Source of truth: Linear project `Efficient Agent Protocol Roadmap`  
 Intake source: production-hardening review received 2026-04-28
 
@@ -14,7 +14,7 @@ Current status:
 - [x] `EAP-125` add SSRF protection and streaming byte caps to web tools (`GEN-205`)
 - [x] `EAP-126` add macro cycle detection and execution timeout controls (`GEN-206`)
 - [x] `EAP-127` harden connection pooling and request lifecycle (`GEN-207`)
-- [ ] `EAP-128` add production-hardening regression gatepack (`GEN-208`)
+- [x] `EAP-128` add production-hardening regression gatepack (`GEN-208`)
 
 ## Objective
 
