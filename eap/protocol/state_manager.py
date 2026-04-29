@@ -1,12 +1,14 @@
 # protocol/state_manager.py
+import contextlib
 import uuid
 import sys
 import sqlite3
 import json
 import os
+import threading
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 from .models import (
     ConversationSession,
@@ -30,13 +32,84 @@ class StateManager:
     ):
         self.db_path = db_path
         self.pointer_store = pointer_store or SQLitePointerStore(db_path=self.db_path)
+        # Single shared SQLite connection per StateManager instance, guarded by
+        # a lock. SQLite serializes writers anyway, so a per-call ``connect()``
+        # is wasted file-system / page-cache churn — it also magnifies the
+        # ``database is locked`` failure mode under the new ASGI runtime which
+        # multiplies concurrency. ``check_same_thread=False`` is safe here
+        # because every access to the connection is funnelled through
+        # ``self._connection()`` which acquires ``self._conn_lock``.
+        self._conn_lock = threading.Lock()
+        # Reuse a single connection for the lifetime of the StateManager.
+        # ``check_same_thread=False`` is safe because every access flows
+        # through ``self._connection()`` which holds ``self._conn_lock``.
+        # Default ``isolation_level=""`` (deferred) is preserved so that the
+        # ``with conn:`` context manager continues to commit/rollback the same
+        # way the previous per-call ``sqlite3.connect`` blocks did. WAL is
+        # tuned once here (PRAGMAs cannot run inside a transaction).
+        self._connection_obj: Optional[sqlite3.Connection] = sqlite3.connect(
+            self.db_path,
+            check_same_thread=False,
+        )
+        self._connection_obj.execute("PRAGMA journal_mode=WAL")
+        self._connection_obj.execute("PRAGMA synchronous=NORMAL")
+        self._closed = False
         self._init_db()
+
+    @contextlib.contextmanager
+    def _connection(self) -> Iterator[sqlite3.Connection]:
+        """Yield the shared SQLite connection under a process-wide lock.
+
+        Mirrors the ``with sqlite3.connect(path) as conn`` semantics by
+        delegating commit / rollback to sqlite3's own connection context
+        manager. Reusing a single connection avoids the per-call
+        ``connect()`` storm that the new ASGI runtime would otherwise
+        produce against a single SQLite file.
+        """
+        with self._conn_lock:
+            if self._closed or self._connection_obj is None:
+                raise RuntimeError("StateManager connection is closed.")
+            conn = self._connection_obj
+            with conn:
+                yield conn
+
+    def close(self) -> None:
+        """Close the shared SQLite connection. Idempotent."""
+        with self._conn_lock:
+            if self._closed:
+                return
+            self._closed = True
+            if self._connection_obj is not None:
+                try:
+                    self._connection_obj.close()
+                finally:
+                    self._connection_obj = None
+        # Close the pointer store backend too if it exposes a close() hook.
+        close_hook = getattr(self.pointer_store, "close", None)
+        if callable(close_hook):
+            try:
+                close_hook()
+            except Exception:
+                pass
+
+    def __enter__(self) -> "StateManager":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        self.close()
+
+    def __del__(self) -> None:  # pragma: no cover - best effort cleanup
+        try:
+            self.close()
+        except Exception:
+            pass
 
     def _init_db(self):
         self.pointer_store.initialize()
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.execute("PRAGMA synchronous=NORMAL")
+        # PRAGMA journal_mode=WAL / synchronous=NORMAL are applied once in
+        # __init__ on the shared connection — they cannot run inside a
+        # transaction, which the _connection() context manager opens.
+        with self._connection() as conn:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS execution_trace_events (
@@ -244,7 +317,7 @@ class StateManager:
 
     def append_trace_event(self, event: ExecutionTraceEvent) -> None:
         payload = event.model_dump(mode="json")
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 INSERT INTO execution_trace_events (
@@ -290,7 +363,7 @@ class StateManager:
                 payload["retry_delay_seconds"],
                 json.dumps(payload["error"]) if payload["error"] is not None else None,
             ))
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             conn.executemany(
                 """
                 INSERT INTO execution_trace_events (
@@ -308,7 +381,7 @@ class StateManager:
         actor_scopes = actor_metadata.get("actor_scopes") or actor_metadata.get("scopes")
         operation = actor_metadata.get("operation")
 
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             rows = conn.execute(
                 """
                 SELECT step_id, tool_name, event_type, timestamp_utc, attempt, resolved_arguments,
@@ -354,7 +427,7 @@ class StateManager:
         total_duration_ms: float,
         final_pointer_id: Optional[str] = None,
     ) -> None:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO execution_run_summaries (
@@ -386,7 +459,7 @@ class StateManager:
         actor_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         updated_at_utc = self._now_utc_iso()
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO execution_run_checkpoints (
@@ -408,7 +481,7 @@ class StateManager:
             )
 
     def get_run_checkpoint(self, run_id: str) -> Dict[str, Any]:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             row = conn.execute(
                 """
                 SELECT started_at_utc, updated_at_utc, status, macro_payload,
@@ -446,7 +519,7 @@ class StateManager:
         query += " ORDER BY updated_at_utc DESC LIMIT ?"
         params = params + (limit,)
 
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             rows = conn.execute(query, params).fetchall()
 
         return [
@@ -462,7 +535,7 @@ class StateManager:
         ]
 
     def get_run_actor_metadata(self, run_id: str) -> Dict[str, Any]:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             checkpoint_row = conn.execute(
                 """
                 SELECT actor_metadata_payload
@@ -503,7 +576,7 @@ class StateManager:
         return actor_payload
 
     def get_execution_summary(self, run_id: str) -> Dict[str, Any]:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             row = conn.execute(
                 """
                 SELECT started_at_utc, completed_at_utc, total_steps, succeeded_steps, failed_steps,
@@ -530,7 +603,7 @@ class StateManager:
 
     def store_execution_diagnostics(self, run_id: str, payload: Dict[str, Any]) -> None:
         updated_at_utc = self._now_utc_iso()
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO execution_run_diagnostics (
@@ -545,7 +618,7 @@ class StateManager:
             )
 
     def get_execution_diagnostics(self, run_id: str) -> Dict[str, Any]:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             row = conn.execute(
                 """
                 SELECT updated_at_utc, payload_json
@@ -566,7 +639,7 @@ class StateManager:
         }
 
     def list_execution_diagnostics(self, limit: int = 100) -> List[Dict[str, Any]]:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             rows = conn.execute(
                 """
                 SELECT run_id, updated_at_utc, payload_json
@@ -614,7 +687,7 @@ class StateManager:
             metadata=metadata,
         )
         payload = session.model_dump(mode="json")
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 INSERT INTO conversation_sessions (
@@ -635,7 +708,7 @@ class StateManager:
         return payload
 
     def get_session(self, session_id: str) -> Dict[str, Any]:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             row = conn.execute(
                 """
                 SELECT created_at_utc, updated_at_utc, memory_strategy, window_turn_limit, summary_text, metadata
@@ -660,7 +733,7 @@ class StateManager:
         return session.model_dump(mode="json")
 
     def list_sessions(self, limit: int = 50) -> List[Dict[str, Any]]:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             rows = conn.execute(
                 """
                 SELECT session_id, created_at_utc, updated_at_utc, memory_strategy, window_turn_limit, summary_text, metadata
@@ -686,7 +759,7 @@ class StateManager:
         return sessions
 
     def delete_session(self, session_id: str) -> None:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             conn.execute("DELETE FROM conversation_turns WHERE session_id = ?", (session_id,))
             cursor = conn.execute("DELETE FROM conversation_sessions WHERE session_id = ?", (session_id,))
 
@@ -719,7 +792,7 @@ class StateManager:
             metadata=metadata,
         )
         payload = turn.model_dump(mode="json")
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 INSERT INTO conversation_turns (
@@ -763,7 +836,7 @@ class StateManager:
             query += " LIMIT ?"
             params = (session_id, limit)
 
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             rows = conn.execute(query, params).fetchall()
 
         turns: List[Dict[str, Any]] = []
@@ -800,7 +873,7 @@ class StateManager:
             overflow = max(0, len(turns) - window_limit)
             if overflow > 0:
                 to_delete = [turn["turn_id"] for turn in turns[:overflow]]
-                with sqlite3.connect(self.db_path) as conn:
+                with self._connection() as conn:
                     conn.executemany(
                         "DELETE FROM conversation_turns WHERE turn_id = ?",
                         [(turn_id,) for turn_id in to_delete],
@@ -834,7 +907,7 @@ class StateManager:
                     merged_summary = merged_summary[-max_summary_chars:]
 
                 to_delete = [turn["turn_id"] for turn in old_turns]
-                with sqlite3.connect(self.db_path) as conn:
+                with self._connection() as conn:
                     conn.executemany(
                         "DELETE FROM conversation_turns WHERE turn_id = ?",
                         [(turn_id,) for turn_id in to_delete],
@@ -863,8 +936,37 @@ class StateManager:
 
     def clear_all(self):
         if os.path.exists(self.db_path):
+            # Close the shared connections (StateManager + pointer store) so
+            # the underlying file can be removed cleanly. Re-open afterward
+            # via _reopen_connection() so subsequent calls keep working.
+            close_hook = getattr(self.pointer_store, "close", None)
+            if callable(close_hook):
+                try:
+                    close_hook()
+                except Exception:
+                    pass
+            with self._conn_lock:
+                if self._connection_obj is not None:
+                    try:
+                        self._connection_obj.close()
+                    finally:
+                        self._connection_obj = None
+                self._closed = True
             os.remove(self.db_path)
+            self._reopen_connection()
+            # Re-build the pointer store with a fresh connection too.
+            self.pointer_store = SQLitePointerStore(db_path=self.db_path)
             self._init_db()
+
+    def _reopen_connection(self) -> None:
+        with self._conn_lock:
+            self._connection_obj = sqlite3.connect(
+                self.db_path,
+                check_same_thread=False,
+            )
+            self._connection_obj.execute("PRAGMA journal_mode=WAL")
+            self._connection_obj.execute("PRAGMA synchronous=NORMAL")
+            self._closed = False
 
     def collect_operational_metrics(self, now_utc: Optional[str] = None) -> Dict[str, Any]:
         snapshot_now = self._parse_now_utc(now_utc).isoformat()
@@ -873,7 +975,7 @@ class StateManager:
         active_pointers = len(self.list_pointers(include_expired=False, now_utc=snapshot_now))
         expired_pointers = max(0, total_pointers - active_pointers)
 
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             run_row = conn.execute(
                 """
                 SELECT

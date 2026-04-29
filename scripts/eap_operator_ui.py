@@ -62,8 +62,12 @@ def _render_dashboard(db_path: Path, run_limit: int, pointer_limit: int) -> str:
     if not db_path.exists():
         return _format_error_page(f"State DB not found yet: {db_path}")
 
+    # Connect read-only via URI so the dashboard works against a volume that
+    # is mounted ``:ro`` inside the container. ``mode=ro`` prevents SQLite from
+    # trying to create a journal/WAL file.
+    uri = f"file:{db_path}?mode=ro"
     try:
-        with sqlite3.connect(db_path) as conn:
+        with sqlite3.connect(uri, uri=True) as conn:
             total_runs = _fetch_count(conn, "SELECT COUNT(*) FROM execution_run_summaries")
             total_pointers = _fetch_count(conn, "SELECT COUNT(*) FROM state_store")
 

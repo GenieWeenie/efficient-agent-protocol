@@ -12,8 +12,12 @@ services:
       - "8080"
       - --db-path
       - /var/lib/eap/agent_state.db
-      - --bearer-token
-      - ${EAP_RUNTIME_BEARER_TOKEN:?Set EAP_RUNTIME_BEARER_TOKEN}
+    environment:
+      # The bearer token is passed via env (not CLI args) so it does not leak
+      # to `ps`/`/proc/<pid>/cmdline` inside the container. For production,
+      # prefer mounting a Docker / Kubernetes secret and pointing
+      # `--bearer-token-file` at the mount path instead.
+      EAP_RUNTIME_BEARER_TOKEN: ${EAP_RUNTIME_BEARER_TOKEN:?Set EAP_RUNTIME_BEARER_TOKEN}
     ports:
       - "${EAP_RUNTIME_PORT:-8080}:8080"
     volumes:
@@ -36,7 +40,11 @@ services:
     ports:
       - "${EAP_OPERATOR_UI_PORT:-8501}:8501"
     volumes:
-      - eap_state:/var/lib/eap
+      # Mount read-only: only the runtime container should write to the
+      # SQLite file. Multi-writer access across container boundaries is
+      # fragile (different fcntl-lock semantics) — for any multi-process /
+      # multi-host deployment, use the Postgres backend instead.
+      - eap_state:/var/lib/eap:ro
     depends_on:
       - runtime
     restart: unless-stopped

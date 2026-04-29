@@ -13,3 +13,6 @@ beautifulsoup4==4.12.3
 
 # Required for the production ASGI runtime server
 uvicorn==0.46.0
+
+# Required for full JSON Schema validation of tool argument payloads
+jsonschema>=4.0

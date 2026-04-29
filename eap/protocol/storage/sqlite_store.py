@@ -1,20 +1,63 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import sqlite3
-from typing import Any, Dict, List, Optional
+import threading
+from typing import Any, Dict, Iterator, List, Optional
 
 from .base import PointerStoreBackend
 
 
 class SQLitePointerStore(PointerStoreBackend):
-    """SQLite implementation of the pointer store backend contract."""
+    """SQLite implementation of the pointer store backend contract.
+
+    The store keeps a single ``sqlite3.Connection`` open for its lifetime and
+    funnels every call through a lock. The previous implementation opened a
+    fresh connection for each ``store_pointer`` / ``retrieve_pointer`` call,
+    which was wasted IO under low concurrency and a real ``database is
+    locked`` source under the new ASGI runtime.
+    """
 
     def __init__(self, db_path: str = "agent_state.db") -> None:
         self.db_path = db_path
+        self._conn_lock = threading.Lock()
+        self._conn: Optional[sqlite3.Connection] = sqlite3.connect(
+            self.db_path,
+            check_same_thread=False,
+        )
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
+        self._closed = False
+
+    @contextlib.contextmanager
+    def _connection(self) -> Iterator[sqlite3.Connection]:
+        with self._conn_lock:
+            if self._closed or self._conn is None:
+                raise RuntimeError("SQLitePointerStore connection is closed.")
+            with self._conn as conn:
+                yield conn
+
+    def close(self) -> None:
+        """Close the shared SQLite connection. Idempotent."""
+        with self._conn_lock:
+            if self._closed:
+                return
+            self._closed = True
+            if self._conn is not None:
+                try:
+                    self._conn.close()
+                finally:
+                    self._conn = None
+
+    def __del__(self) -> None:  # pragma: no cover - best effort cleanup
+        try:
+            self.close()
+        except Exception:
+            pass
 
     def initialize(self) -> None:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS state_store (
@@ -60,7 +103,7 @@ class SQLitePointerStore(PointerStoreBackend):
         ttl_seconds: Optional[int],
         expires_at_utc: Optional[str],
     ) -> None:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             conn.execute(
                 """
                 INSERT INTO state_store
@@ -79,7 +122,7 @@ class SQLitePointerStore(PointerStoreBackend):
             )
 
     def retrieve_pointer(self, pointer_id: str) -> Any:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             cursor = conn.execute("SELECT raw_data FROM state_store WHERE pointer_id = ?", (pointer_id,))
             row = cursor.fetchone()
             if not row:
@@ -109,7 +152,7 @@ class SQLitePointerStore(PointerStoreBackend):
             query += " LIMIT ?"
             params.append(limit)
 
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             rows = conn.execute(query, tuple(params)).fetchall()
 
         pointers: List[Dict[str, Any]] = []
@@ -130,6 +173,6 @@ class SQLitePointerStore(PointerStoreBackend):
         return pointers
 
     def delete_pointer(self, pointer_id: str) -> bool:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connection() as conn:
             cursor = conn.execute("DELETE FROM state_store WHERE pointer_id = ?", (pointer_id,))
             return cursor.rowcount > 0

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import signal
 import threading
 from pathlib import Path
@@ -37,7 +38,22 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--bearer-token",
         default="",
-        help="Optional admin bearer token for /v1/eap/* endpoints.",
+        help=(
+            "Optional admin bearer token for /v1/eap/* endpoints. "
+            "Avoid using on the command line in production — prefer the "
+            "EAP_RUNTIME_BEARER_TOKEN environment variable or "
+            "--bearer-token-file (e.g. for Kubernetes secret mounts) so the "
+            "secret is not visible in `ps`/`/proc/<pid>/cmdline`."
+        ),
+    )
+    parser.add_argument(
+        "--bearer-token-file",
+        default="",
+        help=(
+            "Path to a file containing the bearer token. The first line of "
+            "the file is read and stripped. Useful for k8s/Docker secret "
+            "mounts. Mutually exclusive with --bearer-token."
+        ),
     )
     parser.add_argument(
         "--allow-unauthenticated-local-dev",
@@ -82,6 +98,43 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Maximum accepted runtime request body size in bytes (default: 1000000).",
     )
     return parser.parse_args(argv)
+
+
+BEARER_TOKEN_ENV_VAR = "EAP_RUNTIME_BEARER_TOKEN"
+
+
+def _resolve_bearer_token(args: argparse.Namespace) -> str:
+    """Resolve the bearer token from (in order) flag, file, env var.
+
+    Passing the token on the command line is supported but discouraged because
+    it is visible to anyone with ``ps``/``/proc`` access on the host. Prefer the
+    ``EAP_RUNTIME_BEARER_TOKEN`` environment variable or ``--bearer-token-file``.
+
+    Raises ``ValueError`` if more than one source is provided or if a referenced
+    file is unreadable/empty.
+    """
+    flag_token = args.bearer_token.strip()
+    file_path = (args.bearer_token_file or "").strip()
+
+    sources_provided = sum(1 for value in (flag_token, file_path) if value)
+    if sources_provided > 1:
+        raise ValueError("--bearer-token and --bearer-token-file are mutually exclusive.")
+
+    if file_path:
+        try:
+            raw = Path(file_path).read_text(encoding="utf-8")
+        except OSError as exc:
+            raise ValueError(f"failed to read --bearer-token-file '{file_path}': {exc}") from exc
+        token = raw.splitlines()[0].strip() if raw else ""
+        if not token:
+            raise ValueError(f"--bearer-token-file '{file_path}' is empty.")
+        return token
+
+    if flag_token:
+        return flag_token
+
+    env_token = os.environ.get(BEARER_TOKEN_ENV_VAR, "").strip()
+    return env_token
 
 
 def _register_default_tools(registry: ToolRegistry) -> None:
@@ -178,7 +231,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.max_request_body_bytes <= 0:
         print("[runtime:error] --max-request-body-bytes must be greater than 0.")
         return 1
-    bearer_token = args.bearer_token.strip()
+    try:
+        bearer_token = _resolve_bearer_token(args)
+    except ValueError as exc:
+        print(f"[runtime:error] {exc}")
+        return 1
     try:
         scoped_tokens, active_policy_profile = _load_scoped_auth_config(
             args.scoped_auth_config,
@@ -256,6 +313,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             pass
     finally:
         server.stop()
+        try:
+            state_manager.close()
+        except Exception as exc:  # pragma: no cover - defensive teardown
+            print(f"[runtime:warning] state_manager.close failed: {exc}")
         print("[runtime] stopped.")
     return 0
 
