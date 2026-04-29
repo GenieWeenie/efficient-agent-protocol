@@ -10,3 +10,6 @@ requests==2.33.0
 
 # Required for HTML parsing in web_tools.py
 beautifulsoup4==4.12.3
+
+# Required for the production ASGI runtime server
+uvicorn==0.46.0

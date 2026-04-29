@@ -67,6 +67,12 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "\"per_run_resume_inflight\":1}}"
         ),
     )
+    parser.add_argument(
+        "--max-request-body-bytes",
+        type=int,
+        default=1_000_000,
+        help="Maximum accepted runtime request body size in bytes (default: 1000000).",
+    )
     return parser.parse_args(argv)
 
 
@@ -142,6 +148,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.port <= 0 or args.port > 65535:
         print("[runtime:error] --port must be between 1 and 65535.")
         return 1
+    if args.max_request_body_bytes <= 0:
+        print("[runtime:error] --max-request-body-bytes must be greater than 0.")
+        return 1
     bearer_token = args.bearer_token.strip()
     try:
         scoped_tokens, active_policy_profile = _load_scoped_auth_config(
@@ -180,6 +189,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         scoped_bearer_tokens=scoped_tokens or None,
         rate_limit_rules=rate_limit_rules or None,
         concurrency_limits=concurrency_limits or None,
+        max_request_body_bytes=args.max_request_body_bytes,
     ).start()
 
     stop_event = threading.Event()
@@ -198,6 +208,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"[runtime] scoped_auth_tokens={len(scoped_tokens)}")
     print(f"[runtime] rate_limits={json.dumps(normalized_rate_limits, sort_keys=True, default=lambda o: o.__dict__)}")
     print(f"[runtime] concurrency_limits={json.dumps(normalized_concurrency_limits, sort_keys=True)}")
+    print(f"[runtime] max_request_body_bytes={args.max_request_body_bytes}")
     print("[runtime] tools=fetch_user_data,analyze_data")
 
     try:

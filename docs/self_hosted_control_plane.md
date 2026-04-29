@@ -55,9 +55,10 @@ The smoke validates:
 ## Deployment Topology
 
 - `runtime` container:
-  - Runs `scripts/eap_runtime_service.py`.
+  - Runs `scripts/eap_runtime_service.py`, which starts the Uvicorn-backed ASGI runtime.
   - Requires bearer auth for all `/v1/eap/*` endpoints.
   - Registers a minimal tool set (`fetch_user_data`, `analyze_data`) by default.
+  - Rejects request bodies above the configured `--max-request-body-bytes` limit.
 - `operator-ui` container:
   - Runs `scripts/eap_operator_ui.py`.
   - Read-only dashboard over the shared SQLite state DB.
