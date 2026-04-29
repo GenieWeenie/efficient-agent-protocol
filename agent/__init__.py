@@ -1,36 +1,23 @@
-# agent/__init__.py
-"""Deprecated namespace. Use ``eap.agent`` instead."""
+"""Compatibility namespace. Use ``eap.agent`` instead."""
 from __future__ import annotations
 
 import importlib
 import warnings
 
-__all__ = [
-    "MacroCompiler",
-    "WorkflowGraphCompiler",
-    "AgentClient",
-    "ProviderMessage",
-    "CompletionRequest",
-    "CompletionResponse",
-    "LLMProvider",
-    "OpenAIProvider",
-    "AnthropicProvider",
-    "GoogleProvider",
-    "create_provider",
-]
+__all__ = ['MacroCompiler', 'WorkflowGraphCompiler', 'AgentClient', 'ProviderMessage', 'CompletionRequest', 'CompletionResponse', 'LLMProvider', 'OpenAIProvider', 'AnthropicProvider', 'GoogleProvider', 'create_provider']
 
 _SUBMODULE_MAP: dict[str, tuple[str, str]] = {
-    "MacroCompiler": ("agent.compiler", "MacroCompiler"),
-    "WorkflowGraphCompiler": ("agent.compiler", "WorkflowGraphCompiler"),
-    "AgentClient": ("agent.agent_client", "AgentClient"),
-    "ProviderMessage": ("agent.providers", "ProviderMessage"),
-    "CompletionRequest": ("agent.providers", "CompletionRequest"),
-    "CompletionResponse": ("agent.providers", "CompletionResponse"),
-    "LLMProvider": ("agent.providers", "LLMProvider"),
-    "OpenAIProvider": ("agent.providers", "OpenAIProvider"),
-    "AnthropicProvider": ("agent.providers", "AnthropicProvider"),
-    "GoogleProvider": ("agent.providers", "GoogleProvider"),
-    "create_provider": ("agent.providers", "create_provider"),
+    'MacroCompiler': ('eap.agent.compiler', 'MacroCompiler'),
+    'WorkflowGraphCompiler': ('eap.agent.compiler', 'WorkflowGraphCompiler'),
+    'AgentClient': ('eap.agent.agent_client', 'AgentClient'),
+    'ProviderMessage': ('eap.agent.providers', 'ProviderMessage'),
+    'CompletionRequest': ('eap.agent.providers', 'CompletionRequest'),
+    'CompletionResponse': ('eap.agent.providers', 'CompletionResponse'),
+    'LLMProvider': ('eap.agent.providers', 'LLMProvider'),
+    'OpenAIProvider': ('eap.agent.providers', 'OpenAIProvider'),
+    'AnthropicProvider': ('eap.agent.providers', 'AnthropicProvider'),
+    'GoogleProvider': ('eap.agent.providers', 'GoogleProvider'),
+    'create_provider': ('eap.agent.providers', 'create_provider')
 }
 
 

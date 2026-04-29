@@ -1,44 +1,4 @@
-# environment/tools/__init__.py
-"""Bundled tool implementations for EAP.
+"""Compatibility shim. Use ``eap.environment.tools`` instead."""
+from __future__ import annotations
 
-.. warning::
-    **Unstable / not part of the v1 contract.**  These tools are provided as
-    convenience utilities and starter-pack examples.  Their signatures,
-    schemas, and behavior may change between minor releases without a
-    contract-lock bump.  Pin specific versions if you depend on them.
-"""
-from .example_tools import fetch_user_data, analyze_data, FETCH_SCHEMA, ANALYZE_SCHEMA
-from .file_tools import (
-    LIST_DIRECTORY_SCHEMA,
-    READ_FILE_SCHEMA,
-    WRITE_FILE_SCHEMA,
-    list_local_directory,
-    read_local_file,
-    write_local_file,
-)
-from .web_tools import (
-    EXTRACT_LINKS_SCHEMA,
-    FETCH_JSON_SCHEMA,
-    SCRAPE_SCHEMA,
-    extract_links_from_url,
-    fetch_json_url,
-    scrape_url,
-)
-from .mcp_tools import (
-    INVOKE_MCP_TOOL_SCHEMA,
-    invoke_mcp_tool,
-)
-from .openclaw_tools import (
-    INVOKE_OPENCLAW_TOOL_SCHEMA,
-    invoke_openclaw_tool,
-)
-
-__all__ = [
-    "fetch_user_data", "analyze_data", "FETCH_SCHEMA", "ANALYZE_SCHEMA",
-    "read_local_file", "write_local_file", "list_local_directory",
-    "READ_FILE_SCHEMA", "WRITE_FILE_SCHEMA", "LIST_DIRECTORY_SCHEMA",
-    "scrape_url", "fetch_json_url", "extract_links_from_url",
-    "SCRAPE_SCHEMA", "FETCH_JSON_SCHEMA", "EXTRACT_LINKS_SCHEMA",
-    "invoke_mcp_tool", "INVOKE_MCP_TOOL_SCHEMA",
-    "invoke_openclaw_tool", "INVOKE_OPENCLAW_TOOL_SCHEMA",
-]
+from eap.environment.tools import *  # noqa: F401,F403

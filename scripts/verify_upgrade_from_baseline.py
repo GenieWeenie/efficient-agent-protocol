@@ -22,7 +22,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from protocol.migrations import LATEST_SCHEMA_VERSION, apply_sqlite_migrations, pending_migrations
+from eap.protocol.migrations import LATEST_SCHEMA_VERSION, apply_sqlite_migrations, pending_migrations
 from tests.fixtures.baseline_state_builder import build_baseline_state_db
 
 
@@ -109,7 +109,7 @@ def _check_state_manager_operations(db_path: str, meta: Dict[str, Any]) -> Dict[
     """Verify StateManager can operate on the upgraded database."""
     errors: List[str] = []
     try:
-        from protocol.state_manager import StateManager
+        from eap.protocol.state_manager import StateManager
 
         sm = StateManager(db_path=db_path)
 

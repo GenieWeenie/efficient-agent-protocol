@@ -41,7 +41,7 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["agent*", "environment*", "protocol*", "eap*", "starter_packs*"]
+include = ["eap*", "agent*", "environment*", "protocol*", "starter_packs*"]
 exclude = ["examples*"]
 
 [tool.pytest.ini_options]
@@ -54,7 +54,7 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-source = ["protocol", "agent", "environment", "eap", "starter_packs"]
+source = ["eap", "starter_packs"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -64,8 +64,8 @@ show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = [
-  "environment.safe_eval",
-  "environment.executor",
+  "eap.environment.safe_eval",
+  "eap.environment.executor",
   "eap.runtime.auth_scopes",
   "eap.runtime.guardrails",
   "eap.runtime.http_api",

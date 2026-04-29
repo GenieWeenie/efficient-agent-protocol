@@ -1,12 +1,12 @@
-from environment.executor import AsyncLocalExecutor
-from environment.distributed_executor import DistributedCoordinator
-from environment.plugin_loader import (
+from eap.environment.executor import AsyncLocalExecutor
+from eap.environment.distributed_executor import DistributedCoordinator
+from eap.environment.plugin_loader import (
     DEFAULT_PLUGIN_ENTRYPOINT_GROUP,
     PluginLoadError,
     discover_plugin_entry_points,
     load_plugins_into_registry,
 )
-from environment.tool_registry import (
+from eap.environment.tool_registry import (
     InputValidationError,
     PluginManifestError,
     ToolDefinition,

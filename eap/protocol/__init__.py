@@ -1,4 +1,4 @@
-from protocol.models import (
+from eap.protocol.models import (
     BatchedMacroRequest,
     BranchingRule,
     ConversationSession,
@@ -20,16 +20,16 @@ from protocol.models import (
     WorkflowGraphEdge,
     WorkflowGraphNode,
 )
-from protocol.state_manager import StateManager
-from protocol.logging_config import configure_logging
-from protocol.settings import (
+from eap.protocol.state_manager import StateManager
+from eap.protocol.logging_config import configure_logging
+from eap.protocol.settings import (
     EAPSettings,
     ExecutorLimitSettings,
     LLMClientSettings,
     ToolLimitSettings,
     load_settings,
 )
-from protocol.storage import (
+from eap.protocol.storage import (
     PointerStoreBackend,
     PostgresPointerStore,
     RedisPointerStore,

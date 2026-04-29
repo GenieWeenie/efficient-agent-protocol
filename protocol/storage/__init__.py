@@ -1,11 +1,4 @@
-from .base import PointerStoreBackend
-from .postgres_store import PostgresPointerStore
-from .redis_store import RedisPointerStore
-from .sqlite_store import SQLitePointerStore
+"""Compatibility shim. Use ``eap.protocol.storage`` instead."""
+from __future__ import annotations
 
-__all__ = [
-    "PointerStoreBackend",
-    "SQLitePointerStore",
-    "RedisPointerStore",
-    "PostgresPointerStore",
-]
+from eap.protocol.storage import *  # noqa: F401,F403

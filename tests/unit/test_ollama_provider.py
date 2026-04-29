@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from eap.agent import CompletionRequest, ProviderMessage
-from agent.providers.ollama_provider import OllamaProvider
+from eap.agent.providers.ollama_provider import OllamaProvider
 
 
 class OllamaProviderTest(unittest.TestCase):

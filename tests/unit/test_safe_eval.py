@@ -1,6 +1,6 @@
 import unittest
 
-from environment.safe_eval import (
+from eap.environment.safe_eval import (
     MAX_AST_NODES,
     MAX_CONTAINER_ITEMS,
     MAX_EXPRESSION_LENGTH,

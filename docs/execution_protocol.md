@@ -60,7 +60,7 @@ Updated: 2026-04-28 (v1.0.0 baseline plus Phase 13 hardening intake)
 | 30 | `EAP-117` | `GEN-73` | `Done` | Release + maintainer runbook v1 finalization |
 | 31 | `EAP-118` | `GEN-74` | `Done` | V1 upgrade handoff artifact + RC dry-run |
 | 32 | `EAP-119` | `GEN-199` | `Done` | Production hardening intake and v1.0.1 blocker plan |
-| 33 | `EAP-120` | `GEN-200` | `Todo` | Collapse duplicate package trees and define canonical imports |
+| 33 | `EAP-120` | `GEN-200` | `Done` | Collapse duplicate package trees and define canonical imports |
 | 34 | `EAP-121` | `GEN-201` | `Todo` | Add import and package compatibility migration tests |
 | 35 | `EAP-122` | `GEN-202` | `Todo` | Replace runtime HTTP server with production ASGI path |
 | 36 | `EAP-123` | `GEN-203` | `Todo` | Fail-closed runtime auth defaults |
@@ -73,4 +73,4 @@ Updated: 2026-04-28 (v1.0.0 baseline plus Phase 13 hardening intake)
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: Phase 13 (Production Hardening / v1.0.1 Blockers) is active. `EAP-119` is complete; `EAP-120` is the first implementation item and the next ordered `Todo`.
+Current state: Phase 13 (Production Hardening / v1.0.1 Blockers) is active. `EAP-120` is complete; `EAP-121` is the first implementation item and the next ordered `Todo`.

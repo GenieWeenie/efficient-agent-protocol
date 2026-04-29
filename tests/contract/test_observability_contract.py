@@ -11,9 +11,9 @@ import os
 import tempfile
 import unittest
 
-from protocol.logging_config import JsonFormatter, configure_logging
-from protocol.models import ExecutionTraceEventType
-from protocol.state_manager import StateManager
+from eap.protocol.logging_config import JsonFormatter, configure_logging
+from eap.protocol.models import ExecutionTraceEventType
+from eap.protocol.state_manager import StateManager
 
 
 FROZEN_LOG_REQUIRED_FIELDS = {"timestamp_utc", "level", "logger", "message"}

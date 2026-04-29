@@ -1,6 +1,6 @@
-from agent.compiler import MacroCompiler, WorkflowGraphCompiler
-from agent.agent_client import AgentClient
-from agent.providers import (
+from eap.agent.compiler import MacroCompiler, WorkflowGraphCompiler
+from eap.agent.agent_client import AgentClient
+from eap.agent.providers import (
     AnthropicProvider,
     CompletionRequest,
     CompletionResponse,
