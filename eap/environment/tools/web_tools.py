@@ -1,7 +1,11 @@
 # environment/tools/web_tools.py
+import ipaddress
 import json
 import logging
-from typing import Dict, Optional
+import os
+import socket
+import time
+from typing import Dict, Iterable, Optional, Set
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -13,12 +17,81 @@ DEFAULT_TIMEOUT_SECONDS = 10
 DEFAULT_MAX_BYTES = 1_000_000
 DEFAULT_MAX_TEXT_CHARACTERS = 100_000
 DEFAULT_MAX_LINKS = 200
+DEFAULT_MAX_REDIRECTS = 5
+_STREAM_CHUNK_SIZE = 64 * 1024
+_CGNAT_NETWORK = ipaddress.ip_network("100.64.0.0/10")
 
 
-def _validate_http_url(url: str) -> None:
+def _normalize_host(host: str) -> str:
+    return host.strip().lower().rstrip(".")
+
+
+def _load_host_allowlist(extra_allowlist: Optional[Iterable[str]] = None) -> Set[str]:
+    raw_hosts = os.environ.get("EAP_WEB_TOOL_HOST_ALLOWLIST", "")
+    hosts = {_normalize_host(host) for host in raw_hosts.split(",") if host.strip()}
+    if extra_allowlist:
+        hosts.update(_normalize_host(host) for host in extra_allowlist if host.strip())
+    return hosts
+
+
+def _is_unsafe_ip(address: str) -> bool:
+    parsed = ipaddress.ip_address(address)
+    return (
+        parsed.is_private
+        or parsed.is_loopback
+        or parsed.is_link_local
+        or parsed.is_reserved
+        or parsed.is_multicast
+        or parsed in _CGNAT_NETWORK
+    )
+
+
+def _validate_safe_url(url: str, host_allowlist: Optional[Iterable[str]] = None) -> None:
     parsed = urlparse(url)
-    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+    if parsed.scheme not in ("http", "https") or not parsed.netloc or not parsed.hostname:
         raise ValueError(f"Invalid URL '{url}'. URL must include http/https scheme and host.")
+
+    host = _normalize_host(parsed.hostname)
+    allowlist = _load_host_allowlist(host_allowlist)
+    if host in allowlist:
+        return
+
+    try:
+        address_infos = socket.getaddrinfo(host, parsed.port, type=socket.SOCK_STREAM)
+    except socket.gaierror as exc:
+        raise ValueError(f"URL host '{host}' could not be resolved safely.") from exc
+
+    resolved_addresses = {info[4][0] for info in address_infos if info and info[4]}
+    if not resolved_addresses:
+        raise ValueError(f"URL host '{host}' did not resolve to any address.")
+
+    for address in resolved_addresses:
+        if address in allowlist:
+            continue
+        try:
+            if _is_unsafe_ip(address):
+                raise ValueError(f"URL host '{host}' resolved to disallowed address '{address}'.")
+        except ValueError:
+            raise
+
+
+def _response_text(response: requests.Response, body_bytes: bytes) -> str:
+    if response.encoding:
+        return body_bytes.decode(response.encoding, errors="replace")
+    return body_bytes.decode("utf-8", errors="replace")
+
+
+def _read_streaming_body(response: requests.Response, max_bytes: int, deadline: float) -> bytes:
+    body = bytearray()
+    for chunk in response.iter_content(chunk_size=_STREAM_CHUNK_SIZE):
+        if time.monotonic() > deadline:
+            raise TimeoutError("Response body streaming exceeded timeout_seconds budget.")
+        if not chunk:
+            continue
+        body.extend(chunk)
+        if len(body) > max_bytes:
+            raise ValueError(f"Response body exceeds max_bytes={max_bytes}.")
+    return bytes(body)
 
 
 def _load_text_response(
@@ -26,22 +99,47 @@ def _load_text_response(
     timeout_seconds: int,
     max_bytes: int,
     headers: Optional[Dict[str, str]] = None,
+    host_allowlist: Optional[Iterable[str]] = None,
 ) -> str:
     if timeout_seconds < 1:
         raise ValueError("'timeout_seconds' must be >= 1.")
     if max_bytes < 1:
         raise ValueError("'max_bytes' must be >= 1.")
 
-    response = requests.get(url, timeout=timeout_seconds, headers=headers)
-    response.raise_for_status()
+    current_url = url
+    request_headers = dict(headers or {})
+    deadline = time.monotonic() + float(timeout_seconds * 2)
 
-    body_bytes = response.content
-    if len(body_bytes) > max_bytes:
-        raise ValueError(f"Response body exceeds max_bytes={max_bytes}.")
+    with requests.Session() as session:
+        for redirect_count in range(DEFAULT_MAX_REDIRECTS + 1):
+            _validate_safe_url(current_url, host_allowlist=host_allowlist)
+            if time.monotonic() > deadline:
+                raise TimeoutError("HTTP request exceeded timeout_seconds budget before completion.")
 
-    if response.encoding:
-        return body_bytes.decode(response.encoding, errors="replace")
-    return body_bytes.decode("utf-8", errors="replace")
+            response = session.get(
+                current_url,
+                timeout=timeout_seconds,
+                headers=request_headers,
+                stream=True,
+                allow_redirects=False,
+            )
+            try:
+                if response.is_redirect or response.is_permanent_redirect:
+                    if redirect_count >= DEFAULT_MAX_REDIRECTS:
+                        raise ValueError(f"Too many redirects fetching URL '{url}'.")
+                    location = response.headers.get("Location")
+                    if not location:
+                        raise ValueError(f"Redirect response for URL '{current_url}' omitted Location header.")
+                    current_url = urljoin(current_url, location)
+                    continue
+
+                response.raise_for_status()
+                body_bytes = _read_streaming_body(response, max_bytes=max_bytes, deadline=deadline)
+                return _response_text(response, body_bytes)
+            finally:
+                response.close()
+
+    raise ValueError(f"Too many redirects fetching URL '{url}'.")
 
 
 def scrape_url(
@@ -49,18 +147,24 @@ def scrape_url(
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     max_bytes: int = DEFAULT_MAX_BYTES,
     max_characters: int = DEFAULT_MAX_TEXT_CHARACTERS,
+    host_allowlist: Optional[Iterable[str]] = None,
 ) -> str:
     """Fetches and cleans text content from a URL."""
     logger.info(
         "tool invoked",
         extra={"tool_name": "scrape_url"},
     )
-    _validate_http_url(url)
+    _validate_safe_url(url, host_allowlist=host_allowlist)
     if max_characters < 1:
         raise ValueError("'max_characters' must be >= 1.")
 
     try:
-        text_html = _load_text_response(url, timeout_seconds=timeout_seconds, max_bytes=max_bytes)
+        text_html = _load_text_response(
+            url,
+            timeout_seconds=timeout_seconds,
+            max_bytes=max_bytes,
+            host_allowlist=host_allowlist,
+        )
         soup = BeautifulSoup(text_html, "html.parser")
 
         for script_or_style in soup(["script", "style"]):
@@ -83,13 +187,14 @@ def fetch_json_url(
     url: str,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     max_bytes: int = DEFAULT_MAX_BYTES,
+    host_allowlist: Optional[Iterable[str]] = None,
 ) -> str:
     """Fetches a URL and returns parsed JSON as pretty-printed text."""
     logger.info(
         "tool invoked",
         extra={"tool_name": "fetch_json_url"},
     )
-    _validate_http_url(url)
+    _validate_safe_url(url, host_allowlist=host_allowlist)
 
     try:
         body_text = _load_text_response(
@@ -97,6 +202,7 @@ def fetch_json_url(
             timeout_seconds=timeout_seconds,
             max_bytes=max_bytes,
             headers={"Accept": "application/json"},
+            host_allowlist=host_allowlist,
         )
         parsed = json.loads(body_text)
         return json.dumps(parsed, indent=2, sort_keys=True)
@@ -115,19 +221,25 @@ def extract_links_from_url(
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     max_bytes: int = DEFAULT_MAX_BYTES,
     max_links: int = DEFAULT_MAX_LINKS,
+    host_allowlist: Optional[Iterable[str]] = None,
 ) -> str:
     """Extracts normalized links from a webpage and returns JSON metadata."""
     logger.info(
         "tool invoked",
         extra={"tool_name": "extract_links_from_url"},
     )
-    _validate_http_url(url)
+    _validate_safe_url(url, host_allowlist=host_allowlist)
     if max_links < 1:
         raise ValueError("'max_links' must be >= 1.")
 
     try:
         source_domain = urlparse(url).netloc
-        html = _load_text_response(url, timeout_seconds=timeout_seconds, max_bytes=max_bytes)
+        html = _load_text_response(
+            url,
+            timeout_seconds=timeout_seconds,
+            max_bytes=max_bytes,
+            host_allowlist=host_allowlist,
+        )
         soup = BeautifulSoup(html, "html.parser")
 
         links = []

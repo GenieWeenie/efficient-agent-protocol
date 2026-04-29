@@ -60,6 +60,9 @@ File tools run inside a filesystem sandbox:
   - `max_characters` (`integer`, optional, `1..500000`)
 - Notes:
   - URL must be `http` or `https`.
+  - Host DNS resolution must not target private, loopback, link-local, reserved, multicast, metadata, or CGNAT addresses unless explicitly allowlisted by the operator.
+  - Redirect targets are revalidated before fetching.
+  - Response bodies are streamed and fail as soon as `max_bytes` is exceeded.
   - Scripts/styles are removed before text extraction.
   - Schema uses `additionalProperties: false`.
 
@@ -70,6 +73,7 @@ File tools run inside a filesystem sandbox:
   - `timeout_seconds` (`integer`, optional, `1..120`)
   - `max_bytes` (`integer`, optional, `1..10000000`)
 - Notes:
+  - Uses the same SSRF protections, redirect checks, and streaming `max_bytes` enforcement as `scrape_url`.
   - Returns a runtime error when response is not valid JSON.
   - Schema uses `additionalProperties: false`.
 
@@ -83,8 +87,13 @@ File tools run inside a filesystem sandbox:
   - `max_bytes` (`integer`, optional, `1..10000000`)
   - `max_links` (`integer`, optional, `1..5000`)
 - Notes:
+  - Uses the same SSRF protections, redirect checks, and streaming `max_bytes` enforcement as `scrape_url`.
   - Output includes `links`, `link_count`, and `truncated`.
   - Schema uses `additionalProperties: false`.
+
+Operator configuration:
+- `EAP_WEB_TOOL_HOST_ALLOWLIST` can be set to a comma-separated list of exact hosts/IPs that may resolve to otherwise blocked addresses.
+- Leave the allowlist empty for the safe default when exposing web tools to agents.
 
 ## Interop tools
 
