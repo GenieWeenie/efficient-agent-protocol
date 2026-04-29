@@ -138,6 +138,26 @@ class RuntimeHttpApiIntegrationTest(unittest.TestCase):
         self.assertEqual(body["error_type"], "validation_error")
         self.assertIn("Invalid macro payload", body["message"])
 
+    def test_execute_macro_rejects_oversized_request_body(self) -> None:
+        self.server.stop()
+        self.server = EAPRuntimeHTTPServer(
+            executor=AsyncLocalExecutor(self.state_manager, ToolRegistry()),
+            state_manager=self.state_manager,
+            required_bearer_token="secret-token",
+            max_request_body_bytes=32,
+        ).start()
+
+        response = requests.post(
+            f"{self.server.base_url}/v1/eap/macro/execute",
+            headers={"Authorization": "Bearer secret-token", "Content-Type": "application/json"},
+            data='{"macro":{"steps":[{"step_id":"step_1","tool_name":"echo_text","arguments":{"text":"hello"}}]}}',
+            timeout=5,
+        )
+        self.assertEqual(response.status_code, 413)
+        body = response.json()
+        self.assertEqual(body["error_type"], "request_body_too_large")
+        self.assertEqual(body["details"]["max_request_body_bytes"], 32)
+
     def test_resume_run_with_approval_decision(self) -> None:
         execute_response = requests.post(
             f"{self.server.base_url}/v1/eap/macro/execute",

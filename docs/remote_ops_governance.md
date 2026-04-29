@@ -219,6 +219,7 @@ python scripts/eap_runtime_service.py \
   --db-path /var/lib/eap/agent_state.db \
   --policy-profile strict \
   --guardrails-config /etc/eap/guardrails.json \
+  --max-request-body-bytes 1000000 \
   --scoped-auth-config /etc/eap/scoped_auth.json
 ```
 
