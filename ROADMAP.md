@@ -100,6 +100,14 @@ This roadmap tracks what is needed to recommend EAP without caveats.
 - Prioritize package ownership, runtime server/auth safety, sandboxed tools, SSRF controls, macro hang protection, and regression gates.
 - Checklist: `docs/phase13_production_hardening_roadmap.md`
 
+## Phase 14: Release Maintenance / v1.0.1 Readiness (Active)
+
+- Execute ordered release-maintenance queue (`EAP-129` to `EAP-133`) tracked in Linear.
+- Remove release noise from package metadata and GitHub Actions runtime warnings.
+- Refresh public release evidence after Phase 13 completion.
+- Run the final `v1.0.1` release readiness dry-run before tagging.
+- Checklist: `docs/phase14_release_maintenance_roadmap.md`
+
 ## Post-v1: Hardening and Ecosystem (Completed)
 
 Post-v1.0.0 work tracked as Linear issues GEN-75 through GEN-81.
