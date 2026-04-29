@@ -161,6 +161,13 @@ Chain-of-custody guidance:
 }
 ```
 
+Runtime auth is fail-closed by default:
+
+- no `--bearer-token` and no `--scoped-auth-config` means runtime requests are denied
+- unauthenticated full-scope access is available only through the explicit `--allow-unauthenticated-local-dev` flag
+- local-dev unauthenticated mode is loopback-only and marks trace metadata with `policy_profile=local_dev`
+- production and self-hosted examples must use bearer/scoped-token configuration
+
 ## Policy Profiles And Templates (EAP-095)
 
 Runtime scoped auth now supports built-in policy profiles with template-based grants.

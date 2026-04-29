@@ -63,7 +63,7 @@ Updated: 2026-04-28 (v1.0.0 baseline plus Phase 13 hardening intake)
 | 33 | `EAP-120` | `GEN-200` | `Done` | Collapse duplicate package trees and define canonical imports |
 | 34 | `EAP-121` | `GEN-201` | `Done` | Add import and package compatibility migration tests |
 | 35 | `EAP-122` | `GEN-202` | `Done` | Replace runtime HTTP server with production ASGI path |
-| 36 | `EAP-123` | `GEN-203` | `Todo` | Fail-closed runtime auth defaults |
+| 36 | `EAP-123` | `GEN-203` | `Done` | Fail-closed runtime auth defaults |
 | 37 | `EAP-124` | `GEN-204` | `Todo` | Sandbox local file tools |
 | 38 | `EAP-125` | `GEN-205` | `Todo` | Add SSRF protection and streaming byte caps to web tools |
 | 39 | `EAP-126` | `GEN-206` | `Todo` | Add macro cycle detection and execution timeout controls |
@@ -73,4 +73,4 @@ Updated: 2026-04-28 (v1.0.0 baseline plus Phase 13 hardening intake)
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: Phase 13 (Production Hardening / v1.0.1 Blockers) is active. `EAP-122` is complete; `EAP-123` is the next ordered `Todo`.
+Current state: Phase 13 (Production Hardening / v1.0.1 Blockers) is active. `EAP-123` is complete; `EAP-124` is the next ordered `Todo`.

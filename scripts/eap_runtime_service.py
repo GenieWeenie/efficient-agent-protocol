@@ -40,6 +40,14 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Optional admin bearer token for /v1/eap/* endpoints.",
     )
     parser.add_argument(
+        "--allow-unauthenticated-local-dev",
+        action="store_true",
+        help=(
+            "Explicit local-development escape hatch. Allows unauthenticated full-scope runtime access "
+            "only when binding to 127.0.0.1, localhost, or ::1. Never use in production."
+        ),
+    )
+    parser.add_argument(
         "--scoped-auth-config",
         default="",
         help=(
@@ -168,7 +176,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"[runtime:error] failed to load --guardrails-config: {exc}")
         return 1
 
-    if not bearer_token and not scoped_tokens:
+    if args.allow_unauthenticated_local_dev and args.host.strip().lower() not in {"127.0.0.1", "localhost", "::1"}:
+        print("[runtime:error] --allow-unauthenticated-local-dev requires --host 127.0.0.1, localhost, or ::1.")
+        return 1
+
+    if not bearer_token and not scoped_tokens and not args.allow_unauthenticated_local_dev:
         print("[runtime:error] provide --bearer-token and/or --scoped-auth-config.")
         return 1
 
@@ -190,6 +202,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         rate_limit_rules=rate_limit_rules or None,
         concurrency_limits=concurrency_limits or None,
         max_request_body_bytes=args.max_request_body_bytes,
+        allow_unauthenticated_local_dev=args.allow_unauthenticated_local_dev,
     ).start()
 
     stop_event = threading.Event()
@@ -205,6 +218,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"[runtime] base_url={server.base_url}")
     print(f"[runtime] db_path={db_path}")
     print(f"[runtime] policy_profile={active_policy_profile}")
+    print(f"[runtime] allow_unauthenticated_local_dev={args.allow_unauthenticated_local_dev}")
+    if args.allow_unauthenticated_local_dev:
+        print("[runtime:warning] unauthenticated local-dev auth is enabled; do not expose this service remotely.")
     print(f"[runtime] scoped_auth_tokens={len(scoped_tokens)}")
     print(f"[runtime] rate_limits={json.dumps(normalized_rate_limits, sort_keys=True, default=lambda o: o.__dict__)}")
     print(f"[runtime] concurrency_limits={json.dumps(normalized_concurrency_limits, sort_keys=True)}")
