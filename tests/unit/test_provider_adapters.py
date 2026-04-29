@@ -28,7 +28,7 @@ class ProviderAdaptersTest(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.json.return_value = {"choices": [{"message": {"content": "openai-ok"}}]}
         mock_response.raise_for_status.return_value = None
-        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
             response = provider.complete(request)
 
         self.assertEqual(response.text, "openai-ok")
@@ -55,7 +55,7 @@ class ProviderAdaptersTest(unittest.TestCase):
             b'data: {"choices":[{"delta":{"content":"lo"}}]}',
             b"data: [DONE]",
         ]
-        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
             chunks = list(provider.stream(request))
 
         self.assertEqual(chunks, ["Hel", "lo"])
@@ -79,7 +79,7 @@ class ProviderAdaptersTest(unittest.TestCase):
         mock_response.json.return_value = {"choices": [{"message": {"content": "ok"}}]}
         mock_response.raise_for_status.return_value = None
 
-        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
             provider.complete(request)
 
         kwargs = post.call_args.kwargs
@@ -103,7 +103,7 @@ class ProviderAdaptersTest(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.json.return_value = {"content": [{"type": "text", "text": "anthropic-ok"}]}
         mock_response.raise_for_status.return_value = None
-        with patch("agent.providers.anthropic_provider.requests.post", return_value=mock_response) as post:
+        with patch("eap.agent.providers.anthropic_provider.requests.post", return_value=mock_response) as post:
             response = provider.complete(request)
 
         self.assertEqual(response.text, "anthropic-ok")
@@ -126,7 +126,7 @@ class ProviderAdaptersTest(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.json.return_value = {"id": "resp_1", "output_text": "responses-ok"}
         mock_response.raise_for_status.return_value = None
-        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
             response = provider.complete(request)
 
         self.assertEqual(response.text, "responses-ok")
@@ -150,7 +150,7 @@ class ProviderAdaptersTest(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.status_code = 404
         mock_response.raise_for_status.side_effect = requests.HTTPError("404 Not Found")
-        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response):
+        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response):
             with self.assertRaises(RuntimeError) as context:
                 provider.complete(request)
         self.assertIn("Responses API path is unavailable", str(context.exception))
@@ -176,7 +176,7 @@ class ProviderAdaptersTest(unittest.TestCase):
         }
         mock_response.raise_for_status.return_value = None
 
-        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response):
+        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response):
             response = provider.complete(request)
         self.assertEqual(response.text, "hello world")
 
@@ -196,7 +196,7 @@ class ProviderAdaptersTest(unittest.TestCase):
         mock_response.json.return_value = {"id": "resp_1", "output": [{"content": [{"type": "ref"}]}]}
         mock_response.raise_for_status.return_value = None
 
-        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response):
+        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response):
             with self.assertRaises(KeyError):
                 provider.complete(request)
 
@@ -221,7 +221,7 @@ class ProviderAdaptersTest(unittest.TestCase):
             b'data: {"type":"response.output_text.done","text":"Hello"}',
             b"data: [DONE]",
         ]
-        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
             chunks = list(provider.stream(request))
 
         self.assertEqual(chunks, ["Hel", "lo"])
@@ -252,7 +252,7 @@ class ProviderAdaptersTest(unittest.TestCase):
             b'data: {"output":[{"content":[{"type":"output_text","text":"B"}]}]}',
             b"data: [DONE]",
         ]
-        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
             chunks = list(provider.stream(request))
 
         self.assertEqual(chunks, ["A"])
@@ -277,7 +277,7 @@ class ProviderAdaptersTest(unittest.TestCase):
             b'data: {"type":"response.completed","response":{"output_text":"Hello done"}}',
             b"data: [DONE]",
         ]
-        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response):
+        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response):
             chunks = list(provider.stream(request))
         self.assertEqual(chunks, ["Hello done"])
 
@@ -296,7 +296,7 @@ class ProviderAdaptersTest(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.status_code = 405
         mock_response.raise_for_status.side_effect = requests.HTTPError("405 Method Not Allowed")
-        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response):
+        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response):
             with self.assertRaises(RuntimeError) as context:
                 list(provider.stream(request))
         self.assertIn("Responses API path is unavailable", str(context.exception))
@@ -318,7 +318,7 @@ class ProviderAdaptersTest(unittest.TestCase):
         mock_response.iter_lines.return_value = [
             b'data: {"type":"response.error","error":{"code":"policy_denied","message":"Denied by policy"}}'
         ]
-        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response):
+        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response):
             with self.assertRaises(RuntimeError) as context:
                 list(provider.stream(request))
         self.assertIn("Denied by policy", str(context.exception))
@@ -343,7 +343,7 @@ class ProviderAdaptersTest(unittest.TestCase):
             b'data: {"choices":[{"delta":{"content":"tool"}}]}',
             b"data: [DONE]",
         ]
-        with patch("agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
             chunks = list(provider.stream(request))
 
         self.assertEqual(chunks, ["tool"])
@@ -380,7 +380,7 @@ class ProviderAdaptersTest(unittest.TestCase):
             "candidates": [{"content": {"parts": [{"text": "google-ok"}]}}]
         }
         mock_response.raise_for_status.return_value = None
-        with patch("agent.providers.google_provider.requests.post", return_value=mock_response) as post:
+        with patch("eap.agent.providers.google_provider.requests.post", return_value=mock_response) as post:
             response = provider.complete_with_tools(request)
 
         self.assertEqual(response.text, "google-ok")

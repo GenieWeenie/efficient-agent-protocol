@@ -25,7 +25,7 @@ class OpenClawClientUnitTest(unittest.TestCase):
             status_code=200,
             payload={"ok": True, "tool": "echo_tool", "result": {"text": "hello"}},
         )
-        with patch("environment.openclaw_client.requests.post", return_value=mock_response) as post:
+        with patch("eap.environment.openclaw_client.requests.post", return_value=mock_response) as post:
             result = invoke_openclaw_tools_api(
                 base_url="https://gateway.openclaw.local",
                 api_key="secret-token",
@@ -50,7 +50,7 @@ class OpenClawClientUnitTest(unittest.TestCase):
             status_code=401,
             payload={"error": {"code": "UNAUTHORIZED", "message": "Missing or invalid bearer token."}},
         )
-        with patch("environment.openclaw_client.requests.post", return_value=mock_response):
+        with patch("eap.environment.openclaw_client.requests.post", return_value=mock_response):
             with self.assertRaises(OpenClawToolInvokeError) as context:
                 invoke_openclaw_tools_api(
                     base_url="https://gateway.openclaw.local",
@@ -74,7 +74,7 @@ class OpenClawClientUnitTest(unittest.TestCase):
                 }
             },
         )
-        with patch("environment.openclaw_client.requests.post", return_value=mock_response):
+        with patch("eap.environment.openclaw_client.requests.post", return_value=mock_response):
             with self.assertRaises(OpenClawToolInvokeError) as context:
                 invoke_openclaw_tools_api(
                     base_url="https://gateway.openclaw.local",
@@ -94,7 +94,7 @@ class OpenClawClientUnitTest(unittest.TestCase):
             payload={"error": {"code": "RATE_LIMITED", "message": "Too many requests."}},
             headers={"Retry-After": "17"},
         )
-        with patch("environment.openclaw_client.requests.post", return_value=mock_response):
+        with patch("eap.environment.openclaw_client.requests.post", return_value=mock_response):
             with self.assertRaises(OpenClawToolInvokeError) as context:
                 invoke_openclaw_tools_api(
                     base_url="https://gateway.openclaw.local",

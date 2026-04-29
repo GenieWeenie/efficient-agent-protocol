@@ -74,13 +74,13 @@ class ToolModuleTest(unittest.TestCase):
         response.content = b"<html><body><h1>Title</h1><p>Body</p></body></html>"
         response.encoding = "utf-8"
         response.raise_for_status.return_value = None
-        with patch("environment.tools.web_tools.requests.get", return_value=response):
+        with patch("eap.environment.tools.web_tools.requests.get", return_value=response):
             text = scrape_url("https://example.com")
         self.assertIn("Title", text)
         self.assertIn("Body", text)
 
     def test_scrape_url_failure_raises_runtime_error(self) -> None:
-        with patch("environment.tools.web_tools.requests.get", side_effect=RuntimeError("network down")):
+        with patch("eap.environment.tools.web_tools.requests.get", side_effect=RuntimeError("network down")):
             with self.assertRaises(RuntimeError):
                 scrape_url("https://example.com")
 
@@ -89,7 +89,7 @@ class ToolModuleTest(unittest.TestCase):
         response.content = b'{"name":"eap","version":1}'
         response.encoding = "utf-8"
         response.raise_for_status.return_value = None
-        with patch("environment.tools.web_tools.requests.get", return_value=response):
+        with patch("eap.environment.tools.web_tools.requests.get", return_value=response):
             text = fetch_json_url("https://example.com/data.json")
         self.assertIn('"name": "eap"', text)
         self.assertIn('"version": 1', text)
@@ -99,7 +99,7 @@ class ToolModuleTest(unittest.TestCase):
         response.content = b"<html>not json</html>"
         response.encoding = "utf-8"
         response.raise_for_status.return_value = None
-        with patch("environment.tools.web_tools.requests.get", return_value=response):
+        with patch("eap.environment.tools.web_tools.requests.get", return_value=response):
             with self.assertRaises(RuntimeError):
                 fetch_json_url("https://example.com/data.json")
 
@@ -114,7 +114,7 @@ class ToolModuleTest(unittest.TestCase):
         )
         response.encoding = "utf-8"
         response.raise_for_status.return_value = None
-        with patch("environment.tools.web_tools.requests.get", return_value=response):
+        with patch("eap.environment.tools.web_tools.requests.get", return_value=response):
             payload = extract_links_from_url(
                 "https://example.com/base",
                 same_domain_only=True,

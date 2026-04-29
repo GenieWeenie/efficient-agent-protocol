@@ -8,8 +8,8 @@ Extended in `EAP-109` to include executor runtime path, and in `EAP-110` to incl
 
 Current strict-typed target modules (required in CI):
 
-- `environment.safe_eval`
-- `environment.executor`
+- `eap.environment.safe_eval`
+- `eap.environment.executor`
 - `eap.runtime.auth_scopes`
 - `eap.runtime.guardrails`
 - `eap.runtime.http_api`
@@ -19,7 +19,7 @@ CI gate:
 - Workflow: `.github/workflows/ci.yml`
 - Step: `Type rigor gate (mypy scoped modules)` under required `Lint/Test (py3.11)`
 - Command:
-  - `mypy --follow-imports=skip environment/safe_eval.py environment/executor.py eap/runtime/auth_scopes.py eap/runtime/guardrails.py eap/runtime/http_api.py`
+  - `mypy --follow-imports=skip eap/environment/safe_eval.py eap/environment/executor.py eap/runtime/auth_scopes.py eap/runtime/guardrails.py eap/runtime/http_api.py`
 
 `--follow-imports=skip` keeps enforcement bounded to the scoped modules so legacy typing debt in non-scoped imports does not block this tranche.
 

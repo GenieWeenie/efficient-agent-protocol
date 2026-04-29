@@ -1,6 +1,6 @@
 # Built-in Tools
 
-This document describes the built-in tools shipped in `environment.tools`.
+This document describes the built-in tools shipped in `eap.environment.tools`.
 
 ## File tools
 

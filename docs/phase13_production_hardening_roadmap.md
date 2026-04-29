@@ -7,7 +7,7 @@ Intake source: production-hardening review received 2026-04-28
 Current status:
 - [x] `EAP-119` production hardening intake and v1.0.1 blocker plan (`GEN-199`)
 - [x] `EAP-120` collapse duplicate package trees and define canonical imports (`GEN-200`)
-- [ ] `EAP-121` add import and package compatibility migration tests (`GEN-201`)
+- [x] `EAP-121` add import and package compatibility migration tests (`GEN-201`)
 - [ ] `EAP-122` replace runtime HTTP server with production ASGI path (`GEN-202`)
 - [ ] `EAP-123` fail-closed runtime auth defaults (`GEN-203`)
 - [ ] `EAP-124` sandbox local file tools (`GEN-204`)

@@ -26,7 +26,7 @@ class OllamaProviderTest(unittest.TestCase):
         mock_resp = MagicMock()
         mock_resp.json.return_value = {"message": {"content": "ollama-ok"}, "done": True}
         mock_resp.raise_for_status.return_value = None
-        with patch("agent.providers.ollama_provider.requests.post", return_value=mock_resp) as post:
+        with patch("eap.agent.providers.ollama_provider.requests.post", return_value=mock_resp) as post:
             response = provider.complete(request)
 
         self.assertEqual(response.text, "ollama-ok")
@@ -42,7 +42,7 @@ class OllamaProviderTest(unittest.TestCase):
         mock_resp = MagicMock()
         mock_resp.json.return_value = {"message": {"content": "tools-ok"}, "done": True}
         mock_resp.raise_for_status.return_value = None
-        with patch("agent.providers.ollama_provider.requests.post", return_value=mock_resp):
+        with patch("eap.agent.providers.ollama_provider.requests.post", return_value=mock_resp):
             response = provider.complete_with_tools(request)
 
         self.assertEqual(response.text, "tools-ok")
@@ -59,7 +59,7 @@ class OllamaProviderTest(unittest.TestCase):
         mock_resp = MagicMock()
         mock_resp.raise_for_status.return_value = None
         mock_resp.iter_lines.return_value = iter(lines)
-        with patch("agent.providers.ollama_provider.requests.post", return_value=mock_resp):
+        with patch("eap.agent.providers.ollama_provider.requests.post", return_value=mock_resp):
             tokens = list(provider.stream(request))
 
         self.assertEqual(tokens, ["Hello", " world"])
@@ -75,7 +75,7 @@ class OllamaProviderTest(unittest.TestCase):
         mock_resp = MagicMock()
         mock_resp.raise_for_status.return_value = None
         mock_resp.iter_lines.return_value = iter(lines)
-        with patch("agent.providers.ollama_provider.requests.post", return_value=mock_resp):
+        with patch("eap.agent.providers.ollama_provider.requests.post", return_value=mock_resp):
             tokens = list(provider.stream(request))
 
         self.assertEqual(tokens, ["ok"])
