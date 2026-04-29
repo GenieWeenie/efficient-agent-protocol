@@ -85,10 +85,12 @@ Fix:
 ### Runtime smoke fails with `401 unauthorized`
 Cause:
 - Smoke token does not match the runtime token in compose env.
+- Runtime was started without `--bearer-token` or `--scoped-auth-config`; runtime auth fails closed by default.
 
 Fix:
 - Pass the exact configured token:
   - `python scripts/self_hosted_stack_smoke.py --base-url http://127.0.0.1:8080 --bearer-token "<runtime-token>"`
+- For local-only experiments, `scripts/eap_runtime_service.py` has an explicit `--allow-unauthenticated-local-dev` flag. It only works on loopback hosts and must not be used for self-hosted or remote deployments.
 
 ### Runtime API returns `403 forbidden` with missing scope message
 Cause:

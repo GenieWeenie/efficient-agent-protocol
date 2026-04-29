@@ -69,6 +69,7 @@ The smoke validates:
 - Runtime API expects `Authorization: Bearer <token>`.
 - Token source: `EAP_RUNTIME_BEARER_TOKEN` in `deploy/self_hosted/.env`.
 - Requests without valid bearer token return `401 unauthorized`.
+- Missing auth configuration does not grant anonymous access; runtime auth fails closed by default.
 - Runtime also supports scoped tokens via `--scoped-auth-config` for multi-user governance.
 - Scoped auth defaults to `--policy-profile strict` unless overridden.
 - Runtime supports `--guardrails-config` for endpoint rate limits and concurrency ceilings.
@@ -90,6 +91,7 @@ See profile/template matrix and deny-by-default behavior in `docs/remote_ops_gov
 - Use a strong, randomly generated runtime token.
 - Prefer role-scoped tokens for operators instead of sharing one global token.
 - Do not commit `deploy/self_hosted/.env` to source control.
+- Do not use `--allow-unauthenticated-local-dev` outside loopback-only local testing.
 - Rotate token by updating `EAP_RUNTIME_BEARER_TOKEN` and restarting the stack:
 
 ```bash

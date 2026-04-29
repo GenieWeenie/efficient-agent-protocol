@@ -51,6 +51,7 @@ class ASGISend(Protocol):
         ...
 
 DEFAULT_MAX_REQUEST_BODY_BYTES = 1_000_000
+LOCAL_DEV_AUTH_LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
 
 
 def _timestamp_utc() -> str:
@@ -96,12 +97,14 @@ class _RuntimeState:
         required_bearer_token: Optional[str],
         scoped_bearer_tokens: dict[str, ScopedTokenPolicy],
         guardrails: RuntimeGuardrails,
+        allow_unauthenticated_local_dev: bool,
     ) -> None:
         self.executor = executor
         self.state_manager = state_manager
         self.required_bearer_token = required_bearer_token
         self.scoped_bearer_tokens = scoped_bearer_tokens
         self.guardrails = guardrails
+        self.allow_unauthenticated_local_dev = allow_unauthenticated_local_dev
         self._guardrail_lock = threading.Lock()
         self.guardrail_counters: dict[str, int] = {"rate_limited": 0, "throttled": 0}
 
@@ -189,12 +192,13 @@ class _RuntimeASGIApp:
         scoped_policies = self._state.scoped_bearer_tokens
         required = self._state.required_bearer_token
 
-        if not required and not scoped_policies:
+        if self._state.allow_unauthenticated_local_dev and not required and not scoped_policies:
             return {
-                "actor_id": "anonymous",
+                "actor_id": "local-dev-anonymous",
                 "scopes": set(FULL_RUNTIME_SCOPES),
-                "auth_subject": "anonymous",
-                "policy_profile": "trusted",
+                "auth_subject": "unauthenticated_local_dev",
+                "policy_profile": "local_dev",
+                "local_dev_auth": True,
             }
 
         if not token:
@@ -296,6 +300,8 @@ class _RuntimeASGIApp:
         policy_template = auth_context.get("template")
         if policy_template:
             metadata["policy_template"] = policy_template
+        if auth_context.get("local_dev_auth"):
+            metadata["local_dev_auth"] = True
         return metadata
 
     def _check_run_access(self, run_id: str, auth_context: AuthContext, *, allow_any_scope: str) -> None:
@@ -559,6 +565,10 @@ class EAPRuntimeHTTPServer:
     """ASGI-backed runtime endpoints for external orchestrator integration."""
 
     @staticmethod
+    def _is_loopback_host(host: str) -> bool:
+        return host.strip().lower() in LOCAL_DEV_AUTH_LOOPBACK_HOSTS
+
+    @staticmethod
     def _normalize_scoped_bearer_tokens(
         scoped_bearer_tokens: Optional[dict[str, dict[str, object]]],
     ) -> dict[str, ScopedTokenPolicy]:
@@ -610,11 +620,17 @@ class EAPRuntimeHTTPServer:
         rate_limit_rules: Optional[dict[str, dict[str, object]]] = None,
         concurrency_limits: Optional[dict[str, object]] = None,
         max_request_body_bytes: int = DEFAULT_MAX_REQUEST_BODY_BYTES,
+        allow_unauthenticated_local_dev: bool = False,
     ) -> None:
         if port < 0 or port > 65535:
             raise ValueError("port must be between 0 and 65535")
         if max_request_body_bytes <= 0:
             raise ValueError("max_request_body_bytes must be greater than 0")
+        if allow_unauthenticated_local_dev and not self._is_loopback_host(host):
+            raise ValueError(
+                "allow_unauthenticated_local_dev requires a loopback host "
+                "(127.0.0.1, localhost, or ::1)."
+            )
 
         self._host = host
         self._configured_port = port
@@ -631,7 +647,13 @@ class EAPRuntimeHTTPServer:
                 rate_limit_rules=normalized_rate_limits,
                 concurrency_limits=normalized_concurrency_limits,
             ),
+            allow_unauthenticated_local_dev=allow_unauthenticated_local_dev,
         )
+        if allow_unauthenticated_local_dev:
+            print(
+                "[runtime:warning] unauthenticated local-dev auth is enabled; "
+                "use only on loopback development hosts."
+            )
         self._app = _RuntimeASGIApp(self._state, max_request_body_bytes=max_request_body_bytes)
         self._config = uvicorn.Config(
             self._app,

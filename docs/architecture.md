@@ -109,7 +109,7 @@ Primary endpoints:
 Runtime API includes:
 
 - Uvicorn-backed ASGI request handling
-- scoped bearer-token auth and actor ownership checks
+- fail-closed bearer/scoped-token auth and actor ownership checks
 - operation-level rate limiting and concurrency throttles
 - request body size enforcement with structured JSON errors
 - trace/summary retrieval for external orchestrators (OpenClaw/MCP integrations)

@@ -96,6 +96,12 @@ class AsyncLocalExecutor:
         }
         if isinstance(source.get("auth_subject"), str) and source["auth_subject"].strip():
             metadata["auth_subject"] = source["auth_subject"].strip()
+        if isinstance(source.get("policy_profile"), str) and source["policy_profile"].strip():
+            metadata["policy_profile"] = source["policy_profile"].strip()
+        if isinstance(source.get("policy_template"), str) and source["policy_template"].strip():
+            metadata["policy_template"] = source["policy_template"].strip()
+        if source.get("local_dev_auth") is True:
+            metadata["local_dev_auth"] = True
         return metadata
 
     async def execute_macro(
@@ -153,6 +159,12 @@ class AsyncLocalExecutor:
                     merged_actor_metadata["actor_scopes"] = normalized_actor_metadata["actor_scopes"]
                 if normalized_actor_metadata.get("auth_subject"):
                     merged_actor_metadata["auth_subject"] = normalized_actor_metadata["auth_subject"]
+                if normalized_actor_metadata.get("policy_profile"):
+                    merged_actor_metadata["policy_profile"] = normalized_actor_metadata["policy_profile"]
+                if normalized_actor_metadata.get("policy_template"):
+                    merged_actor_metadata["policy_template"] = normalized_actor_metadata["policy_template"]
+                if normalized_actor_metadata.get("local_dev_auth"):
+                    merged_actor_metadata["local_dev_auth"] = True
                 merged_actor_metadata["operation"] = operation
                 run_actor_metadata = merged_actor_metadata
 
