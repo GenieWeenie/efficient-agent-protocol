@@ -4,6 +4,7 @@ from typing import Dict, Iterable, Optional, Tuple
 import requests
 
 from .base import CompletionRequest, CompletionResponse, LLMProvider
+from eap.protocol.http_client import BoundedHTTPClient
 
 
 class OpenAIProvider(LLMProvider):
@@ -16,12 +17,15 @@ class OpenAIProvider(LLMProvider):
         timeout_seconds: int,
         extra_headers: Optional[Dict[str, str]] = None,
         api_mode: str = "chat_completions",
+        http_client: Optional[BoundedHTTPClient] = None,
     ):
         self.endpoint = endpoint
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
         self.extra_headers = dict(extra_headers or {})
         self.api_mode = api_mode
+        self._owns_http_client = http_client is None
+        self._http_client = http_client or BoundedHTTPClient(timeout_seconds=timeout_seconds)
 
     def _headers(self) -> Dict[str, str]:
         headers = dict(self.extra_headers)
@@ -44,25 +48,27 @@ class OpenAIProvider(LLMProvider):
             }
             if request.tools:
                 payload["tools"] = request.tools
-            response = requests.post(
+            response = self._http_client.post(
                 self.endpoint,
                 json=payload,
                 headers=self._headers(),
-                timeout=self.timeout_seconds,
             )
             try:
-                response.raise_for_status()
-            except requests.HTTPError as exc:
-                if response.status_code in {404, 405, 410, 501}:
-                    raise RuntimeError(
-                        "OpenAI Responses API path is unavailable on this endpoint."
-                    ) from exc
-                raise
-            raw_json = response.json()
-            return CompletionResponse(
-                text=self._extract_responses_text(raw_json),
-                raw_response=raw_json,
-            )
+                try:
+                    response.raise_for_status()
+                except requests.HTTPError as exc:
+                    if response.status_code in {404, 405, 410, 501}:
+                        raise RuntimeError(
+                            "OpenAI Responses API path is unavailable on this endpoint."
+                        ) from exc
+                    raise
+                raw_json = response.json()
+                return CompletionResponse(
+                    text=self._extract_responses_text(raw_json),
+                    raw_response=raw_json,
+                )
+            finally:
+                response.close()
 
         payload = {
             "model": request.model,
@@ -72,18 +78,20 @@ class OpenAIProvider(LLMProvider):
         if request.tools:
             payload["tools"] = request.tools
 
-        response = requests.post(
+        response = self._http_client.post(
             self.endpoint,
             json=payload,
             headers=self._headers(),
-            timeout=self.timeout_seconds,
         )
-        response.raise_for_status()
-        raw_json = response.json()
-        return CompletionResponse(
-            text=raw_json["choices"][0]["message"]["content"],
-            raw_response=raw_json,
-        )
+        try:
+            response.raise_for_status()
+            raw_json = response.json()
+            return CompletionResponse(
+                text=raw_json["choices"][0]["message"]["content"],
+                raw_response=raw_json,
+            )
+        finally:
+            response.close()
 
     @staticmethod
     def _extract_responses_text(raw_json: Dict[str, object]) -> str:
@@ -206,11 +214,10 @@ class OpenAIProvider(LLMProvider):
                 payload["tools"] = request.tools
 
             try:
-                response = requests.post(
+                response = self._http_client.post(
                     self.endpoint,
                     json=payload,
                     headers=self._headers(),
-                    timeout=self.timeout_seconds,
                     stream=True,
                 )
             except requests.ConnectionError as exc:
@@ -225,18 +232,77 @@ class OpenAIProvider(LLMProvider):
                     f"Consider increasing EAP_TIMEOUT_SECONDS (current: {self.timeout_seconds}s)."
                 ) from exc
             try:
-                response.raise_for_status()
-            except requests.HTTPError as exc:
-                if response.status_code in {404, 405, 410, 501}:
-                    raise RuntimeError(
-                        f"OpenAI Responses API path is unavailable on this endpoint ({self.endpoint}). "
-                        f"Switch to chat_completions mode or use a compatible gateway. "
-                        f"See docs/streaming_compatibility.md."
-                    ) from exc
-                raise
+                try:
+                    response.raise_for_status()
+                except requests.HTTPError as exc:
+                    if response.status_code in {404, 405, 410, 501}:
+                        raise RuntimeError(
+                            f"OpenAI Responses API path is unavailable on this endpoint ({self.endpoint}). "
+                            f"Switch to chat_completions mode or use a compatible gateway. "
+                            f"See docs/streaming_compatibility.md."
+                        ) from exc
+                    raise
+                saw_incremental = False
+                emitted_final_fallback = False
+                for raw_line in response.iter_lines():
+                    if not raw_line:
+                        continue
+                    line = raw_line.decode("utf-8")
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[len("data:") :].strip()
+                    if data == "[DONE]":
+                        break
+                    try:
+                        payload_obj = json.loads(data)
+                    except json.JSONDecodeError:
+                        continue
+                    if not isinstance(payload_obj, dict):
+                        continue
 
-            saw_incremental = False
-            emitted_final_fallback = False
+                    token, is_incremental = self._extract_responses_stream_token(payload_obj)
+                    if not token:
+                        continue
+                    if is_incremental:
+                        saw_incremental = True
+                        yield token
+                        continue
+                    if saw_incremental or emitted_final_fallback:
+                        continue
+                    emitted_final_fallback = True
+                    yield token
+            finally:
+                response.close()
+            return
+
+        payload = {
+            "model": request.model,
+            "messages": [{"role": msg.role, "content": msg.content} for msg in request.messages],
+            "temperature": request.temperature,
+            "stream": True,
+        }
+        if request.tools:
+            payload["tools"] = request.tools
+
+        try:
+            response = self._http_client.post(
+                self.endpoint,
+                json=payload,
+                headers=self._headers(),
+                stream=True,
+            )
+        except requests.ConnectionError as exc:
+            raise RuntimeError(
+                f"Failed to connect to streaming endpoint ({self.endpoint}). "
+                f"Verify the gateway is running and reachable."
+            ) from exc
+        except requests.Timeout as exc:
+            raise RuntimeError(
+                f"Timeout connecting to streaming endpoint ({self.endpoint}). "
+                f"Consider increasing EAP_TIMEOUT_SECONDS (current: {self.timeout_seconds}s)."
+            ) from exc
+        try:
+            response.raise_for_status()
             for raw_line in response.iter_lines():
                 if not raw_line:
                     continue
@@ -250,67 +316,16 @@ class OpenAIProvider(LLMProvider):
                     payload_obj = json.loads(data)
                 except json.JSONDecodeError:
                     continue
-                if not isinstance(payload_obj, dict):
-                    continue
+                token = (
+                    payload_obj.get("choices", [{}])[0]
+                    .get("delta", {})
+                    .get("content")
+                )
+                if token:
+                    yield str(token)
+        finally:
+            response.close()
 
-                token, is_incremental = self._extract_responses_stream_token(payload_obj)
-                if not token:
-                    continue
-                if is_incremental:
-                    saw_incremental = True
-                    yield token
-                    continue
-                if saw_incremental or emitted_final_fallback:
-                    continue
-                emitted_final_fallback = True
-                yield token
-            return
-
-        payload = {
-            "model": request.model,
-            "messages": [{"role": msg.role, "content": msg.content} for msg in request.messages],
-            "temperature": request.temperature,
-            "stream": True,
-        }
-        if request.tools:
-            payload["tools"] = request.tools
-
-        try:
-            response = requests.post(
-                self.endpoint,
-                json=payload,
-                headers=self._headers(),
-                timeout=self.timeout_seconds,
-                stream=True,
-            )
-        except requests.ConnectionError as exc:
-            raise RuntimeError(
-                f"Failed to connect to streaming endpoint ({self.endpoint}). "
-                f"Verify the gateway is running and reachable."
-            ) from exc
-        except requests.Timeout as exc:
-            raise RuntimeError(
-                f"Timeout connecting to streaming endpoint ({self.endpoint}). "
-                f"Consider increasing EAP_TIMEOUT_SECONDS (current: {self.timeout_seconds}s)."
-            ) from exc
-        response.raise_for_status()
-        for raw_line in response.iter_lines():
-            if not raw_line:
-                continue
-            line = raw_line.decode("utf-8")
-            if not line.startswith("data:"):
-                continue
-            data = line[len("data:") :].strip()
-            if data == "[DONE]":
-                break
-            try:
-                payload_obj = json.loads(data)
-            except json.JSONDecodeError:
-                continue
-            token = (
-                payload_obj.get("choices", [{}])[0]
-                .get("delta", {})
-                .get("content")
-            )
-            if token:
-                yield str(token)
+    def close(self) -> None:
+        if self._owns_http_client:
+            self._http_client.close()

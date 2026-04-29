@@ -22,7 +22,7 @@ class OpenAIResponsesStreamingIntegrationTest(unittest.TestCase):
         ]
 
         seen = []
-        with patch("eap.agent.providers.openai_provider.requests.post", return_value=stream_response) as post:
+        with patch("eap.protocol.http_client.requests.Session.post", return_value=stream_response) as post:
             final = client.stream_chat("hello", on_token=seen.append, fallback_to_non_stream=False)
 
         self.assertEqual(final, "Hello")
@@ -50,7 +50,7 @@ class OpenAIResponsesStreamingIntegrationTest(unittest.TestCase):
 
         seen = []
         with patch(
-            "eap.agent.providers.openai_provider.requests.post",
+            "eap.protocol.http_client.requests.Session.post",
             side_effect=[stream_response, completion_response],
         ) as post:
             final = client.stream_chat("hello", on_token=seen.append)

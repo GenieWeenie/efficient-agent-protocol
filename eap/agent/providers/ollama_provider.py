@@ -8,9 +8,8 @@ Ollama's OpenAI-compatibility shim.
 import json
 from typing import Dict, Iterable, Optional
 
-import requests
-
 from .base import CompletionRequest, CompletionResponse, LLMProvider
+from eap.protocol.http_client import BoundedHTTPClient
 
 
 DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
@@ -24,10 +23,13 @@ class OllamaProvider(LLMProvider):
         base_url: str = DEFAULT_OLLAMA_BASE_URL,
         timeout_seconds: int = 120,
         extra_headers: Optional[Dict[str, str]] = None,
+        http_client: Optional[BoundedHTTPClient] = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.timeout_seconds = timeout_seconds
         self.extra_headers = dict(extra_headers or {})
+        self._owns_http_client = http_client is None
+        self._http_client = http_client or BoundedHTTPClient(timeout_seconds=timeout_seconds)
 
     def _headers(self) -> Dict[str, str]:
         headers = {"Content-Type": "application/json"}
@@ -44,16 +46,18 @@ class OllamaProvider(LLMProvider):
             "stream": False,
             "options": {"temperature": request.temperature},
         }
-        response = requests.post(
+        response = self._http_client.post(
             f"{self.base_url}/api/chat",
             json=payload,
             headers=self._headers(),
-            timeout=self.timeout_seconds,
         )
-        response.raise_for_status()
-        raw_json = response.json()
-        text = raw_json.get("message", {}).get("content", "")
-        return CompletionResponse(text=text, raw_response=raw_json)
+        try:
+            response.raise_for_status()
+            raw_json = response.json()
+            text = raw_json.get("message", {}).get("content", "")
+            return CompletionResponse(text=text, raw_response=raw_json)
+        finally:
+            response.close()
 
     def complete_with_tools(self, request: CompletionRequest) -> CompletionResponse:
         return self.complete(request)
@@ -65,25 +69,31 @@ class OllamaProvider(LLMProvider):
             "stream": True,
             "options": {"temperature": request.temperature},
         }
-        response = requests.post(
+        response = self._http_client.post(
             f"{self.base_url}/api/chat",
             json=payload,
             headers=self._headers(),
-            timeout=self.timeout_seconds,
             stream=True,
         )
-        response.raise_for_status()
-        for raw_line in response.iter_lines():
-            if not raw_line:
-                continue
-            try:
-                chunk = json.loads(raw_line.decode("utf-8"))
-            except json.JSONDecodeError:
-                continue
-            if not isinstance(chunk, dict):
-                continue
-            content = chunk.get("message", {}).get("content")
-            if content:
-                yield str(content)
-            if chunk.get("done", False):
-                break
+        try:
+            response.raise_for_status()
+            for raw_line in response.iter_lines():
+                if not raw_line:
+                    continue
+                try:
+                    chunk = json.loads(raw_line.decode("utf-8"))
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(chunk, dict):
+                    continue
+                content = chunk.get("message", {}).get("content")
+                if content:
+                    yield str(content)
+                if chunk.get("done", False):
+                    break
+        finally:
+            response.close()
+
+    def close(self) -> None:
+        if self._owns_http_client:
+            self._http_client.close()

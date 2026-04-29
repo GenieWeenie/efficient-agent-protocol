@@ -67,10 +67,10 @@ Updated: 2026-04-28 (v1.0.0 baseline plus Phase 13 hardening intake)
 | 37 | `EAP-124` | `GEN-204` | `Done` | Sandbox local file tools |
 | 38 | `EAP-125` | `GEN-205` | `Done` | Add SSRF protection and streaming byte caps to web tools |
 | 39 | `EAP-126` | `GEN-206` | `Done` | Add macro cycle detection and execution timeout controls |
-| 40 | `EAP-127` | `GEN-207` | `Todo` | Harden connection pooling and request lifecycle |
+| 40 | `EAP-127` | `GEN-207` | `Done` | Harden connection pooling and request lifecycle |
 | 41 | `EAP-128` | `GEN-208` | `Todo` | Add production-hardening regression gatepack |
 
 ## Execution Rule
 
 Do not start a new implementation item unless it is the first non-blocked `Todo` item in this queue.  
-Current state: Phase 13 (Production Hardening / v1.0.1 Blockers) is active. `EAP-126` is complete; `EAP-127` is the next ordered `Todo`.
+Current state: Phase 13 (Production Hardening / v1.0.1 Blockers) is active. `EAP-127` is complete; `EAP-128` is the next ordered `Todo`.

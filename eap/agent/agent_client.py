@@ -46,6 +46,16 @@ class AgentClient:
         )
         self.compiler = MacroCompiler()
 
+    def close(self) -> None:
+        """Release provider-owned network resources."""
+        self.provider.close()
+
+    def __enter__(self) -> "AgentClient":
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+        self.close()
+
     def _headers(self) -> Dict[str, str]:
         if hasattr(self.provider, "_headers"):
             return self.provider._headers()  # type: ignore[attr-defined]

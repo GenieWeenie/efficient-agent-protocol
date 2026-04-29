@@ -40,6 +40,35 @@ Set via `EAP_EXECUTOR_PER_TOOL_LIMITS_JSON`:
 | `backoff_multiplier` | 2.0 | Standard exponential backoff; reduce to 1.5 for tighter latency budgets |
 | `timeout_seconds` | 60 | Per-provider; reduce for local models (10-30), increase for large cloud models (120+) |
 
+## Provider HTTP Lifecycle
+
+Provider calls use a reusable pooled `requests.Session` through
+`BoundedHTTPClient`. OpenClaw integrations can use `OpenClawToolsClient` for
+the same reusable lifecycle; the backwards-compatible one-shot helper remains
+bounded and closes its client after each call.
+
+Defaults:
+
+| Setting | Default | Notes |
+|---|---|---|
+| Connect timeout | `min(5s, timeout_seconds)` | Keeps dead gateways from consuming the full read budget during connection setup |
+| Read timeout | `timeout_seconds` | Comes from `EAP_TIMEOUT_SECONDS` or role-specific timeout env vars |
+| Retry attempts | 2 | Applies to connection/read errors and HTTP `429`, `500`, `502`, `503`, `504` |
+| Retry backoff | 0.25 | Uses urllib3 exponential backoff and honors `Retry-After` |
+| Pool size | 10 connections | Per provider/client instance |
+
+Lifecycle guidance:
+
+- Reuse `AgentClient`, provider, or `OpenClawToolsClient` instances across
+  requests instead of creating one per prompt.
+- Call `AgentClient.close()` or use `with AgentClient(...) as client:` in
+  long-running processes to release pooled sockets during shutdown.
+- For embedded/custom integrations, inject `BoundedHTTPClient` when you need
+  custom pool or retry settings.
+- Built-in web tools intentionally use a short-lived session per invocation so
+  each redirect target can be revalidated for SSRF safety before the next
+  request.
+
 ## Runtime HTTP API
 
 | Environment Variable | Default | Description |

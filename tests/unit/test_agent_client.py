@@ -18,12 +18,12 @@ class AgentClientTest(unittest.TestCase):
         mock_response.json.return_value = {"choices": [{"message": {"content": "ok"}}]}
         mock_response.raise_for_status.return_value = None
 
-        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+        with patch("eap.protocol.http_client.requests.Session.post", return_value=mock_response) as post:
             result = client.chat("hello")
 
         self.assertEqual(result, "ok")
         kwargs = post.call_args.kwargs
-        self.assertEqual(kwargs["timeout"], 12)
+        self.assertEqual(kwargs["timeout"], (5.0, 12.0))
         self.assertEqual(kwargs["headers"]["Authorization"], "Bearer secret")
         self.assertEqual(kwargs["json"]["temperature"], 0.3)
 
@@ -33,7 +33,7 @@ class AgentClientTest(unittest.TestCase):
         mock_response.json.return_value = {"choices": [{"message": {"content": "{\"steps\": []}"}}]}
         mock_response.raise_for_status.return_value = None
 
-        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response):
+        with patch("eap.protocol.http_client.requests.Session.post", return_value=mock_response):
             macro = client.generate_macro("do thing", {"x_hash": {"type": "object"}})
 
         self.assertEqual(macro.steps, [])
@@ -48,7 +48,7 @@ class AgentClientTest(unittest.TestCase):
         mock_response.json.return_value = {"choices": [{"message": {"content": "{\"steps\": []}"}}]}
         mock_response.raise_for_status.return_value = None
 
-        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+        with patch("eap.protocol.http_client.requests.Session.post", return_value=mock_response) as post:
             client.generate_macro(
                 "follow up",
                 {"x_hash": {"type": "object"}},
@@ -70,7 +70,7 @@ class AgentClientTest(unittest.TestCase):
         mock_response.json.return_value = {"output_text": "ok"}
         mock_response.raise_for_status.return_value = None
 
-        with patch("eap.agent.providers.openai_provider.requests.post", return_value=mock_response) as post:
+        with patch("eap.protocol.http_client.requests.Session.post", return_value=mock_response) as post:
             result = client.chat("hello")
 
         self.assertEqual(result, "ok")

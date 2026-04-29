@@ -20,6 +20,17 @@ Global defaults:
 - `EAP_OPENAI_API_MODE` (`chat_completions` or `responses`, default: `chat_completions`)
 - `EAP_EXTRA_HEADERS_JSON` (optional JSON object of HTTP headers)
 
+Provider HTTP lifecycle:
+- Provider HTTP calls reuse pooled sessions with bounded retries.
+- Use `OpenClawToolsClient` for reusable OpenClaw `/tools/invoke` sessions; the
+  backwards-compatible helper is a bounded one-shot call.
+- `EAP_TIMEOUT_SECONDS` controls the read timeout; the connect timeout defaults
+  to `min(5s, EAP_TIMEOUT_SECONDS)`.
+- Role-specific timeout variables (`EAP_ARCHITECT_TIMEOUT_SECONDS`,
+  `EAP_AUDITOR_TIMEOUT_SECONDS`) override the global value for those clients.
+- Long-running processes should call `AgentClient.close()` or use
+  `with AgentClient(...) as client:` to release pooled sockets at shutdown.
+
 Role-specific overrides:
 - `EAP_ARCHITECT_BASE_URL`
 - `EAP_ARCHITECT_MODEL`
