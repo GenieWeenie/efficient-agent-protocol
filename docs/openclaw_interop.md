@@ -109,10 +109,10 @@ Recommended sequence:
 ## 8) Implemented MCP Bridge (EAP-078)
 
 `EAP-078` is now implemented in-repo with:
-- MCP stdio client bridge at `environment/mcp_client.py`
+- MCP stdio client bridge at `eap/environment/mcp_client.py`
 - built-in bridge tool:
-  - `invoke_mcp_tool` (`environment/tools/mcp_tools.py`)
-  - schema export in `environment.tools` and `eap.environment.tools`
+  - `invoke_mcp_tool` (`eap/environment/tools/mcp_tools.py`)
+  - canonical schema export in `eap.environment.tools`
 - integration test proving runtime execution of a reference MCP tool:
   - `tests/integration/test_mcp_interop.py`
   - mock MCP server fixture: `tests/fixtures/mock_mcp_stdio_server.py`
@@ -288,10 +288,10 @@ Recommended sequence:
 
 `EAP-087` is now implemented in-repo with:
 - typed OpenClaw tools-invoke client:
-  - `environment/openclaw_client.py`
+  - `eap/environment/openclaw_client.py`
 - runtime bridge tool:
-  - `environment/tools/openclaw_tools.py`
-  - schema export in `environment.tools` and `eap.environment.tools`
+  - `eap/environment/tools/openclaw_tools.py`
+  - canonical schema export in `eap.environment.tools`
 - coverage for success, auth failure, and policy-denial mapping:
   - `tests/unit/test_openclaw_client.py`
   - `tests/unit/test_openclaw_tools.py`
