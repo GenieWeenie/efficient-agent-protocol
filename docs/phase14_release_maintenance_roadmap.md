@@ -6,7 +6,7 @@ Intake source: post-Phase 13 completion and post-merge CI annotations from 2026-
 
 Current status:
 - [x] `EAP-129` create Phase 14 release maintenance queue (`GEN-209`)
-- [ ] `EAP-130` clean up package license metadata (`GEN-210`)
+- [x] `EAP-130` clean up package license metadata (`GEN-210`)
 - [ ] `EAP-131` resolve GitHub Actions Node runtime warnings (`GEN-211`)
 - [ ] `EAP-132` refresh release evidence and docs index (`GEN-212`)
 - [ ] `EAP-133` run v1.0.1 release readiness dry-run (`GEN-213`)
