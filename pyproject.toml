@@ -7,7 +7,8 @@ name = "efficient-agent-protocol"
 version = "1.0.1"
 description = "Local-first framework for multi-step tool workflows with pointer-backed state and DAG execution."
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10,<3.14"
 
 dependencies = [
