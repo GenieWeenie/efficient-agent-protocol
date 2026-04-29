@@ -10,7 +10,7 @@ Current status:
 - [x] `EAP-121` add import and package compatibility migration tests (`GEN-201`)
 - [x] `EAP-122` replace runtime HTTP server with production ASGI path (`GEN-202`)
 - [x] `EAP-123` fail-closed runtime auth defaults (`GEN-203`)
-- [ ] `EAP-124` sandbox local file tools (`GEN-204`)
+- [x] `EAP-124` sandbox local file tools (`GEN-204`)
 - [ ] `EAP-125` add SSRF protection and streaming byte caps to web tools (`GEN-205`)
 - [ ] `EAP-126` add macro cycle detection and execution timeout controls (`GEN-206`)
 - [ ] `EAP-127` harden connection pooling and request lifecycle (`GEN-207`)

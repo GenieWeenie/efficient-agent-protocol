@@ -49,6 +49,12 @@ Executor concurrency/rate limits:
   - Example:
     - `{"scrape_url":{"max_concurrency":2,"requests_per_second":5.0,"burst_capacity":2}}`
 
+Built-in file tools:
+- `EAP_FILE_TOOL_ROOT` (optional directory path)
+  - Defaults to the current working directory.
+  - `read_local_file`, `write_local_file`, and `list_local_directory` reject paths that resolve outside this root.
+  - Use a dedicated workspace directory when exposing file tools to an agent.
+
 Pointer janitor (dashboard):
 - `EAP_POINTER_JANITOR_ENABLED` (default: enabled)
 - `EAP_POINTER_JANITOR_INTERVAL_SECONDS` (default: `300`)
@@ -106,3 +112,4 @@ For streaming compatibility across providers and gateways, see [`streaming_compa
 - Executor global concurrency must be a positive integer.
 - Global burst capacity requires global RPS to be set.
 - Per-tool limits JSON must be an object keyed by non-empty tool names.
+- `EAP_FILE_TOOL_ROOT`, when set, must point to an existing directory.

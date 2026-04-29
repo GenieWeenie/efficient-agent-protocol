@@ -1,12 +1,17 @@
+from __future__ import annotations
+
 # environment/tools/file_tools.py
 import json
 import logging
 import os
+from pathlib import Path
+from typing import Optional
 
 logger = logging.getLogger("eap.environment.tools.file_tools")
 
 DEFAULT_MAX_READ_CHARACTERS = 200000
 DEFAULT_MAX_LIST_ENTRIES = 200
+FILE_TOOL_ROOT_ENV = "EAP_FILE_TOOL_ROOT"
 
 
 def _validate_non_empty_path(value: str, field_name: str) -> None:
@@ -14,35 +19,106 @@ def _validate_non_empty_path(value: str, field_name: str) -> None:
         raise ValueError(f"'{field_name}' must be a non-empty string.")
 
 
-def _build_entry_record(base_dir: str, full_path: str, is_dir: bool) -> dict:
-    relative = os.path.relpath(full_path, base_dir)
+def _sandbox_root(sandbox_root: Optional[str] = None) -> Path:
+    raw_root = sandbox_root or os.environ.get(FILE_TOOL_ROOT_ENV) or os.getcwd()
+    root = Path(raw_root).expanduser().resolve()
+    if not root.exists():
+        raise FileNotFoundError(f"File tool sandbox root does not exist: {root}")
+    if not root.is_dir():
+        raise NotADirectoryError(f"File tool sandbox root is not a directory: {root}")
+    return root
+
+
+def _resolve_sandbox_path(path_value: str, *, field_name: str, sandbox_root: Optional[str] = None) -> tuple[Path, Path]:
+    _validate_non_empty_path(path_value, field_name)
+    root = _sandbox_root(sandbox_root)
+    requested = Path(path_value).expanduser()
+    candidate = requested if requested.is_absolute() else root / requested
+    resolved = candidate.resolve(strict=False)
+    if resolved != root and root not in resolved.parents:
+        raise PermissionError(
+            f"Path '{path_value}' escapes the configured file tool sandbox root '{root}'."
+        )
+    return root, resolved
+
+
+def _assert_existing_path_in_sandbox(
+    path_value: str,
+    *,
+    field_name: str,
+    sandbox_root: Optional[str] = None,
+) -> tuple[Path, Path]:
+    root, resolved = _resolve_sandbox_path(path_value, field_name=field_name, sandbox_root=sandbox_root)
+    if not resolved.exists():
+        raise FileNotFoundError(f"Path '{path_value}' not found inside file tool sandbox '{root}'.")
+    # Resolve again with strict semantics so existing symlinks cannot escape after the loose pass.
+    strict_resolved = resolved.resolve(strict=True)
+    if strict_resolved != root and root not in strict_resolved.parents:
+        raise PermissionError(
+            f"Path '{path_value}' escapes the configured file tool sandbox root '{root}'."
+        )
+    return root, strict_resolved
+
+
+def _assert_write_target_in_sandbox(file_path: str, *, sandbox_root: Optional[str] = None) -> tuple[Path, Path]:
+    root, resolved = _resolve_sandbox_path(file_path, field_name="file_path", sandbox_root=sandbox_root)
+    parent = resolved.parent
+    if parent.exists():
+        parent_resolved = parent.resolve(strict=True)
+        if parent_resolved != root and root not in parent_resolved.parents:
+            raise PermissionError(
+                f"Parent directory for '{file_path}' escapes the configured file tool sandbox root '{root}'."
+            )
+        if resolved.exists():
+            target_resolved = resolved.resolve(strict=True)
+            if target_resolved != root and root not in target_resolved.parents:
+                raise PermissionError(
+                    f"Path '{file_path}' escapes the configured file tool sandbox root '{root}'."
+                )
+    return root, resolved
+
+
+def _build_entry_record(sandbox_root: Path, base_dir: Path, full_path: Path, is_dir: bool) -> dict:
+    resolved = full_path.resolve(strict=True)
+    if resolved != sandbox_root and sandbox_root not in resolved.parents:
+        raise PermissionError(
+            f"Directory entry '{full_path}' escapes the configured file tool sandbox root '{sandbox_root}'."
+        )
+    relative = os.path.relpath(resolved, base_dir)
     return {
         "path": relative,
         "type": "directory" if is_dir else "file",
-        "size_bytes": None if is_dir else os.path.getsize(full_path),
+        "size_bytes": None if is_dir else resolved.stat().st_size,
     }
 
 
-def read_local_file(file_path: str, max_characters: int = DEFAULT_MAX_READ_CHARACTERS) -> str:
+def read_local_file(
+    file_path: str,
+    max_characters: int = DEFAULT_MAX_READ_CHARACTERS,
+    sandbox_root: Optional[str] = None,
+) -> str:
     """Reads UTF-8 text from a local file with an explicit size guard."""
     logger.info(
         "tool invoked",
         extra={"tool_name": "read_local_file"},
     )
-    _validate_non_empty_path(file_path, "file_path")
     if max_characters < 1:
         raise ValueError("'max_characters' must be >= 1.")
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"File '{file_path}' not found.")
-    if os.path.isdir(file_path):
+    root, resolved_path = _assert_existing_path_in_sandbox(
+        file_path,
+        field_name="file_path",
+        sandbox_root=sandbox_root,
+    )
+    if resolved_path.is_dir():
         raise IsADirectoryError(f"Path '{file_path}' is a directory, not a file.")
 
-    with open(file_path, "r", encoding="utf-8") as handle:
+    with resolved_path.open("r", encoding="utf-8") as handle:
         content = handle.read(max_characters + 1)
 
     if len(content) > max_characters:
         raise ValueError(
-            f"File '{file_path}' exceeds max_characters={max_characters}. Increase the limit to read this file."
+            f"File '{file_path}' inside sandbox '{root}' exceeds max_characters={max_characters}. "
+            "Increase the limit to read this file."
         )
     return content
 
@@ -52,34 +128,39 @@ def write_local_file(
     content: str,
     mode: str = "overwrite",
     create_directories: bool = False,
+    sandbox_root: Optional[str] = None,
 ) -> str:
     """Writes or appends UTF-8 text to a local file."""
     logger.info(
         "tool invoked",
         extra={"tool_name": "write_local_file"},
     )
-    _validate_non_empty_path(file_path, "file_path")
     if mode not in ("overwrite", "append"):
         raise ValueError("'mode' must be one of: overwrite, append.")
 
-    absolute_path = os.path.abspath(file_path)
-    parent = os.path.dirname(absolute_path)
-    if parent and not os.path.exists(parent):
+    root, absolute_path = _assert_write_target_in_sandbox(file_path, sandbox_root=sandbox_root)
+    parent = absolute_path.parent
+    if not parent.exists():
         if create_directories:
-            os.makedirs(parent, exist_ok=True)
+            parent.mkdir(parents=True, exist_ok=True)
+            parent_resolved = parent.resolve(strict=True)
+            if parent_resolved != root and root not in parent_resolved.parents:
+                raise PermissionError(
+                    f"Parent directory for '{file_path}' escapes the configured file tool sandbox root '{root}'."
+                )
         else:
             raise FileNotFoundError(
                 f"Parent directory '{parent}' not found. Set create_directories=True to create it."
             )
-    if os.path.isdir(absolute_path):
+    if absolute_path.exists() and absolute_path.is_dir():
         raise IsADirectoryError(f"Path '{file_path}' is a directory, not a file.")
 
     file_mode = "w" if mode == "overwrite" else "a"
-    with open(absolute_path, file_mode, encoding="utf-8") as handle:
+    with absolute_path.open(file_mode, encoding="utf-8") as handle:
         written = handle.write(content)
 
     action = "Wrote" if mode == "overwrite" else "Appended"
-    return f"{action} {written} characters to '{file_path}'."
+    return f"{action} {written} characters to '{file_path}' inside sandbox '{root}'."
 
 
 def list_local_directory(
@@ -87,21 +168,23 @@ def list_local_directory(
     recursive: bool = False,
     include_hidden: bool = False,
     max_entries: int = DEFAULT_MAX_LIST_ENTRIES,
+    sandbox_root: Optional[str] = None,
 ) -> str:
     """Lists local directory entries and returns structured JSON output."""
     logger.info(
         "tool invoked",
         extra={"tool_name": "list_local_directory"},
     )
-    _validate_non_empty_path(directory_path, "directory_path")
     if max_entries < 1:
         raise ValueError("'max_entries' must be >= 1.")
-    if not os.path.exists(directory_path):
-        raise FileNotFoundError(f"Directory '{directory_path}' not found.")
-    if not os.path.isdir(directory_path):
+    sandbox_root_path, base_dir = _assert_existing_path_in_sandbox(
+        directory_path,
+        field_name="directory_path",
+        sandbox_root=sandbox_root,
+    )
+    if not base_dir.is_dir():
         raise NotADirectoryError(f"Path '{directory_path}' is not a directory.")
 
-    base_dir = os.path.abspath(directory_path)
     entries = []
     truncated = False
 
@@ -109,7 +192,8 @@ def list_local_directory(
         return include_hidden or not name.startswith(".")
 
     if recursive:
-        for root, dirnames, filenames in os.walk(base_dir):
+        for current_root, dirnames, filenames in os.walk(base_dir):
+            root_path = Path(current_root)
             if not include_hidden:
                 dirnames[:] = [dirname for dirname in dirnames if _is_visible(dirname)]
 
@@ -117,8 +201,8 @@ def list_local_directory(
                 if len(entries) >= max_entries:
                     truncated = True
                     break
-                full_path = os.path.join(root, dirname)
-                entries.append(_build_entry_record(base_dir, full_path, is_dir=True))
+                full_path = root_path / dirname
+                entries.append(_build_entry_record(sandbox_root_path, base_dir, full_path, is_dir=True))
             if truncated:
                 break
 
@@ -128,8 +212,8 @@ def list_local_directory(
                 if len(entries) >= max_entries:
                     truncated = True
                     break
-                full_path = os.path.join(root, filename)
-                entries.append(_build_entry_record(base_dir, full_path, is_dir=False))
+                full_path = root_path / filename
+                entries.append(_build_entry_record(sandbox_root_path, base_dir, full_path, is_dir=False))
             if truncated:
                 break
     else:
@@ -143,10 +227,11 @@ def list_local_directory(
             if len(entries) >= max_entries:
                 truncated = True
                 break
-            entries.append(_build_entry_record(base_dir, entry.path, is_dir=entry.is_dir()))
+            entries.append(_build_entry_record(sandbox_root_path, base_dir, Path(entry.path), is_dir=entry.is_dir()))
 
     payload = {
-        "directory_path": base_dir,
+        "directory_path": str(base_dir),
+        "sandbox_root": str(sandbox_root_path),
         "recursive": recursive,
         "include_hidden": include_hidden,
         "max_entries": max_entries,
