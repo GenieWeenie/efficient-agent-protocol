@@ -4,6 +4,8 @@ from typing import Any, Dict, Optional
 
 import requests
 
+from eap.protocol.http_client import BoundedHTTPClient
+
 
 @dataclass(frozen=True)
 class OpenClawToolInvokeRequest:
@@ -31,6 +33,49 @@ class OpenClawToolInvokeError(RuntimeError):
         self.error_type = error_type
         self.details = details
         self.retry_after_seconds = retry_after_seconds
+
+
+class OpenClawToolsClient:
+    """Reusable OpenClaw `/tools/invoke` client with pooled bounded HTTP lifecycle."""
+
+    def __init__(
+        self,
+        *,
+        base_url: str,
+        api_key: str,
+        timeout_seconds: int = 30,
+        account_id: Optional[str] = None,
+        channel_id: Optional[str] = None,
+        http_client: Optional[BoundedHTTPClient] = None,
+    ) -> None:
+        self.base_url = base_url
+        self.api_key = api_key
+        self.timeout_seconds = timeout_seconds
+        self.account_id = account_id
+        self.channel_id = channel_id
+        self._owns_http_client = http_client is None
+        self._http_client = http_client or BoundedHTTPClient(timeout_seconds=timeout_seconds)
+
+    def invoke(self, request: OpenClawToolInvokeRequest) -> OpenClawToolInvokeResponse:
+        return invoke_openclaw_tools_api(
+            base_url=self.base_url,
+            api_key=self.api_key,
+            request=request,
+            timeout_seconds=self.timeout_seconds,
+            account_id=self.account_id,
+            channel_id=self.channel_id,
+            http_client=self._http_client,
+        )
+
+    def close(self) -> None:
+        if self._owns_http_client:
+            self._http_client.close()
+
+    def __enter__(self) -> "OpenClawToolsClient":
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+        self.close()
 
 
 def _parse_retry_after_seconds(value: Optional[str]) -> Optional[int]:
@@ -118,6 +163,7 @@ def invoke_openclaw_tools_api(
     timeout_seconds: int = 30,
     account_id: Optional[str] = None,
     channel_id: Optional[str] = None,
+    http_client: Optional[BoundedHTTPClient] = None,
 ) -> OpenClawToolInvokeResponse:
     normalized_base = (base_url or "").strip().rstrip("/")
     if not normalized_base.startswith(("http://", "https://")):
@@ -140,28 +186,35 @@ def invoke_openclaw_tools_api(
     if channel_id and channel_id.strip():
         headers["x-openclaw-channel-id"] = channel_id.strip()
 
-    response = requests.post(
-        endpoint,
-        json={"name": request.name, "arguments": request.arguments},
-        headers=headers,
-        timeout=timeout_seconds,
-    )
-    payload = _read_json_payload(response)
-    if 200 <= response.status_code < 300:
-        return OpenClawToolInvokeResponse(status_code=response.status_code, payload=payload)
+    client = http_client or BoundedHTTPClient(timeout_seconds=timeout_seconds)
+    try:
+        response = client.post(
+            endpoint,
+            json={"name": request.name, "arguments": request.arguments},
+            headers=headers,
+        )
+        try:
+            payload = _read_json_payload(response)
+            if 200 <= response.status_code < 300:
+                return OpenClawToolInvokeResponse(status_code=response.status_code, payload=payload)
 
-    error_code = _extract_error_code(payload)
-    error_type = _map_error_type(response.status_code, error_code)
-    message = _extract_error_message(
-        payload,
-        default=f"OpenClaw /tools/invoke failed with HTTP {response.status_code}.",
-    )
-    details = _extract_error_details(payload, fallback_code=error_code)
-    retry_after_seconds = _parse_retry_after_seconds(response.headers.get("Retry-After"))
-    raise OpenClawToolInvokeError(
-        message=message,
-        status_code=response.status_code,
-        error_type=error_type,
-        details=details,
-        retry_after_seconds=retry_after_seconds,
-    )
+            error_code = _extract_error_code(payload)
+            error_type = _map_error_type(response.status_code, error_code)
+            message = _extract_error_message(
+                payload,
+                default=f"OpenClaw /tools/invoke failed with HTTP {response.status_code}.",
+            )
+            details = _extract_error_details(payload, fallback_code=error_code)
+            retry_after_seconds = _parse_retry_after_seconds(response.headers.get("Retry-After"))
+            raise OpenClawToolInvokeError(
+                message=message,
+                status_code=response.status_code,
+                error_type=error_type,
+                details=details,
+                retry_after_seconds=retry_after_seconds,
+            )
+        finally:
+            response.close()
+    finally:
+        if http_client is None:
+            client.close()

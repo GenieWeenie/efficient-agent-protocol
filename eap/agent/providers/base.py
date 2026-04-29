@@ -38,3 +38,6 @@ class LLMProvider(ABC):
     @abstractmethod
     def stream(self, request: CompletionRequest) -> Iterable[str]:
         """Stream completion tokens/chunks for providers that support streaming."""
+
+    def close(self) -> None:
+        """Release provider-owned network resources."""

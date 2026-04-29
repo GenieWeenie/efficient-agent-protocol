@@ -1,17 +1,24 @@
-from typing import Dict, List
-
-import requests
+from typing import Dict, List, Optional
 
 from .base import CompletionRequest, CompletionResponse, LLMProvider
+from eap.protocol.http_client import BoundedHTTPClient
 
 
 class AnthropicProvider(LLMProvider):
     """Adapter for Anthropic `/v1/messages` APIs."""
 
-    def __init__(self, endpoint: str, api_key: str, timeout_seconds: int):
+    def __init__(
+        self,
+        endpoint: str,
+        api_key: str,
+        timeout_seconds: int,
+        http_client: Optional[BoundedHTTPClient] = None,
+    ):
         self.endpoint = endpoint
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
+        self._owns_http_client = http_client is None
+        self._http_client = http_client or BoundedHTTPClient(timeout_seconds=timeout_seconds)
 
     def _headers(self) -> Dict[str, str]:
         return {
@@ -53,15 +60,17 @@ class AnthropicProvider(LLMProvider):
         return ""
 
     def _request(self, request: CompletionRequest) -> CompletionResponse:
-        response = requests.post(
+        response = self._http_client.post(
             self.endpoint,
             json=self._to_payload(request),
             headers=self._headers(),
-            timeout=self.timeout_seconds,
         )
-        response.raise_for_status()
-        raw_json = response.json()
-        return CompletionResponse(text=self._extract_text(raw_json), raw_response=raw_json)
+        try:
+            response.raise_for_status()
+            raw_json = response.json()
+            return CompletionResponse(text=self._extract_text(raw_json), raw_response=raw_json)
+        finally:
+            response.close()
 
     def complete(self, request: CompletionRequest) -> CompletionResponse:
         return self._request(request)
@@ -71,3 +80,7 @@ class AnthropicProvider(LLMProvider):
 
     def stream(self, request: CompletionRequest):
         raise NotImplementedError("Streaming not implemented for AnthropicProvider yet.")
+
+    def close(self) -> None:
+        if self._owns_http_client:
+            self._http_client.close()

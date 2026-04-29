@@ -1,9 +1,10 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from eap.environment.openclaw_client import (
     OpenClawToolInvokeError,
     OpenClawToolInvokeRequest,
+    OpenClawToolsClient,
     invoke_openclaw_tools_api,
 )
 
@@ -18,6 +19,9 @@ class _MockResponse:
     def json(self):
         return self._payload
 
+    def close(self):
+        pass
+
 
 class OpenClawClientUnitTest(unittest.TestCase):
     def test_invoke_openclaw_tools_api_success(self) -> None:
@@ -25,7 +29,7 @@ class OpenClawClientUnitTest(unittest.TestCase):
             status_code=200,
             payload={"ok": True, "tool": "echo_tool", "result": {"text": "hello"}},
         )
-        with patch("eap.environment.openclaw_client.requests.post", return_value=mock_response) as post:
+        with patch("eap.protocol.http_client.requests.Session.post", return_value=mock_response) as post:
             result = invoke_openclaw_tools_api(
                 base_url="https://gateway.openclaw.local",
                 api_key="secret-token",
@@ -38,7 +42,7 @@ class OpenClawClientUnitTest(unittest.TestCase):
         self.assertEqual(result.status_code, 200)
         self.assertTrue(result.payload["ok"])
         kwargs = post.call_args.kwargs
-        self.assertEqual(kwargs["timeout"], 12)
+        self.assertEqual(kwargs["timeout"], (5.0, 12.0))
         self.assertEqual(kwargs["json"]["name"], "echo_tool")
         self.assertEqual(kwargs["json"]["arguments"]["text"], "hello")
         self.assertEqual(kwargs["headers"]["Authorization"], "Bearer secret-token")
@@ -50,7 +54,7 @@ class OpenClawClientUnitTest(unittest.TestCase):
             status_code=401,
             payload={"error": {"code": "UNAUTHORIZED", "message": "Missing or invalid bearer token."}},
         )
-        with patch("eap.environment.openclaw_client.requests.post", return_value=mock_response):
+        with patch("eap.protocol.http_client.requests.Session.post", return_value=mock_response):
             with self.assertRaises(OpenClawToolInvokeError) as context:
                 invoke_openclaw_tools_api(
                     base_url="https://gateway.openclaw.local",
@@ -74,7 +78,7 @@ class OpenClawClientUnitTest(unittest.TestCase):
                 }
             },
         )
-        with patch("eap.environment.openclaw_client.requests.post", return_value=mock_response):
+        with patch("eap.protocol.http_client.requests.Session.post", return_value=mock_response):
             with self.assertRaises(OpenClawToolInvokeError) as context:
                 invoke_openclaw_tools_api(
                     base_url="https://gateway.openclaw.local",
@@ -94,7 +98,7 @@ class OpenClawClientUnitTest(unittest.TestCase):
             payload={"error": {"code": "RATE_LIMITED", "message": "Too many requests."}},
             headers={"Retry-After": "17"},
         )
-        with patch("eap.environment.openclaw_client.requests.post", return_value=mock_response):
+        with patch("eap.protocol.http_client.requests.Session.post", return_value=mock_response):
             with self.assertRaises(OpenClawToolInvokeError) as context:
                 invoke_openclaw_tools_api(
                     base_url="https://gateway.openclaw.local",
@@ -105,6 +109,27 @@ class OpenClawClientUnitTest(unittest.TestCase):
         error = context.exception
         self.assertEqual(error.error_type, "rate_limited")
         self.assertEqual(error.retry_after_seconds, 17)
+
+    def test_openclaw_tools_client_reuses_injected_http_client(self) -> None:
+        mock_http_client = MagicMock()
+        mock_http_client.post.return_value = _MockResponse(
+            status_code=200,
+            payload={"ok": True},
+        )
+        client = OpenClawToolsClient(
+            base_url="https://gateway.openclaw.local",
+            api_key="secret-token",
+            http_client=mock_http_client,
+        )
+
+        first = client.invoke(OpenClawToolInvokeRequest(name="echo_tool", arguments={"text": "a"}))
+        second = client.invoke(OpenClawToolInvokeRequest(name="echo_tool", arguments={"text": "b"}))
+        client.close()
+
+        self.assertTrue(first.payload["ok"])
+        self.assertTrue(second.payload["ok"])
+        self.assertEqual(mock_http_client.post.call_count, 2)
+        mock_http_client.close.assert_not_called()
 
 
 if __name__ == "__main__":

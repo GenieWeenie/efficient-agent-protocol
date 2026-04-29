@@ -1,18 +1,25 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 from urllib.parse import quote
 
-import requests
-
 from .base import CompletionRequest, CompletionResponse, LLMProvider
+from eap.protocol.http_client import BoundedHTTPClient
 
 
 class GoogleProvider(LLMProvider):
     """Adapter for Google Gemini generateContent API."""
 
-    def __init__(self, base_url: str, api_key: str, timeout_seconds: int):
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str,
+        timeout_seconds: int,
+        http_client: Optional[BoundedHTTPClient] = None,
+    ):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
+        self._owns_http_client = http_client is None
+        self._http_client = http_client or BoundedHTTPClient(timeout_seconds=timeout_seconds)
 
     def _endpoint_for_model(self, model: str) -> str:
         return f"{self.base_url}/models/{quote(model, safe='')}:generateContent"
@@ -69,15 +76,17 @@ class GoogleProvider(LLMProvider):
 
     def _request(self, request: CompletionRequest) -> CompletionResponse:
         endpoint = self._endpoint_for_model(request.model)
-        response = requests.post(
+        response = self._http_client.post(
             endpoint,
             params={"key": self.api_key},
             json=self._to_payload(request),
-            timeout=self.timeout_seconds,
         )
-        response.raise_for_status()
-        raw_json = response.json()
-        return CompletionResponse(text=self._extract_text(raw_json), raw_response=raw_json)
+        try:
+            response.raise_for_status()
+            raw_json = response.json()
+            return CompletionResponse(text=self._extract_text(raw_json), raw_response=raw_json)
+        finally:
+            response.close()
 
     def complete(self, request: CompletionRequest) -> CompletionResponse:
         return self._request(request)
@@ -87,3 +96,7 @@ class GoogleProvider(LLMProvider):
 
     def stream(self, request: CompletionRequest):
         raise NotImplementedError("Streaming not implemented for GoogleProvider yet.")
+
+    def close(self) -> None:
+        if self._owns_http_client:
+            self._http_client.close()
