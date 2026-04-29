@@ -98,4 +98,4 @@
 | [phase11_typing_rigor_completion_roadmap.md](phase11_typing_rigor_completion_roadmap.md) | Typing rigor completion (completed) |
 | [phase12_v1_launch_readiness_roadmap.md](phase12_v1_launch_readiness_roadmap.md) | V1 launch readiness stabilization (completed) |
 | [phase13_production_hardening_roadmap.md](phase13_production_hardening_roadmap.md) | Production hardening and v1.0.1 blockers (completed) |
-| [phase14_release_maintenance_roadmap.md](phase14_release_maintenance_roadmap.md) | Release maintenance and v1.0.1 readiness (active) |
+| [phase14_release_maintenance_roadmap.md](phase14_release_maintenance_roadmap.md) | Release maintenance and v1.0.1 readiness (completed) |

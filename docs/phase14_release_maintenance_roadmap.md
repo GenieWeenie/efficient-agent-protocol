@@ -1,6 +1,6 @@
 # Phase 14 Release Maintenance Roadmap
 
-Status: Active  
+Status: Complete
 Source of truth: Linear project `Efficient Agent Protocol Roadmap`  
 Intake source: post-Phase 13 completion and post-merge CI annotations from 2026-04-29
 
@@ -9,7 +9,7 @@ Current status:
 - [x] `EAP-130` clean up package license metadata (`GEN-210`)
 - [x] `EAP-131` resolve GitHub Actions Node runtime warnings (`GEN-211`)
 - [x] `EAP-132` refresh release evidence and docs index (`GEN-212`)
-- [ ] `EAP-133` run v1.0.1 release readiness dry-run (`GEN-213`)
+- [x] `EAP-133` run v1.0.1 release readiness dry-run (`GEN-213`)
 
 ## Objective
 
@@ -34,7 +34,7 @@ The Phase 14 queue targets the visible post-hardening maintenance items:
 | 2 | `EAP-130` | `GEN-210` | P2 | Packaging metadata | Replace deprecated license metadata with current supported packaging format | Package build completes without the setuptools license metadata deprecation warning; MIT license metadata remains correct |
 | 3 | `EAP-131` | `GEN-211` | P2 | CI runtime warnings | Inventory and resolve GitHub Actions Node.js runtime deprecation annotations | Node 24-compatible action majors are used where available; Gitleaks runs through the pinned CLI; the remaining Dependency Review upstream blocker is documented in `docs/github_actions_runtime_inventory.md` |
 | 4 | `EAP-132` | `GEN-212` | P2 | Docs and release evidence | Refresh docs index, roadmap status, and v1.0.1 release evidence | `docs/releases/v1.0.1-readiness.md` centralizes current evidence, blockers, and go/no-go criteria and is linked from the docs index and release runbook |
-| 5 | `EAP-133` | `GEN-213` | P2 | Release dry-run | Run final v1.0.1 readiness evidence pass | Unified gatepack, package smoke, and GitHub main workflows are green or blockers are explicitly listed |
+| 5 | `EAP-133` | `GEN-213` | P2 | Release dry-run | Run final v1.0.1 readiness evidence pass | Unified gatepack, package build/install smoke, and GitHub main workflows are green; remaining tag condition is post-merge workflow confirmation |
 
 ## Dependency Order
 

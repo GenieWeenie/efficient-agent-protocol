@@ -98,6 +98,12 @@ Zero known vulnerabilities in pinned dependencies.
 pip-audit -r requirements.txt
 ```
 
+CI enforces the requirements-file audit directly. Local runs of
+`scripts/v1_readiness_gatepack.py` may fall back to `pip-audit --local` only
+when the local Python cannot create pip-audit's temporary requirements venv
+because `ensurepip` aborts; a vulnerability result from either path remains
+blocking.
+
 ### 9. Threshold / Baseline Files
 
 All CI threshold and baseline files must be present and version-controlled:
