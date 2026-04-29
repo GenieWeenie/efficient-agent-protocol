@@ -3,7 +3,7 @@ import sqlite3
 import tempfile
 import unittest
 
-from protocol.migrations import LATEST_SCHEMA_VERSION, apply_sqlite_migrations, pending_migrations
+from eap.protocol.migrations import LATEST_SCHEMA_VERSION, apply_sqlite_migrations, pending_migrations
 
 
 def _create_legacy_schema(db_path: str) -> None:

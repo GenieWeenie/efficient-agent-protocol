@@ -15,7 +15,7 @@ class OpenClawToolsUnitTest(unittest.TestCase):
             status_code=200,
             payload={"ok": True, "result": {"answer": 42}},
         )
-        with patch("environment.tools.openclaw_tools.invoke_openclaw_tools_api", return_value=response):
+        with patch("eap.environment.tools.openclaw_tools.invoke_openclaw_tools_api", return_value=response):
             raw = invoke_openclaw_tool(
                 base_url="https://gateway.openclaw.local",
                 api_key="secret-token",
@@ -28,7 +28,7 @@ class OpenClawToolsUnitTest(unittest.TestCase):
 
     def test_invoke_openclaw_tool_translates_client_error(self) -> None:
         with patch(
-            "environment.tools.openclaw_tools.invoke_openclaw_tools_api",
+            "eap.environment.tools.openclaw_tools.invoke_openclaw_tools_api",
             side_effect=OpenClawToolInvokeError(
                 message="Tool denied by policy.",
                 status_code=403,

@@ -50,6 +50,10 @@ The bare `protocol`, `environment`, and `agent` import paths are deprecated.
 They continue to work but emit `DeprecationWarning` on attribute access.
 These legacy paths will be **removed in v2.0**.
 
+As of the Phase 13 production-hardening work, the `eap.*` packages own the
+runtime implementation. The legacy top-level packages are compatibility shims
+only and must not contain separate runtime implementations.
+
 | Before | After |
 | --- | --- |
 | `from protocol import StateManager` | `from eap.protocol import StateManager` |

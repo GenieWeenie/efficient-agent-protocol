@@ -1,34 +1,22 @@
-# environment/__init__.py
-"""Deprecated namespace. Use ``eap.environment`` instead."""
+"""Compatibility namespace. Use ``eap.environment`` instead."""
 from __future__ import annotations
 
 import importlib
 import warnings
 
-__all__ = [
-    "AsyncLocalExecutor",
-    "DistributedCoordinator",
-    "ToolRegistry",
-    "ToolDefinition",
-    "InputValidationError",
-    "PluginManifestError",
-    "PluginLoadError",
-    "DEFAULT_PLUGIN_ENTRYPOINT_GROUP",
-    "discover_plugin_entry_points",
-    "load_plugins_into_registry",
-]
+__all__ = ['AsyncLocalExecutor', 'DistributedCoordinator', 'ToolRegistry', 'ToolDefinition', 'InputValidationError', 'PluginManifestError', 'PluginLoadError', 'DEFAULT_PLUGIN_ENTRYPOINT_GROUP', 'discover_plugin_entry_points', 'load_plugins_into_registry']
 
 _SUBMODULE_MAP: dict[str, tuple[str, str]] = {
-    "AsyncLocalExecutor": ("environment.executor", "AsyncLocalExecutor"),
-    "DistributedCoordinator": ("environment.distributed_executor", "DistributedCoordinator"),
-    "ToolRegistry": ("environment.tool_registry", "ToolRegistry"),
-    "ToolDefinition": ("environment.tool_registry", "ToolDefinition"),
-    "InputValidationError": ("environment.tool_registry", "InputValidationError"),
-    "PluginManifestError": ("environment.tool_registry", "PluginManifestError"),
-    "PluginLoadError": ("environment.plugin_loader", "PluginLoadError"),
-    "DEFAULT_PLUGIN_ENTRYPOINT_GROUP": ("environment.plugin_loader", "DEFAULT_PLUGIN_ENTRYPOINT_GROUP"),
-    "discover_plugin_entry_points": ("environment.plugin_loader", "discover_plugin_entry_points"),
-    "load_plugins_into_registry": ("environment.plugin_loader", "load_plugins_into_registry"),
+    'AsyncLocalExecutor': ('eap.environment.executor', 'AsyncLocalExecutor'),
+    'DistributedCoordinator': ('eap.environment.distributed_executor', 'DistributedCoordinator'),
+    'ToolRegistry': ('eap.environment.tool_registry', 'ToolRegistry'),
+    'ToolDefinition': ('eap.environment.tool_registry', 'ToolDefinition'),
+    'InputValidationError': ('eap.environment.tool_registry', 'InputValidationError'),
+    'PluginManifestError': ('eap.environment.tool_registry', 'PluginManifestError'),
+    'PluginLoadError': ('eap.environment.plugin_loader', 'PluginLoadError'),
+    'DEFAULT_PLUGIN_ENTRYPOINT_GROUP': ('eap.environment.plugin_loader', 'DEFAULT_PLUGIN_ENTRYPOINT_GROUP'),
+    'discover_plugin_entry_points': ('eap.environment.plugin_loader', 'discover_plugin_entry_points'),
+    'load_plugins_into_registry': ('eap.environment.plugin_loader', 'load_plugins_into_registry')
 }
 
 

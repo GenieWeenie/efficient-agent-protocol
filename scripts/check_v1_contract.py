@@ -27,7 +27,7 @@ from eap.protocol import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_LOCK_PATH = REPO_ROOT / "docs" / "v1_contract_lock.json"
 DEFAULT_PYPROJECT_PATH = REPO_ROOT / "pyproject.toml"
-DEFAULT_SETTINGS_PATH = REPO_ROOT / "protocol" / "settings.py"
+DEFAULT_SETTINGS_PATH = REPO_ROOT / "eap" / "protocol" / "settings.py"
 DEFAULT_TS_CLIENT_PATH = REPO_ROOT / "sdk" / "typescript" / "src" / "client.ts"
 DEFAULT_GO_CLIENT_PATH = REPO_ROOT / "sdk" / "go" / "client.go"
 

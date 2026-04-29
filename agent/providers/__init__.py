@@ -1,18 +1,4 @@
-from .base import CompletionRequest, CompletionResponse, LLMProvider, ProviderMessage
-from .anthropic_provider import AnthropicProvider
-from .factory import create_provider
-from .google_provider import GoogleProvider
-from .ollama_provider import OllamaProvider
-from .openai_provider import OpenAIProvider
+"""Compatibility shim. Use ``eap.agent.providers`` instead."""
+from __future__ import annotations
 
-__all__ = [
-    "ProviderMessage",
-    "CompletionRequest",
-    "CompletionResponse",
-    "LLMProvider",
-    "OpenAIProvider",
-    "AnthropicProvider",
-    "GoogleProvider",
-    "OllamaProvider",
-    "create_provider",
-]
+from eap.agent.providers import *  # noqa: F401,F403

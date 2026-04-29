@@ -8,8 +8,8 @@ import sqlite3
 import tempfile
 import unittest
 
-from protocol.migrations import LATEST_SCHEMA_VERSION, apply_sqlite_migrations
-from protocol.state_manager import StateManager
+from eap.protocol.migrations import LATEST_SCHEMA_VERSION, apply_sqlite_migrations
+from eap.protocol.state_manager import StateManager
 from tests.fixtures.baseline_state_builder import build_baseline_state_db
 
 
