@@ -391,6 +391,74 @@ class AsyncLocalExecutor:
                 return tool_name_or_hash
             return None
 
+        async def _resolve_step_reference(
+            ref_value: str,
+            argument_key: str,
+            input_pointer_ids: dict[str, str],
+        ) -> object:
+            if ref_value.startswith("$step:"):
+                ref_payload = ref_value[len("$step:"):]
+            else:
+                ref_payload = ref_value[1:]
+            ref_step_id, _, path = ref_payload.partition(".")
+            if ref_step_id not in step_futures:
+                raise KeyError(f"Step reference '{ref_step_id}' failed.")
+
+            pointer_id = await step_futures[ref_step_id]
+            dependency_status = step_status.get(ref_step_id, {}).get("status")
+            if dependency_status != "ok":
+                raise KeyError(
+                    f"Dependency step '{ref_step_id}' did not complete successfully ({dependency_status})."
+                )
+            input_pointer_ids[argument_key] = pointer_id
+            resolved_value: object = self.state_manager.retrieve(pointer_id)
+            if path:
+                for part in path.split("."):
+                    if isinstance(resolved_value, dict):
+                        resolved_value = resolved_value.get(part)
+                    else:
+                        resolved_value = None
+                        break
+            return resolved_value
+
+        async def _resolve_argument_value(
+            value: object,
+            argument_key: str,
+            input_pointer_ids: dict[str, str],
+            depth: int = 0,
+        ) -> object:
+            if depth > execution_limits.max_reference_resolution_depth:
+                raise InputValidationError(
+                    "Macro reference resolution exceeded "
+                    f"max_reference_resolution_depth={execution_limits.max_reference_resolution_depth}."
+                )
+            if isinstance(value, str) and value.startswith("$"):
+                return await _resolve_step_reference(value, argument_key, input_pointer_ids)
+            if isinstance(value, str) and value.startswith("ptr_"):
+                input_pointer_ids[argument_key] = value
+                return self.state_manager.retrieve(value)
+            if isinstance(value, dict):
+                return {
+                    nested_key: await _resolve_argument_value(
+                        nested_value,
+                        f"{argument_key}.{nested_key}",
+                        input_pointer_ids,
+                        depth=depth + 1,
+                    )
+                    for nested_key, nested_value in value.items()
+                }
+            if isinstance(value, list):
+                return [
+                    await _resolve_argument_value(
+                        nested_value,
+                        f"{argument_key}[{idx}]",
+                        input_pointer_ids,
+                        depth=depth + 1,
+                    )
+                    for idx, nested_value in enumerate(value)
+                ]
+            return value
+
         def _pointer_metadata(extra: Optional[dict[str, object]] = None) -> dict[str, object]:
             base: dict[str, object] = {
                 "execution_run_id": run_id,
@@ -665,28 +733,10 @@ class AsyncLocalExecutor:
                         event_type=ExecutionTraceEventType.APPROVED,
                     )
 
-                resolved_args = {}
-                input_pointer_ids = {}
+                resolved_args: dict[str, object] = {}
+                input_pointer_ids: dict[str, str] = {}
                 for key, val in step.arguments.items():
-                    # Forgiving Routing: Handles "$step:id" and "$id"
-                    if isinstance(val, str) and val.startswith("$"):
-                        ref_step_id = val.replace("$step:", "").replace("$", "")
-                        if ref_step_id not in step_futures:
-                            raise KeyError(f"Step reference '{ref_step_id}' failed.")
-
-                        pointer_id = await step_futures[ref_step_id]
-                        dependency_status = step_status.get(ref_step_id, {}).get("status")
-                        if dependency_status != "ok":
-                            raise KeyError(
-                                f"Dependency step '{ref_step_id}' did not complete successfully ({dependency_status})."
-                            )
-                        input_pointer_ids[key] = pointer_id
-                        resolved_args[key] = self.state_manager.retrieve(pointer_id)
-                    elif isinstance(val, str) and val.startswith("ptr_"):
-                        input_pointer_ids[key] = val
-                        resolved_args[key] = self.state_manager.retrieve(val)
-                    else:
-                        resolved_args[key] = val
+                    resolved_args[key] = await _resolve_argument_value(val, key, input_pointer_ids)
 
                 self.registry.validate_arguments(step.tool_name, resolved_args)
                 tool_func = self.registry.get_tool(step.tool_name)
@@ -880,10 +930,73 @@ class AsyncLocalExecutor:
                 await _persist_checkpoint(status="active")
                 return step_pointer
 
+        async def _mark_step_timeout(step: ToolCall) -> PointerPayload:
+            error_payload_model = ToolErrorPayload(
+                error_type="macro_timeout",
+                message=(
+                    "Macro execution exceeded "
+                    f"max_total_runtime_seconds={execution_limits.max_total_runtime_seconds}."
+                ),
+                step_id=step.step_id,
+                tool_name=step.tool_name,
+                details={"max_total_runtime_seconds": execution_limits.max_total_runtime_seconds},
+            )
+            error_payload = error_payload_model.model_dump()
+            _append_trace_event(
+                step_id=step.step_id,
+                tool_name=step.tool_name,
+                event_type=ExecutionTraceEventType.FAILED,
+                attempt=1,
+                error=error_payload_model,
+            )
+            timeout_pointer = _pointer_payload(
+                self.state_manager.store_and_point(
+                    raw_data=error_payload,
+                    summary=f"Step {step.step_id} failed with macro_timeout.",
+                    metadata=_pointer_metadata({"status": "error", "error_type": "macro_timeout"}),
+                )
+            )
+            timeout_pointer_id = _pointer_id(timeout_pointer)
+            step_status[step.step_id] = {"status": "error", "pointer_id": timeout_pointer_id}
+            step_contexts[step.step_id] = {
+                "pointer_id": timeout_pointer_id,
+                "metadata": timeout_pointer.get("metadata"),
+                "raw_data": error_payload,
+                "status": "error",
+            }
+            if not step_futures[step.step_id].done():
+                step_futures[step.step_id].set_result(timeout_pointer_id)
+            return timeout_pointer
+
         tasks: list[asyncio.Task[PointerPayload]] = [
             asyncio.create_task(run_step(step)) for step in macro.steps
         ]
-        results = await asyncio.gather(*tasks)
+        if execution_limits.max_total_runtime_seconds is None:
+            results = await asyncio.gather(*tasks)
+        else:
+            try:
+                results = await asyncio.wait_for(
+                    asyncio.gather(*tasks),
+                    timeout=execution_limits.max_total_runtime_seconds,
+                )
+            except asyncio.TimeoutError:
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+                gathered_results = await asyncio.gather(*tasks, return_exceptions=True)
+                results = []
+                for step, task, task_result in zip(macro.steps, tasks, gathered_results):
+                    if isinstance(task_result, dict):
+                        results.append(task_result)
+                    elif step_status.get(step.step_id, {}).get("pointer_id"):
+                        pointer_id_value = step_status[step.step_id].get("pointer_id")
+                        pointer_id = pointer_id_value if isinstance(pointer_id_value, str) else None
+                        results.append(_hydrate_pointer_response(pointer_id, step.step_id))
+                    elif task.cancelled() or isinstance(task_result, BaseException):
+                        results.append(await _mark_step_timeout(step))
+                    else:
+                        results.append(await _mark_step_timeout(step))
+                await _persist_checkpoint(status="active")
         final_result: Optional[PointerPayload] = results[-1] if results else None
 
         run_completed_at = datetime.now(timezone.utc)

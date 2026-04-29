@@ -33,6 +33,8 @@ class ToolLimitSettings:
 @dataclass(frozen=True)
 class ExecutorLimitSettings:
     max_global_concurrency: int
+    max_total_runtime_seconds: Optional[float]
+    max_reference_resolution_depth: int
     global_requests_per_second: Optional[float]
     global_burst_capacity: Optional[int]
     per_tool_limits: Dict[str, ToolLimitSettings]
@@ -213,6 +215,20 @@ def _build_executor_limits() -> ExecutorLimitSettings:
     if max_concurrency <= 0:
         raise ValueError("EAP_EXECUTOR_MAX_CONCURRENCY must be > 0")
 
+    max_total_runtime_seconds = _parse_optional_float(
+        os.getenv("EAP_EXECUTOR_MAX_TOTAL_RUNTIME_SECONDS", ""),
+        "EAP_EXECUTOR_MAX_TOTAL_RUNTIME_SECONDS",
+    )
+    if max_total_runtime_seconds is not None and max_total_runtime_seconds <= 0:
+        raise ValueError("EAP_EXECUTOR_MAX_TOTAL_RUNTIME_SECONDS must be > 0")
+
+    max_reference_resolution_depth = _parse_int(
+        os.getenv("EAP_EXECUTOR_MAX_REFERENCE_RESOLUTION_DEPTH", "32"),
+        "EAP_EXECUTOR_MAX_REFERENCE_RESOLUTION_DEPTH",
+    )
+    if max_reference_resolution_depth <= 0:
+        raise ValueError("EAP_EXECUTOR_MAX_REFERENCE_RESOLUTION_DEPTH must be > 0")
+
     global_rps = _parse_optional_float(
         os.getenv("EAP_EXECUTOR_GLOBAL_RPS", ""),
         "EAP_EXECUTOR_GLOBAL_RPS",
@@ -252,6 +268,8 @@ def _build_executor_limits() -> ExecutorLimitSettings:
 
     return ExecutorLimitSettings(
         max_global_concurrency=max_concurrency,
+        max_total_runtime_seconds=max_total_runtime_seconds,
+        max_reference_resolution_depth=max_reference_resolution_depth,
         global_requests_per_second=global_rps,
         global_burst_capacity=global_burst,
         per_tool_limits=per_tool_limits,

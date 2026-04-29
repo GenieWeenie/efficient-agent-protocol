@@ -366,7 +366,12 @@ class _RuntimeASGIApp:
         try:
             macro = BatchedMacroRequest.model_validate(macro_payload)
         except ValidationError as exc:
-            raise self._error(400, "validation_error", "Invalid macro payload.", details={"errors": exc.errors()})
+            raise self._error(
+                400,
+                "validation_error",
+                "Invalid macro payload.",
+                details={"errors": exc.errors(include_context=False)},
+            )
 
         concurrency_token = self._acquire_concurrency(operation=RUNTIME_OPERATION_MACRO_EXECUTE)
         try:
@@ -426,7 +431,7 @@ class _RuntimeASGIApp:
                     400,
                     "validation_error",
                     "Invalid resume approval payload.",
-                    details={"errors": exc.errors()},
+                    details={"errors": exc.errors(include_context=False)},
                 )
             except Exception as exc:  # pragma: no cover - defensive safeguard
                 raise self._error(500, "execution_error", f"Run resume failed: {str(exc)}")

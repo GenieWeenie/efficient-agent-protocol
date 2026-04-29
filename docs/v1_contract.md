@@ -22,6 +22,8 @@ The `v1.0` contract covers:
   - `WorkflowEdgeKind`
 - Tool error payload envelope (`ToolErrorPayload`) including allowed `error_type`
   values.
+  Current values: `validation_error`, `dependency_error`, `tool_execution_error`,
+  `approval_rejected`, and `macro_timeout`.
 - Frozen runtime settings key surface used by `load_settings()`.
 - SDK HTTP operation path set for TypeScript and Go clients.
 

@@ -1,5 +1,5 @@
 {
-  "generated_from_package_version": "0.1.9",
+  "generated_from_package_version": "1.0.1",
   "lock_format_version": 1,
   "snapshot": {
     "public_api_exports": {
@@ -91,6 +91,8 @@
       "EAP_EXECUTOR_GLOBAL_BURST",
       "EAP_EXECUTOR_GLOBAL_RPS",
       "EAP_EXECUTOR_MAX_CONCURRENCY",
+      "EAP_EXECUTOR_MAX_REFERENCE_RESOLUTION_DEPTH",
+      "EAP_EXECUTOR_MAX_TOTAL_RUNTIME_SECONDS",
       "EAP_EXECUTOR_PER_TOOL_LIMITS_JSON",
       "EAP_EXTRA_HEADERS_JSON",
       "EAP_MODEL",
@@ -103,7 +105,8 @@
         "validation_error",
         "dependency_error",
         "tool_execution_error",
-        "approval_rejected"
+        "approval_rejected",
+        "macro_timeout"
       ],
       "fields": [
         "details",

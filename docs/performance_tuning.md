@@ -15,6 +15,8 @@ EAP uses WAL (Write-Ahead Logging) mode by default for better concurrent read/wr
 | Environment Variable | Default | Description |
 |---|---|---|
 | `EAP_EXECUTOR_MAX_CONCURRENCY` | 8 | Max parallel tool executions |
+| `EAP_EXECUTOR_MAX_TOTAL_RUNTIME_SECONDS` | (unset) | Optional wall-clock cap for an entire macro run |
+| `EAP_EXECUTOR_MAX_REFERENCE_RESOLUTION_DEPTH` | 32 | Max nested depth for macro argument reference resolution |
 | `EAP_EXECUTOR_GLOBAL_RPS` | (unset) | Global requests-per-second rate limit |
 | `EAP_EXECUTOR_GLOBAL_BURST` | (unset) | Burst capacity for rate limiter |
 

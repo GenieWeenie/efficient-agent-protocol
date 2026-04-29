@@ -7,7 +7,7 @@
 
 > Status: v1.0 Release Candidate. Core APIs and schema are frozen per [`docs/v1_contract.md`](docs/v1_contract.md).
 > See `STABILITY.md` and `ROADMAP.md` for guarantees and planned milestones.
-> Latest stable release: `v1.0.0`
+> Latest stable release: `v1.0.1`
 
 ![Efficient Agent Protocol v1.0.0 explainer](assets/readme/eap_v1_explainer.png)
 

@@ -12,7 +12,9 @@ from pydantic import ValidationError
 from eap.protocol import (
     BatchedMacroRequest,
     BranchingRule,
+    ExecutionLimits,
     StateManager,
+    ToolExecutionLimit,
     ToolCall,
     WorkflowEdgeKind,
     WorkflowGraphEdge,
@@ -32,6 +34,24 @@ from eap.agent import AgentClient, WorkflowGraphCompiler
 configure_logging()
 settings = load_settings()
 
+
+def _default_execution_limits_from_settings() -> ExecutionLimits:
+    return ExecutionLimits(
+        max_global_concurrency=settings.executor.max_global_concurrency,
+        max_total_runtime_seconds=settings.executor.max_total_runtime_seconds,
+        max_reference_resolution_depth=settings.executor.max_reference_resolution_depth,
+        global_requests_per_second=settings.executor.global_requests_per_second,
+        global_burst_capacity=settings.executor.global_burst_capacity,
+        per_tool={
+            tool_name: ToolExecutionLimit(
+                max_concurrency=limit.max_concurrency,
+                requests_per_second=limit.requests_per_second,
+                burst_capacity=limit.burst_capacity,
+            )
+            for tool_name, limit in settings.executor.per_tool_limits.items()
+        },
+    )
+
 # --- Page Config ---
 st.set_page_config(page_title="EAP Dashboard", layout="wide", page_icon="⚡")
 
@@ -43,7 +63,11 @@ def get_backend():
     registry.register("read_local_file", read_local_file, READ_FILE_SCHEMA)
     registry.register("analyze_data", analyze_data, ANALYZE_SCHEMA)
     registry.register("scrape_url", scrape_url, SCRAPE_SCHEMA)
-    executor = AsyncLocalExecutor(state_manager, registry)
+    executor = AsyncLocalExecutor(
+        state_manager,
+        registry,
+        default_execution_limits=_default_execution_limits_from_settings(),
+    )
     return state_manager, registry, executor
 
 state_manager, registry, executor = get_backend()

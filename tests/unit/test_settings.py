@@ -16,6 +16,8 @@ class SettingsTest(unittest.TestCase):
             self.assertEqual(settings.architect.extra_headers, {})
             self.assertEqual(settings.auditor.extra_headers, {})
             self.assertEqual(settings.executor.max_global_concurrency, 8)
+            self.assertIsNone(settings.executor.max_total_runtime_seconds)
+            self.assertEqual(settings.executor.max_reference_resolution_depth, 32)
             self.assertEqual(settings.executor.per_tool_limits, {})
 
     def test_role_specific_overrides(self) -> None:
@@ -54,13 +56,25 @@ class SettingsTest(unittest.TestCase):
         with mock.patch.dict(
             os.environ,
             {
-                "EAP_EXECUTOR_PER_TOOL_LIMITS_JSON": '{"tool_a":{"max_concurrency":2,"requests_per_second":5.0,"burst_capacity":3}}'
+                "EAP_EXECUTOR_MAX_TOTAL_RUNTIME_SECONDS": "30",
+                "EAP_EXECUTOR_MAX_REFERENCE_RESOLUTION_DEPTH": "16",
+                "EAP_EXECUTOR_PER_TOOL_LIMITS_JSON": '{"tool_a":{"max_concurrency":2,"requests_per_second":5.0,"burst_capacity":3}}',
             },
             clear=True,
         ):
             settings = load_settings()
+            self.assertEqual(settings.executor.max_total_runtime_seconds, 30.0)
+            self.assertEqual(settings.executor.max_reference_resolution_depth, 16)
             self.assertEqual(settings.executor.per_tool_limits["tool_a"].max_concurrency, 2)
             self.assertEqual(settings.executor.per_tool_limits["tool_a"].requests_per_second, 5.0)
+
+    def test_executor_timeout_limit_validation(self) -> None:
+        with mock.patch.dict(os.environ, {"EAP_EXECUTOR_MAX_TOTAL_RUNTIME_SECONDS": "0"}, clear=True):
+            with self.assertRaises(ValueError):
+                load_settings()
+        with mock.patch.dict(os.environ, {"EAP_EXECUTOR_MAX_REFERENCE_RESOLUTION_DEPTH": "0"}, clear=True):
+            with self.assertRaises(ValueError):
+                load_settings()
 
     def test_invalid_extra_headers_validation(self) -> None:
         with mock.patch.dict(os.environ, {"EAP_EXTRA_HEADERS_JSON": '["bad"]'}, clear=True):

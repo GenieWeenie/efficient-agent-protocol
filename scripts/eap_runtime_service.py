@@ -10,7 +10,7 @@ from typing import Any, Dict, Sequence
 
 from eap.environment import AsyncLocalExecutor, ToolRegistry
 from eap.environment.tools import ANALYZE_SCHEMA, FETCH_SCHEMA, analyze_data, fetch_user_data
-from eap.protocol import StateManager
+from eap.protocol import ExecutionLimits, StateManager, ToolExecutionLimit, load_settings
 from eap.runtime import EAPRuntimeHTTPServer
 from eap.runtime.guardrails import normalize_concurrency_limits, normalize_rate_limit_rules
 from eap.runtime.policy_profiles import DEFAULT_POLICY_PROFILE, build_scoped_token_policies
@@ -88,6 +88,25 @@ def _register_default_tools(registry: ToolRegistry) -> None:
     # Keep default remote surface narrow for safer out-of-box operation.
     registry.register("fetch_user_data", fetch_user_data, FETCH_SCHEMA)
     registry.register("analyze_data", analyze_data, ANALYZE_SCHEMA)
+
+
+def _load_default_execution_limits() -> ExecutionLimits:
+    settings = load_settings()
+    return ExecutionLimits(
+        max_global_concurrency=settings.executor.max_global_concurrency,
+        max_total_runtime_seconds=settings.executor.max_total_runtime_seconds,
+        max_reference_resolution_depth=settings.executor.max_reference_resolution_depth,
+        global_requests_per_second=settings.executor.global_requests_per_second,
+        global_burst_capacity=settings.executor.global_burst_capacity,
+        per_tool={
+            tool_name: ToolExecutionLimit(
+                max_concurrency=limit.max_concurrency,
+                requests_per_second=limit.requests_per_second,
+                burst_capacity=limit.burst_capacity,
+            )
+            for tool_name, limit in settings.executor.per_tool_limits.items()
+        },
+    )
 
 
 def _load_scoped_auth_config(
@@ -190,7 +209,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     state_manager = StateManager(db_path=str(db_path))
     registry = ToolRegistry()
     _register_default_tools(registry)
-    executor = AsyncLocalExecutor(state_manager, registry)
+    try:
+        default_execution_limits = _load_default_execution_limits()
+    except Exception as exc:
+        print(f"[runtime:error] failed to load executor settings: {exc}")
+        return 1
+    executor = AsyncLocalExecutor(state_manager, registry, default_execution_limits=default_execution_limits)
 
     server = EAPRuntimeHTTPServer(
         executor=executor,

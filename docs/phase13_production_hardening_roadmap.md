@@ -12,7 +12,7 @@ Current status:
 - [x] `EAP-123` fail-closed runtime auth defaults (`GEN-203`)
 - [x] `EAP-124` sandbox local file tools (`GEN-204`)
 - [x] `EAP-125` add SSRF protection and streaming byte caps to web tools (`GEN-205`)
-- [ ] `EAP-126` add macro cycle detection and execution timeout controls (`GEN-206`)
+- [x] `EAP-126` add macro cycle detection and execution timeout controls (`GEN-206`)
 - [ ] `EAP-127` harden connection pooling and request lifecycle (`GEN-207`)
 - [ ] `EAP-128` add production-hardening regression gatepack (`GEN-208`)
 
