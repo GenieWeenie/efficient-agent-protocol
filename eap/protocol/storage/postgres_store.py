@@ -47,12 +47,27 @@ class PsycopgPointerClient(_PostgresPointerClient):
         dsn: str,
         schema: str = "public",
         table_name: str = "eap_state_store",
+        *,
+        min_pool_size: int = 1,
+        max_pool_size: int = 10,
+        use_connection_pool: bool = True,
     ) -> None:
         self.dsn = dsn
         self.schema = self._validate_identifier(schema, "schema")
         self.table_name = self._validate_identifier(table_name, "table_name")
         self.qualified_table = f'"{self.schema}"."{self.table_name}"'
         self._psycopg = self._import_psycopg()
+        # Lazily-initialised psycopg_pool.ConnectionPool. We try to use a pool
+        # when the optional dependency is available — the previous code did a
+        # fresh ``psycopg.connect()`` per call which is wasteful and a real
+        # bottleneck under the new ASGI runtime. ``use_connection_pool=False``
+        # restores the legacy per-call behaviour for tests / specialised
+        # deployments.
+        self._min_pool_size = max(int(min_pool_size), 0)
+        self._max_pool_size = max(int(max_pool_size), self._min_pool_size or 1)
+        self._use_connection_pool = bool(use_connection_pool)
+        self._pool: Optional[Any] = None
+        self._pool_init_attempted = False
 
     @classmethod
     def _validate_identifier(cls, value: str, field_name: str) -> str:
@@ -71,8 +86,41 @@ class PsycopgPointerClient(_PostgresPointerClient):
             ) from exc
         return psycopg
 
+    def _get_or_create_pool(self):
+        """Return the psycopg_pool.ConnectionPool, or ``None`` if unavailable."""
+        if not self._use_connection_pool:
+            return None
+        if self._pool is not None:
+            return self._pool
+        if self._pool_init_attempted:
+            return None
+        self._pool_init_attempted = True
+        try:  # psycopg_pool ships with psycopg[binary] >= 3.1; tolerate absence
+            from psycopg_pool import ConnectionPool  # type: ignore
+        except Exception:  # pragma: no cover - depends on runtime env
+            self._pool = None
+            return None
+        self._pool = ConnectionPool(
+            conninfo=self.dsn,
+            min_size=self._min_pool_size,
+            max_size=self._max_pool_size,
+            open=True,
+        )
+        return self._pool
+
     def _connect(self):
+        pool = self._get_or_create_pool()
+        if pool is not None:
+            return pool.connection()
         return self._psycopg.connect(self.dsn)
+
+    def close(self) -> None:
+        """Close the underlying connection pool, if any. Idempotent."""
+        if self._pool is not None:
+            try:
+                self._pool.close()
+            finally:
+                self._pool = None
 
     @staticmethod
     def _normalize_iso(value: Any) -> Optional[str]:
@@ -265,3 +313,9 @@ class PostgresPointerStore(PointerStoreBackend):
 
     def delete_pointer(self, pointer_id: str) -> bool:
         return self.client.delete_pointer(pointer_id)
+
+    def close(self) -> None:
+        """Close the underlying client / connection pool. Idempotent."""
+        close_hook = getattr(self.client, "close", None)
+        if callable(close_hook):
+            close_hook()

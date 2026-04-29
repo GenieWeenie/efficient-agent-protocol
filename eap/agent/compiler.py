@@ -1,4 +1,5 @@
 # agent/compiler.py
+import hashlib
 import json
 from typing import Any, Dict, Optional, Union
 from eap.protocol.models import (
@@ -48,9 +49,13 @@ class MacroCompiler:
                     if "tool" in step and "tool_name" not in step:
                         step["tool_name"] = step.pop("tool")
 
-                    # Ensure step_id exists
+                    # Ensure step_id exists. Use a deterministic content-hash
+                    # so that the same step JSON yields the same id across
+                    # processes (Python's built-in hash() is salted).
                     if "step_id" not in step:
-                        step["step_id"] = f"auto_step_{hash(str(step)) % 1000}"
+                        canonical = json.dumps(step, sort_keys=True, default=str).encode("utf-8")
+                        digest = hashlib.sha256(canonical).hexdigest()[:12]
+                        step["step_id"] = f"auto_step_{digest}"
 
             # 3. Final Pydantic validation
             return BatchedMacroRequest(**parsed_data)

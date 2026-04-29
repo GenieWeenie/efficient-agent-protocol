@@ -3,7 +3,21 @@ import hashlib
 import json
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
+
+try:  # jsonschema is preferred but optional at runtime; we fall back gracefully.
+    import jsonschema
+    from jsonschema import Draft202012Validator
+    from jsonschema.exceptions import SchemaError as _JSONSchemaError
+    from jsonschema.exceptions import ValidationError as _JSONSchemaValidationError
+
+    _JSONSCHEMA_AVAILABLE = True
+except Exception:  # pragma: no cover - exercised only when dep missing
+    jsonschema = None  # type: ignore[assignment]
+    Draft202012Validator = None  # type: ignore[assignment]
+    _JSONSchemaError = Exception  # type: ignore[assignment]
+    _JSONSchemaValidationError = Exception  # type: ignore[assignment]
+    _JSONSCHEMA_AVAILABLE = False
 
 
 class InputValidationError(ValueError):
@@ -38,6 +52,9 @@ class ToolRegistry:
         self._tools: Dict[str, Callable] = {}
         self._schemas: Dict[str, dict] = {}
         self._hashes: Dict[str, str] = {}
+        # Cache compiled jsonschema validators per tool name to avoid
+        # re-parsing the schema on every call.
+        self._validators: Dict[str, Any] = {}
         if auto_load_plugins:
             self.load_plugins(group=plugin_group, strict=strict_plugin_loading)
 
@@ -52,13 +69,31 @@ class ToolRegistry:
         self._tools[name] = func
         self._schemas[name] = schema
 
-        # Create a deterministic hash of the schema
-        # If the schema changes, the hash changes automatically
+        # Create a deterministic hash of the schema. SHA-256 is used (instead
+        # of MD5) so static-analysis tools like Bandit/CodeQL stop flagging
+        # the call as a weak-cryptography use; the truncated digest is only
+        # for non-cryptographic name disambiguation.
         schema_str = json.dumps(schema, sort_keys=True)
-        schema_hash = hashlib.md5(schema_str.encode()).hexdigest()[:8]
+        schema_hash = hashlib.sha256(schema_str.encode()).hexdigest()[:8]
 
         hashed_name = f"{name}_{schema_hash}"
         self._hashes[name] = hashed_name
+        # Pre-compile a jsonschema validator if the library is present and
+        # the parameters block is a valid JSON schema. Failures here are
+        # silently ignored — validate_arguments will fall back to the
+        # built-in checks when no compiled validator is available.
+        self._validators.pop(name, None)
+        if _JSONSCHEMA_AVAILABLE:
+            params = schema.get("parameters")
+            if isinstance(params, dict):
+                try:
+                    Draft202012Validator.check_schema(params)
+                    self._validators[name] = Draft202012Validator(params)
+                except _JSONSchemaError:
+                    # Schema is structurally invalid for jsonschema; we still
+                    # accept it for backward compatibility but argument
+                    # validation will degrade to the built-in checks.
+                    self._validators.pop(name, None)
 
     def register_tool_definition(self, tool_definition: ToolDefinition) -> None:
         """Registers a validated tool definition object."""
@@ -200,10 +235,20 @@ class ToolRegistry:
 
     def validate_arguments(self, name_or_hash: str, arguments: Dict[str, Any]) -> None:
         """
-        Validate arguments against the registered JSON schema (basic object checks).
-        Raises InputValidationError on invalid payloads.
+        Validate arguments against the registered JSON schema.
+
+        When the optional ``jsonschema`` package is available (the default for
+        modern installs), the registered ``parameters`` block is treated as a
+        Draft 2020-12 JSON Schema. This adds support for ``pattern``,
+        ``oneOf``/``anyOf``/``allOf``, nested ``properties``, ``format``, and
+        the rest of the spec — features the previous hand-rolled implementation
+        silently ignored. When the dependency is missing, we fall back to the
+        legacy built-in checks so existing deployments keep working.
+
+        Raises ``InputValidationError`` on invalid payloads.
         """
         schema = self.get_schema(name_or_hash)
+        original_name = self._resolve_original_name(name_or_hash)
         params = schema.get("parameters", {})
         if params.get("type") not in (None, "object"):
             raise InputValidationError("Input validation failed: top-level parameters type must be object.")
@@ -211,6 +256,28 @@ class ToolRegistry:
         if not isinstance(arguments, dict):
             raise InputValidationError("Input validation failed: arguments payload must be an object.")
 
+        validator = self._validators.get(original_name)
+        if validator is not None:
+            try:
+                validator.validate(arguments)
+            except _JSONSchemaValidationError as exc:
+                location = "/".join(str(part) for part in exc.absolute_path) or "<root>"
+                tool_label = schema.get("name", name_or_hash)
+                raise InputValidationError(
+                    f"Input validation failed for tool '{tool_label}' at '{location}': {exc.message}"
+                ) from exc
+            return
+
+        # ---- Fallback path (jsonschema unavailable or schema not compatible) ----
+        self._validate_arguments_builtin(schema, name_or_hash, arguments, params)
+
+    def _validate_arguments_builtin(
+        self,
+        schema: Dict[str, Any],
+        name_or_hash: str,
+        arguments: Dict[str, Any],
+        params: Dict[str, Any],
+    ) -> None:
         properties = params.get("properties", {})
         required = params.get("required", [])
         additional_properties = params.get("additionalProperties", True)

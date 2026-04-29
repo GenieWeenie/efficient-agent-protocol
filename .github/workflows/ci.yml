@@ -42,10 +42,29 @@ jobs:
         run: |
           ruff check . --select E9,F63,F7,F82
 
+      - name: Lint (Ruff advisory broader rule set, non-blocking)
+        if: matrix.python-version == '3.11'
+        continue-on-error: true
+        run: |
+          # Phase-14 R12: report (but do not yet gate on) the broader
+          # E,F,W,B,UP,SIM,RUF rule families. The next hardening pass
+          # will fix the top offenders and flip this to a blocking gate.
+          ruff check . --select E,F,W,B,UP,SIM,RUF --output-format=concise || true
+
       - name: Type rigor gate (mypy scoped modules)
         if: matrix.python-version == '3.11'
         run: |
           mypy --follow-imports=skip eap/environment/safe_eval.py eap/environment/executor.py eap/runtime/auth_scopes.py eap/runtime/guardrails.py eap/runtime/http_api.py
+
+      - name: Security lint (Bandit, high-severity gate)
+        if: matrix.python-version == '3.11'
+        run: |
+          # Phase-14 R12: bandit security lint, gating only on HIGH-severity
+          # findings to avoid a whole-codebase reformat. Medium/low findings
+          # are still printed for visibility.
+          pip install bandit
+          bandit -r eap/ --severity-level high
+          bandit -r eap/ --exit-zero --severity-level low || true
 
       - name: Run tests
         if: matrix.python-version != '3.11'

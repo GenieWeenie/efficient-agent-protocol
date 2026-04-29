@@ -35,6 +35,54 @@ configure_logging()
 settings = load_settings()
 
 
+_AUDITOR_REJECT_REASON_FALLBACK = (
+    "Auditor response could not be parsed as a structured decision. "
+    "Defaulting to reject for safety."
+)
+
+
+def parse_auditor_decision(raw_decision: str) -> tuple[str, str]:
+    """Parse the auditor's response into a structured ``(decision, reason)`` tuple.
+
+    The auditor is asked to emit a JSON object of the form
+    ``{"decision": "approve" | "reject", "reason": "..."}``. If the response
+    is missing, malformed, or carries an unknown decision value, this function
+    returns ``("reject", <fallback reason>)`` — the substring path that
+    previously approved any text containing the literal word ``APPROVED`` is
+    intentionally gone.
+    """
+    if not isinstance(raw_decision, str) or not raw_decision.strip():
+        return "reject", _AUDITOR_REJECT_REASON_FALLBACK
+
+    payload: object = None
+    try:
+        payload = json.loads(raw_decision.strip())
+    except json.JSONDecodeError:
+        # Fall back to the first JSON object embedded in the response (the
+        # auditor sometimes emits surrounding prose despite instructions).
+        match = re.search(r"\{.*\}", raw_decision, re.DOTALL)
+        if match:
+            try:
+                payload = json.loads(match.group(0))
+            except json.JSONDecodeError:
+                payload = None
+
+    if not isinstance(payload, dict):
+        return "reject", _AUDITOR_REJECT_REASON_FALLBACK
+
+    decision_raw = payload.get("decision")
+    reason_raw = payload.get("reason")
+    decision = decision_raw.strip().lower() if isinstance(decision_raw, str) else ""
+    reason = reason_raw.strip() if isinstance(reason_raw, str) and reason_raw.strip() else ""
+
+    if decision == "approve":
+        return "approve", reason or "Auditor approved without an explicit reason."
+    if decision == "reject":
+        return "reject", reason or "Auditor rejected without an explicit reason."
+
+    return "reject", _AUDITOR_REJECT_REASON_FALLBACK
+
+
 def _default_execution_limits_from_settings() -> ExecutionLimits:
     return ExecutionLimits(
         max_global_concurrency=settings.executor.max_global_concurrency,
@@ -370,7 +418,12 @@ with tab1:
                         timeout_seconds=settings.auditor.timeout_seconds,
                         openai_api_mode=settings.auditor.openai_api_mode,
                         extra_headers=settings.auditor.extra_headers,
-                        system_prompt="Review for safety. Respond APPROVED or DENIED."
+                        system_prompt=(
+                            "You are the AUDITOR. Review the proposed macro for safety. "
+                            "Respond ONLY with a JSON object of the form "
+                            '{"decision": "approve" | "reject", "reason": "<short rationale>"}. '
+                            "Do not include code fences or any prose."
+                        ),
                     )
                     review_prompt = f"Review: {macro.model_dump_json()}"
                     streamed = {"text": ""}
@@ -380,12 +433,15 @@ with tab1:
                         streamed["text"] += token
                         decision_placeholder.markdown(f"**Decision (streaming):** {streamed['text']}")
 
-                    audit_decision = auditor.stream_chat(review_prompt, on_token=on_audit_token)
-                    decision_placeholder.markdown(f"**Decision:** {audit_decision}")
+                    raw_decision = auditor.stream_chat(review_prompt, on_token=on_audit_token)
+                    audit_decision, audit_reason = parse_auditor_decision(raw_decision)
+                    decision_placeholder.markdown(
+                        f"**Decision:** `{audit_decision}` — {audit_reason}"
+                    )
                     s.update(label=f"🛡️ Audit: {audit_decision}", state="complete")
 
             # EXECUTOR
-            if "APPROVED" in audit_decision.upper():
+            if audit_decision == "approve":
                 with st.status("🚀 Executing DAG...", expanded=True) as s:
                     result = asyncio.run(executor.execute_macro(macro))
                     st.json(result)
@@ -401,11 +457,11 @@ with tab1:
                     )
                     st.rerun() 
             else:
-                st.error("Audit Failed. Execution Blocked.")
+                st.error(f"Audit Failed. Execution Blocked. Reason: {audit_reason}")
                 state_manager.append_turn(
                     session_id=st.session_state.active_session_id,
                     role="assistant",
-                    content="Audit failed. Execution blocked.",
+                    content=f"Audit failed. Execution blocked. Reason: {audit_reason}",
                 )
 
 # --- TAB 2: Data Inspector ---

@@ -16,6 +16,7 @@ dependencies = [
   "requests==2.33.0",
   "beautifulsoup4==4.12.3",
   "uvicorn==0.46.0",
+  "jsonschema>=4.0",
 ]
 
 [project.urls]
@@ -32,6 +33,7 @@ dev = [
   "ruff>=0.6.0",
   "pre-commit>=3.7.0",
   "mypy>=1.11.0",
+  "bandit>=1.7.0",
 ]
 storage = [
   "redis>=5.0.0",
@@ -74,3 +76,13 @@ module = [
 ]
 strict = true
 disallow_any_explicit = true
+
+[tool.bandit]
+# Bandit is run in CI as a security gate. We currently only fail the build on
+# HIGH-severity issues; medium/low are reported but tolerated to avoid a
+# wholesale rewrite. Tighten to ``--severity-level low`` once the reported
+# medium-severity findings (notably SQL string formatting in
+# postgres_store.py — already protected by an identifier whitelist) are
+# explicitly suppressed via ``# nosec``.
+exclude_dirs = ["tests", "examples", ".venv", ".venv-bootstrap", "build", "dist"]
+skips = []

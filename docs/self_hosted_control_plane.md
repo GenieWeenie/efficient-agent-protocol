@@ -67,11 +67,26 @@ The smoke validates:
 ## Auth Model
 
 - Runtime API expects `Authorization: Bearer <token>`.
-- Token source: `EAP_RUNTIME_BEARER_TOKEN` in `deploy/self_hosted/.env`.
+- Token source: `EAP_RUNTIME_BEARER_TOKEN` in `deploy/self_hosted/.env`. The
+  runtime resolves the token in this order:
+  1. `--bearer-token` CLI flag (discouraged — visible to anyone with `ps`
+     access on the host).
+  2. `--bearer-token-file <path>` (recommended for k8s / Docker secret
+     mounts; the file's first line is read).
+  3. `EAP_RUNTIME_BEARER_TOKEN` environment variable (used by the bundled
+     compose stack).
 - Requests without valid bearer token return `401 unauthorized`.
 - Missing auth configuration does not grant anonymous access; runtime auth fails closed by default.
 - Runtime also supports scoped tokens via `--scoped-auth-config` for multi-user governance.
 - Scoped auth defaults to `--policy-profile strict` unless overridden.
+
+> **Production deployment:** the bundled SQLite-backed compose stack is
+> intended for single-host development / lightweight self-hosting only.
+> Multi-process or multi-host deployments must use the Postgres backend —
+> two containers writing to the same SQLite file across container
+> boundaries have different fcntl-lock semantics and will eventually
+> corrupt the file under load. The `operator-ui` container in the bundled
+> compose mounts the volume `:ro` for that reason.
 - Runtime supports `--guardrails-config` for endpoint rate limits and concurrency ceilings.
 
 Scope baseline:
