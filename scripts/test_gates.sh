@@ -98,6 +98,7 @@ case "${MODE}" in
       tests/integration/test_provider_selection.py \
       tests/unit/test_provider_adapters.py
     run_gate "streamlit-ui-smoke" run_ui_smoke
+    run_gate "perf-suite" run_pytest tests/perf
     ;;
   *)
     echo "Usage: ./scripts/test_gates.sh [quick|integration|ui|perf|full|all]"
